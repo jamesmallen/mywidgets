@@ -1,0 +1,129 @@
+﻿<?xml version="1.0"?>
+
+<?konfabulator xml-strict="true"?>
+
+<widget version="1.0" minimumVersion="2.1" debug="errors">
+
+  <option>allowCustomObjectAttributes</option>
+
+  
+
+  <window name="main"
+
+    title="Dictionary"
+
+    width="450" height="600"
+
+    alignment="left"
+
+    opacity="255"
+
+    shadow="0"
+
+    visible="1"/>
+
+
+
+  <action trigger="onLoad" file="Dictionary.js"/>
+
+  
+
+  <preference name="dictionaryURL"
+
+    title="Dictionary URL:"
+
+    type="popup"
+
+    defaultValue="http://dictionary.reference.com/search?q=">
+
+    <option>http://dictionary.reference.com/search?q=</option>
+
+    <option>Custom</option>
+
+  </preference>
+
+  
+
+  <preference name="dictionaryURLCustom"
+
+    title="Custom:"
+
+    type="text"
+
+    defaultValue="http://"/>
+
+  
+
+  <preference name="thesaurusURL"
+
+    title="Thesaurus URL:"
+
+    type="popup"
+
+    defaultValue="http://thesaurus.reference.com/search?q=">
+
+    <option>http://thesaurus.reference.com/search?q=</option>
+
+    <option>Custom</option>
+
+  </preference>
+
+  
+
+  <preference name="thesaurusURLCustom"
+
+    title="Custom:"
+
+    type="text"
+
+    defaultValue="http://">
+
+    <description>Select the URL to use for your dictionary and thesaurus. The word to look up will be appended to the URL you specify.
+
+    If you would like to use a custom URL, select "Custom" in the dropdown and enter the URL (including the http;//) in the appropriate "Custom" box.</description>
+
+  </preference>
+
+  
+
+  <preference name="selectedBook"
+
+    hidden="true"
+
+    defaultValue="Dictionary"
+
+    type="text"/>
+
+  
+
+  <action trigger="onPreferencesChanged">
+
+    onPreferencesChanged();
+
+  </action>
+
+  
+
+
+
+  <about-box>
+
+    <image>Resources/AboutBox.png</image>
+
+    <about-version
+      font="Arial Bold"
+      size="13"
+      hOffset="265" vOffset="112"
+      color="#FFFFFF">
+      <shadow>
+        <color>#000000</color>
+        <hOffset>1</hOffset>
+        <vOffset>1</vOffset>
+      </shadow>
+    </about-version>
+  </about-box>
+
+</widget>
+
+
+
