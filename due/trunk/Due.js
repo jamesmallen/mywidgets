@@ -1,51 +1,613 @@
-var backgroundImages = new Array();
-var dueList = new Array();
-var dueListItemsShadows = new Array();
-var dueListDatesShadows = new Array();
-var dueListItems = new Array();
-var dueListDates = new Array();
-var reflectionImages = new Array();
-var glowImages = new Array();
 
-var itemHeight = 27;
-var itemHOffset = 7;
-var itemVOffset = 8;
-var textHOffset = 10;
-var textVOffset = 16;
-var dateHOffset = 10;
-var dateVOffset = 16;
+const animDuration = 300;
 
-var decorationsHeight = 15;
+const buttonsInnie    = 0x00;
+const buttonsOuttie   = 0x01;
 
-emptyBackground = new Image();
-emptyBackground.src = "Resources/GrayBackground.png";
-emptyBackground.vOffset = itemVOffset;
-emptyBackground.hOffset = itemHOffset;
-emptyBackground.opacity = 0;
-emptyBackground.tooltip = "Right-click to add new Due items.";
-emptyBackground.onContextMenu = "buildContextMenu(-1)";
+const stateTrans      = 0x01;
 
-emptyTextShadow = new Text();
-emptyText = new Text();
-emptyTextShadow.data = emptyText.data = "Nothing Due!";
-emptyTextShadow.hOffset = main.width / 2 + 1;
-emptyTextShadow.vOffset = itemVOffset + textVOffset + 1;
-emptyText.hOffset = main.width / 2;
-emptyText.vOffset = itemVOffset + textVOffset;
-emptyTextShadow.alignment = emptyText.alignment = "center";
-emptyTextShadow.color = "#000000";
-emptyText.color = "#FFFFFF";
-emptyTextShadow.font = emptyText.font = preferences.userNormalFont.value;
-emptyTextShadow.size = emptyText.size = preferences.userNormalSize.value;
-emptyTextShadow.opacity = emptyText.opacity = 0;
+var state;
 
-emptyReflection = new Image();
-emptyReflection.src = "Resources/ClearReflection.png";
-emptyReflection.vOffset = itemVOffset;
-emptyReflection.hOffset = itemHOffset;
-emptyReflection.opacity = 0;
+var buttonState;
+var nextButtonState;
+var nextNextButtonState;
+
+var dueList;
+
+var pillArray;
+var addButton;
+var addButtonBg;
+
+var update
+
+var curDay;
+var updateTimer;
 
 
+function initialize()
+{
+  state = 0;
+  
+  buttonState = 0;
+  nextButtonState = 0;
+  nextNextButtonState = 0;
+  
+  dueList = new Array();
+  pillArray = new Array()
+  
+  addButtonBg = new Image();
+  addButtonBg.src = "Resources/AddButtonBg.png";
+  addButtonBg.opacity = 0;
+  addButtonBg.alignment = "right";
+  addButtonBg.onMouseUp = "editItem(-1)";
+  addButtonBg.contextMenuItems = buildContextMenu(-1);
+  
+  addButton = new Image();
+  addButton.src = "Resources/AddButtonTop.png";
+  addButton.opacity = 0;
+  addButton.alignment = "right";
+  
+  curDay = getCurrentMonthDay();
+  updateTimer = new Timer();
+  updateTimer.onTimerFired = "updateNextDay()";
+  updateTimer.interval = "5.0";
+  updateTimer.ticking = true;
+  
+}
+
+function updateNextDay()
+{
+  if (curDay != getCurrentMonthDay()) {
+    curDay = getCurrentMonthDay();
+    onLoseFocus();
+    sleep(animDuration);
+    onPreferencesChanged();
+  }
+}
+
+
+function getCurrentMonthDay()
+{
+  var d = new Date();
+  return pad(d.getMonth() + 1, 2, 0, "left") + pad(d.getDate(), 2, 0, "left");
+}
+
+function debugElement(el, elStr, d)
+{
+  if (elStr == undefined)
+    elStr = "";
+  if (d == undefined)
+    d = 0;
+  if (d == 0)
+    log("### BEGIN debugElement() ###");
+  log(elStr + "[" + (typeof el) + "]=" + el);
+  for (e in el) {
+    if (String(typeof el[e]).toLowerCase() == "object" &&
+        el[e] != el)
+      debugElement(el[e], elStr + "." + e, d + 1);
+    else
+      log(elStr + "." + e + "[" + (typeof el[e]) + "]=" + el[e]);
+  }
+  if (d==0)
+    log("### END debugElement() ###");
+}
+
+
+function limit(x, min, max)
+{
+  if (x <= min)
+    return min;
+  else if (x >= max)
+    return max;
+  else
+    return x;
+}
+
+function moveAddButton()
+{
+  var scale = pillArray[0].height / 27;
+  addButtonBg.width = scale * addButtonBg.srcWidth;
+  addButtonBg.height = scale * addButtonBg.srcHeight;
+  addButton.width = scale * addButton.srcWidth;
+  addButton.height = scale * addButton.srcHeight;
+
+  addButtonBg.hOffset = main.width;
+  addButtonBg.vOffset = main.height - addButton.height;
+  addButton.hOffset = main.width;
+  addButton.vOffset = main.height - addButton.height;
+}
+
+
+function onGainFocus()
+{
+  if (preferences.dueListPref.value.length > 0) {
+    showButtons(true);
+  }
+  
+  moveAddButton();
+  var anim1 = new FadeAnimation(addButtonBg, parseInt(preferences.bgOpacity.value), animDuration * 2, animator.kEaseInOut);
+  var anim2 = new FadeAnimation(addButton, 255, animDuration * 2, animator.kEaseInOut);
+  animator.start(anim1);
+  animator.start(anim2);
+}
+
+function onLoseFocus()
+{
+  if (preferences.dueListPref.value.length > 0) {
+    showButtons(false);
+  }
+  
+  var anim1 = new FadeAnimation(addButtonBg, 0, animDuration * 2, animator.kEaseInOut);
+  var anim2 = new FadeAnimation(addButton, 0, animDuration * 2, animator.kEaseInOut);
+  animator.start(anim1);
+  animator.start(anim2);
+}
+
+
+
+
+function showButtons(b)
+{
+  if (state & stateTrans) {
+    if (b == true) {
+      nextNextButtonState = buttonsOuttie;
+    } else {
+      nextNextButtonState = buttonsInnie;
+    }
+    return;
+  } else {
+    if (b == true) {
+      nextNextButtonState = buttonsOuttie;
+      nextButtonState = buttonsOuttie;
+    } else {
+      nextNextButtonState = buttonsInnie;
+      nextButtonState = buttonsInnie;
+    }
+    transition();
+  }
+}
+
+function transition()
+{
+  if (buttonState == nextButtonState) {
+    return;
+  }
+  state = state | stateTrans;
+  if (nextButtonState == buttonsOuttie) {
+    var a = new CustomAnimation(1, slide, startFadeIn);
+    a.startWidth = pillArray[0].width;
+    a.endWidth = parseInt(pillArray[0].width) + parseInt(pillArray[0].modifyButton.width) + parseInt(pillArray[0].deleteButton.width) + parseInt(pillArray[0].modifyButton.width) * 0.25;
+    a.duration = animDuration;
+    
+    main.width = a.endWidth;
+    animator.start(a);
+  } else {
+    for (var i in pillArray) {
+      pillArray[i].showButtons = false;
+    }
+    // fade out and slide in
+    // buttonsShowing = false;
+    var a = new CustomAnimation(1, fadeButtons, startSlideIn);
+    a.startOpacity = 255;
+    a.endOpacity = 0;
+    a.duration = animDuration;
+    animator.start(a);
+  }
+  
+}
+
+
+function slide()
+{
+  var now = animator.milliseconds;
+  var t = limit(now - this.startTime, 0, this.duration);
+  var percent = t / this.duration;
+  
+  var newWidth;
+  var ret;
+  
+  if (percent >= 1.0) {
+    newWidth = this.endWidth;
+    ret = false;
+  } else {
+    newWidth = animator.ease(this.startWidth, this.endWidth, percent, animator.kEaseInOut);
+    ret = true;
+  }
+  
+  for (var i in pillArray) {
+    pillArray[i].setWidth(newWidth, true);
+  }
+  
+  return ret;
+}
+
+
+function fadeButtons()
+{
+  var now = animator.milliseconds;
+  var t = limit(now - this.startTime, 0, this.duration);
+  var percent = t / this.duration;
+  
+  var newOpacity;
+  var ret;
+  
+  if (percent >= 1.0) {
+    newOpacity = this.endOpacity;
+    ret = false;
+  } else {
+    newOpacity = animator.ease(this.startOpacity, this.endOpacity, percent, animator.kEaseInOut);
+    ret = true;
+  }
+  
+  for (var i in pillArray) {
+    pillArray[i].modifyButton.opacity = newOpacity;
+    pillArray[i].deleteButton.opacity = newOpacity;
+  }
+  
+  return ret;
+}
+
+
+function startFadeIn()
+{
+  for (var i in pillArray) {
+    pillArray[i].showButtons = true;
+    pillArray[i].alignLayers();
+    pillArray[i].resizeText();
+  }
+  
+  var a = new CustomAnimation(1, fadeButtons, doneShowButtons);
+  a.startOpacity = 0;
+  a.endOpacity = 255;
+  a.duration = animDuration;
+  animator.start(a);
+}
+
+function startSlideIn()
+{
+  var a = new CustomAnimation(1, slide, doneShowButtons);
+  a.startWidth = pillArray[0].width;
+  a.endWidth = parseInt(pillArray[0].width) - (parseInt(pillArray[0].modifyButton.width) + parseInt(pillArray[0].deleteButton.width) + parseInt(pillArray[0].modifyButton.width) * 0.25);
+  a.duration = animDuration;
+  animator.start(a);
+}
+
+function doneShowButtons()
+{
+  if (buttonState == buttonsInnie) {
+    for (var i in pillArray) {
+      pillArray[i].resizeText();
+    }
+  }
+  main.width = pillArray[0].width;
+  
+  buttonState = nextButtonState;
+  if (nextNextButtonState != nextButtonState) {
+    nextButtonState = nextNextButtonState;
+    transition();
+  } else {
+    state = state & ~stateTrans;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+Pill.prototype.setBgOpacity = function(o)
+{
+  this.backgroundLeft.opacity = o;
+  this.backgroundMiddle.opacity = o;
+  this.backgroundRight.opacity = o;
+}
+
+
+Pill.prototype.setOpacity = function(o)
+{
+  this.hiliteLeft.opacity = o;
+  this.hiliteMiddle.opacity = o;
+  this.hiliteRight.opacity = o;
+  this.text.opacity = o;
+  this.textShadow.opacity = o;
+  this.date.opacity = o;
+  this.dateShadow.opacity = o;
+  if (this.showButtons) {
+    this.modifyButton.opacity = o;
+    this.deleteButton.opacity = o;
+  }
+}
+
+Pill.prototype.setHOffset = function(x)
+{
+  for (o in this) {
+    if (typeof(this[o]) == "object" && typeof(this[o].hOffset) != "undefined") {
+      this[o].hOffset += (x - this.hOffset);
+    }
+  }
+  
+  this.hOffset = x;
+}
+
+Pill.prototype.setVOffset = function(y)
+{
+  for (o in this) {
+    if (typeof(this[o]) == "object" && typeof(this[o].vOffset) != "undefined") {
+      this[o].vOffset += (y - this.vOffset);
+    }
+  }
+  
+  this.vOffset = y;
+}
+
+Pill.prototype.setWidth = function(x, holdStill)
+{
+  if (x < this.backgroundLeft.srcWidth + this.backgroundRight.srcWidth) {
+    this.backgroundLeft.width = x/2;
+    this.backgroundRight.width = x - this.backgroundLeft.width;
+    this.backgroundMiddle.width = 0;
+    this.backgroundMiddle.hOffset = this.backgroundLeft.width;
+    this.backgroundRight.hOffset = this.backgroundLeft.hOffset + this.backgroundLeft.width;
+  } else {
+    this.backgroundLeft.width = this.backgroundLeft.srcWidth;
+    this.backgroundRight.width = this.backgroundRight.srcWidth;
+    this.backgroundMiddle.width = x - this.backgroundLeft.width - this.backgroundRight.width;
+    this.backgroundMiddle.hOffset = this.backgroundLeft.width;
+    this.backgroundRight.hOffset = this.backgroundMiddle.hOffset + this.backgroundMiddle.width;
+  }
+  
+  this.width = x;
+  
+  this.cover();
+  if (typeof(holdStill) == "undefined" || holdStill == false) {
+    this.alignLayers();
+  }
+}
+
+Pill.prototype.setHeight = function(y, holdStill)
+{
+  this.backgroundLeft.height = y;
+  this.backgroundMiddle.height = y;
+  this.backgroundRight.height = y;
+  
+  this.height = y;
+  
+  this.cover();
+  if (typeof(holdStill) == "undefined" || holdStill == false) {
+    this.alignLayers();
+  }
+}
+
+Pill.prototype.cover = function()
+{
+  this.hiliteLeft.width = this.backgroundLeft.width;
+  this.hiliteRight.width = this.backgroundRight.width;
+  this.hiliteMiddle.width = this.backgroundMiddle.width;
+  this.hiliteLeft.height = this.backgroundLeft.height;
+  this.hiliteRight.height = this.backgroundRight.height;
+  this.hiliteMiddle.height = this.backgroundMiddle.height;
+  this.hiliteMiddle.hOffset = this.backgroundMiddle.hOffset;
+  this.hiliteRight.hOffset = this.backgroundRight.hOffset;
+}
+
+
+Pill.prototype.alignLayers = function()
+{
+  var scale = this.height / 27;
+  this.modifyButton.width = this.modifyButton.srcWidth * scale;
+  this.modifyButton.height = this.modifyButton.srcHeight * scale;
+  this.deleteButton.width = this.deleteButton.srcWidth * scale;
+  this.deleteButton.height = this.deleteButton.srcHeight * scale;
+  
+  this.text.hOffset = this.hOffset + this.backgroundLeft.width;
+  this.text.vOffset = this.vOffset + ((this.height + this.text.height) / 2) - (this.text.size * 0.2) - (this.height * 0.05);
+  
+  this.modifyButton.hOffset = this.backgroundRight.hOffset - (this.modifyButton.width + this.deleteButton.width);
+  this.deleteButton.hOffset = this.backgroundRight.hOffset - this.deleteButton.width;
+  
+  this.modifyButton.vOffset = this.backgroundLeft.vOffset + scale * 5;
+  this.deleteButton.vOffset = this.backgroundLeft.vOffset + scale * 5;
+  
+  if (this.showButtons == true) {
+    this.date.hOffset = this.modifyButton.hOffset - this.modifyButton.width * 0.25;
+  } else {
+    this.date.hOffset = this.hOffset + this.width - this.backgroundRight.width;
+  }
+  this.date.vOffset = this.text.vOffset;
+  
+  
+  this.textShadow.hOffset = this.text.hOffset + 1;
+  this.textShadow.vOffset = this.text.vOffset + 1;
+  this.dateShadow.hOffset = this.date.hOffset + 1;
+  this.dateShadow.vOffset = this.date.vOffset + 1;
+  
+}
+
+
+
+Pill.prototype.resizeText = function()
+{
+  this.alignLayers();
+  if (this.fitData == true) {
+    this.text.width = -1;
+    this.text.height = -1;
+    this.date.width = -1;
+    this.date.height = -1;
+    var height = this.text.height + 13;
+    this.setHeight(height);
+    var width = parseInt(this.backgroundLeft.width) + parseInt(this.text.width) + parseInt(this.date.width) + parseInt(this.backgroundRight.width);
+    if (this.showButtons == true) {
+      width += (parseInt(this.modifyButton.width) + parseInt(this.deleteButton.width) + parseInt(this.modifyButton.width) * 0.25);
+    }
+    this.text.truncation = "none";
+    this.textShadow.truncation = "none";
+    this.setWidth(width);
+  } else {
+    this.date.width = -1;
+    var width = parseInt(this.width) - (parseInt(this.backgroundLeft.width) + parseInt(this.date.width) + parseInt(this.backgroundRight.width));
+    if (this.showButtons == true) {
+      width -= (parseInt(this.modifyButton.width) + parseInt(this.deleteButton.width) + parseInt(this.modifyButton.width) * 0.25);
+    }
+    this.text.truncation = "end";
+    this.textShadow.truncation = "end";
+    this.text.width = width;
+    this.textShadow.width = width;
+  }
+}
+
+Pill.prototype.setAutosize = function(a)
+{
+  if (a == true) {
+    this.fitData = true;
+  } else {
+    this.fitData = false;
+  }
+  
+  this.resizeText();
+}
+
+Pill.prototype.setText = function(str)
+{
+  this.text.data = str;
+  this.textShadow.data = str;
+  
+  this.resizeText();
+}
+
+Pill.prototype.setDate = function(str)
+{
+  // Add two spaces of padding
+  this.date.data = "  " + str;
+  this.dateShadow.data = "  " + str;
+  
+  this.resizeText();
+}
+
+Pill.prototype.setBgColor = function(c)
+{
+  this.backgroundLeft.colorize = c;
+  this.backgroundMiddle.colorize = c;
+  this.backgroundRight.colorize = c;
+}
+
+Pill.prototype.setColor = function(c)
+{
+  this.text.color = c;
+  this.date.color = c;
+}
+
+
+Pill.prototype.setFont = function(f)
+{
+  this.textShadow.font = f;
+  this.dateShadow.font = f;
+  this.text.font = f;
+  this.date.font = f;
+  
+  this.resizeText();
+}
+
+
+Pill.prototype.setSize = function(s)
+{
+  this.textShadow.size = s;
+  this.dateShadow.size = s;
+  this.text.size = s;
+  this.date.size = s;
+  
+  this.resizeText();
+}
+
+
+Pill.prototype.setTooltip = function(t)
+{
+  this.backgroundMiddle.tooltip = t;
+}
+
+Pill.prototype.updateFromPrefs = function()
+{
+  this.setColor(preferences.userColor.value);
+  this.setFont(preferences.userFont.value);
+  this.setSize(preferences.userSize.value);
+  this.setBgOpacity(preferences.bgOpacity.value);
+}
+
+Pill.prototype.setIndex = function(i)
+{
+  this.modifyButton.onMouseUp = "editItem(" + i + ")";
+  this.deleteButton.onMouseUp = "deleteItem(" + i + ")";
+  this.backgroundMiddle.contextMenuItems = buildContextMenu(i);
+}
+
+
+function Pill()
+{
+  this.hOffset = 0;
+  this.vOffset = 0;
+  this.opacity = 255;
+  
+  this.fitData = true;
+  this.showButtons = false;
+  this.showAddButton = false;
+  
+  this.backgroundLeft = new Image();
+  this.backgroundLeft.src = "Resources/GrayBackgroundLeft.png";
+  this.backgroundLeft.hOffset = 0;
+  this.backgroundLeft.vOffset = 0;
+  
+  this.backgroundMiddle = new Image();
+  this.backgroundMiddle.src = "Resources/GrayBackgroundMiddle.png";
+  this.backgroundMiddle.hOffset = this.backgroundLeft.hOffset + this.backgroundLeft.srcWidth;
+  this.backgroundMiddle.vOffset = this.backgroundLeft.vOffset;
+  this.backgroundMiddle.width = 0;
+  
+  this.backgroundRight = new Image();
+  this.backgroundRight.src = "Resources/GrayBackgroundRight.png";
+  this.backgroundRight.hOffset = this.backgroundMiddle.hOffset;
+  this.backgroundRight.vOffset = this.backgroundMiddle.vOffset;
+  
+  this.width = this.backgroundLeft.width + this.backgroundRight.width;
+  this.height = this.backgroundLeft.height;
+  
+  this.textShadow = new Text();
+  this.textShadow.alignment = "left";
+  
+  this.dateShadow = new Text();
+  this.dateShadow.alignment = "right";
+  
+  this.text = new Text();
+  this.text.alignment = "left";
+  
+  this.date = new Text();
+  this.date.alignment = "right";
+  
+  this.modifyButton = new Image();
+  this.modifyButton.src = "Resources/ModifyButton.png";
+  this.modifyButton.opacity = 0;
+  
+  this.deleteButton = new Image();
+  this.deleteButton.src = "Resources/DeleteButton.png"
+  this.deleteButton.opacity = 0;
+  
+  this.hiliteLeft = new Image();
+  this.hiliteLeft.src = "Resources/ClearReflectionLeft.png";
+  
+  this.hiliteMiddle = new Image();
+  this.hiliteMiddle.src = "Resources/ClearReflectionMiddle.png";
+  
+  this.hiliteRight = new Image();
+  this.hiliteRight.src = "Resources/ClearReflectionRight.png";
+  
+  this.updateFromPrefs();
+  
+  this.cover();
+  this.alignLayers();
+}
 
 
 
@@ -93,8 +655,9 @@ function pad(str, length, pad_char, side)
 function updateList()
 {
   var prefList = preferences.dueListPref.value.split(",");
-  if (dueList) {
-    delete dueList;
+  
+  for (var i in dueList) {
+    delete dueList[i];
   }
   
   dueList = new Array();
@@ -109,9 +672,18 @@ function updateList()
     
     var lineItem = prefList[i].split('|');
     
+    dueList[i].text = escapeItem(lineItem[2], "decode");
+    dueList[i].extra = escapeItem(lineItem[3], "decode");
+    
     var dateParts = escapeItem(lineItem[0]).match(/^(\d{4})(\d{2})(\d{2})$/);
-    if (dateParts == null) {
-      // badly formed date - skip it
+    if (lineItem[0].length != 8 || (dateParts = escapeItem(lineItem[0]).match(/^(\d{4})(\d{2})(\d{2})$/)) == null) {
+      // no due date
+      dueList[i].dueDate = null;
+      dueList[i].dueTime = Number.MAX_VALUE;
+      dueList[i].warnTime = 0;
+      dueList[i].warnDays = 0;
+      dueList[i].state = "normal";
+      dueList[i].dateString = "";
       continue;
     }
     
@@ -119,28 +691,35 @@ function updateList()
     var nowTime = nowDate.getTime();
     dueList[i].dueDate = new Date(dateParts[1], dateParts[2] - 1, dateParts[3]);
     dueList[i].dueTime = dueList[i].dueDate.getTime();
-    dueList[i].warnTime = dueList[i].dueTime - lineItem[1] * 216000000;
+    dueList[i].warnTime = dueList[i].dueTime - lineItem[1] * 86400000;
     dueList[i].warnDays = lineItem[1];
     
     if (nowTime > dueList[i].dueTime) {
-      dueList[i].state = 'overdue';
+      dueList[i].state = "overdue";
     } else if (nowTime > dueList[i].warnTime) {
-      dueList[i].state = 'soon';
+      dueList[i].state = "soon";
     } else {
-      dueList[i].state = 'normal';
+      dueList[i].state = "normal";
     }
     
-    dueList[i].text = lineItem[2];
-    dueList[i].extra = lineItem[3];
-    
     switch (preferences.dateDisplay.value) {
-      case 'Month/Date':
-        dueList[i].dateString = (dueList[i].dueDate.getMonth() + 1).toString() + '/' + (dueList[i].dueDate.getDate()).toString();
+      case "Month/Date":
+        dueList[i].dateString = (dueList[i].dueDate.getMonth() + 1).toString() + "/" + (dueList[i].dueDate.getDate()).toString();
         // dueList[i].longDateString =  dateString + '/' + (dueList[i].dueDate.getFullYear()).toString();
         break;
-      case 'Date/Month':
-        dueList[i].dateString = (dueList[i].dueDate.getDate()).toString() + '/' + (dueList[i].dueDate.getMonth() + 1).toString();
+      case "Date/Month":
+        dueList[i].dateString = (dueList[i].dueDate.getDate()).toString() + "/" + (dueList[i].dueDate.getMonth() + 1).toString();
         // dueList[i].longDateString = (dueList[i].dueDate.getFullYear()).toString() + '/' + dateString;
+        break;
+      case "Days Until Warning":
+        dueList[i].dateString = Math.floor((warnTime - nowTime) / 86400000);
+        break;
+      case "Days Until Due":
+        dueList[i].dateString = Math.floor((dueTime - nowTime) / 86400000);
+        // dueList[i].longDateString = dueList[i].dateString;
+        break;
+      default:
+        dueList[i].dateString = "";
         break;
     }
   }
@@ -150,10 +729,10 @@ function updateList()
     if (a.state == b.state) {
       return a.dueTime - b.dueTime;
     } else {
-      switch(a.state) {
-        case 'overdue': return -1; break;
-        case 'soon': if (b.state == 'overdue') return 1; else return -1; break;
-        case 'normal': default: return 1; break;
+      switch (a.state) {
+        case "overdue": return -1; break;
+        case "soon": if (b.state == "overdue") return 1; else return -1; break;
+        case "normal": default: return 1; break;
       }
     }
   });
@@ -169,214 +748,213 @@ function updateList()
 function buildContextMenu(i)
 {
   var items = new Array();
-  items[0] = new MenuItem();
-  items[0].title = "Add Item";
-  items[0].onSelect = "editItem(-1)";
+  
+  var item = new MenuItem();
+  item.title = "Add Item";
+  item.onSelect = "editItem(-1)";
+  items.push(item);
+  
   if (i >= 0) {
-    items[1] = new MenuItem();
-    items[1].title = "Edit Item";
-    items[1].onSelect = "editItem(" + i + ")";
-    items[2] = new MenuItem();
-    items[2].title = "Delete Item";
-    items[2].onSelect = "deleteItem(" + i + ")";
+    item = new MenuItem();
+    item.title = "Edit Item";
+    item.onSelect = "editItem(" + i + ")";
+    items.push(item);
+    item = new MenuItem();
+    item.title = "Delete Item";
+    item.onSelect = "deleteItem(" + i + ")";
+    items.push(item);
   }
   
-  main.contextMenuItems = items
+  item = new MenuItem();
+  item.title = "Reload";
+  item.onSelect = "reloadWidget()";
+  items.push(item);
+  
+  return items;
 }
 
 
 function buildList()
 {
   suppressUpdates();
-  itemOffset = 0;
-
-  if (backgroundImages) {
-    for (var i in backgroundImages) {
-      delete backgroundImages[i];
-      delete dueListItemsShadows[i];
-      delete dueListDatesShadows[i];
-      delete dueListItems[i];
-      delete dueListDates[i];
-      delete reflectionImages[i];
-      delete glowImages[i];
-    }
+  
+  for (var i in pillArray) {
+    delete pillArray[i];
   }
+  
+  pillArray = new Array();
   
   updateList();
   
   if ( dueList.length == 0 ) {
-    main.height = itemHeight + decorationsHeight;
-    emptyBackground.opacity = preferences.bgOpacity.value;
-    emptyText.opacity = 255;
-    emptyTextShadow.opacity = 255;
-    emptyReflection.opacity = 255;
-    resumeUpdates();
+    var p = new Pill();
+    p.setText("Nothing Due!");
+    p.setIndex(-1);
+    pillArray.push(p);
   } else {
-    emptyBackground.opacity = 0;
-    emptyText.opacity = 0;
-    emptyTextShadow.opacity = 0;
-    emptyReflection.opacity = 0;
-    main.height = (itemHeight * dueList.length) + decorationsHeight;
-    
     var nowDate = new Date();
     var nowTime = nowDate.getTime();
     
     for (var i in dueList) {
-    
-      backgroundImages[i] = new Image();
-      backgroundImages[i].src = "Resources/GrayBackground.png";
-      backgroundImages[i].vOffset = (itemHeight * i) + itemVOffset;
-      backgroundImages[i].hOffset = itemHOffset;
-      backgroundImages[i].opacity = preferences.bgOpacity.value;
-      backgroundImages[i].onContextMenu = "buildContextMenu(" + i + ")";
-      backgroundImages[i].tooltip = escapeItem(dueList[i].text, "decode") + "\n" + escapeItem(dueList[i].extra, "decode") + "\nDue " + dueList[i].dueDate.toLocaleDateString() + "\n(Warning " + dueList[i].warnDays + ((dueList[i].warnDays == 1)?" day":" days") + " in advance)";
       
-      dueListItemsShadows[i] = new Text();
-      dueListDatesShadows[i] = new Text();
-      dueListItems[i] = new Text();
-      dueListDates[i] = new Text();
-
-
-      dueListItemsShadows[i].data = dueListItems[i].data = escapeItem(dueList[i].text, "decode");
-      dueListItemsShadows[i].hOffset = itemHOffset + textHOffset + 1;
-      dueListItemsShadows[i].vOffset = (itemHeight * i) + itemVOffset + textVOffset + 1;
-      dueListItems[i].hOffset = itemHOffset + textHOffset;
-      dueListItems[i].vOffset = (itemHeight * i) + itemVOffset + textVOffset;
-      dueListItemsShadows[i].width = dueListItems[i].width = 180;
-      dueListItemsShadows[i].truncation = dueListItems[i].truncation = "end";
-      dueListItemsShadows[i].color = "#000000";
-      dueListItems[i].color = "#FFFFFF";
+      var p = new Pill();
+      p.setIndex(i);
+      p.setText(dueList[i].text);
+      p.setDate(dueList[i].dateString);
+      var tooltip = dueList[i].text;
+      if (dueList[i].extra.length > 0) {
+        tooltip += "\n" + dueList[i].extra;
+      }
+      if (dueList[i].dueDate != null) {
+        tooltip += "\n" + dueList[i].dueDate.toLocaleDateString();
+      }
+      if (dueList[i].warnDays != 0) {
+        tooltip += "\n(Warning " + dueList[i].warnDays + ((dueList[i].warnDays == 1)?" day":" days") + " in advance)";
+      }
+      p.setTooltip(tooltip);
       
-      dueListDatesShadows[i].data = dueListDates[i].data = dueList[i].dateString;
-      dueListDatesShadows[i].hOffset = main.width - itemHOffset - dateHOffset + 1;
-      dueListDatesShadows[i].vOffset = (itemHeight * i) + itemVOffset + dateVOffset + 1;
-      dueListDatesShadows[i].alignment = dueListDates[i].alignment = 'right';
-      dueListDates[i].hOffset = main.width - itemHOffset - dateHOffset;
-      dueListDates[i].vOffset = (itemHeight * i) + itemVOffset + dateVOffset;
-      dueListDatesShadows[i].width = -1;
-      dueListDatesShadows[i].color = "#000000";
-      dueListDates[i].color = "#FFFFFF";
-      
-      
-      switch (dueList[i].state) {
-        case 'overdue':
-          dueListItemsShadows[i].font = dueListDatesShadows[i].font = dueListItems[i].font = dueListDates[i].font = preferences.userOverdueFont.value;
-          dueListItemsShadows[i].size = dueListDatesShadows[i].size = dueListItems[i].size = dueListDates[i].size = preferences.userOverdueSize.value;
-          backgroundImages[i].colorize = preferences.overdueColor.value;
-          if (preferences.overdueDecoration.value == 'Glow') {
-            glowImages[i] = new Image();
-            glowImages[i].src = "Resources/YellowGlow.png";
-            glowImages[i].vOffset = itemHeight * i;
-            glowImages[i].hOffset = 0;
-          }
+      switch(dueList[i].state) {
+        case "overdue":
+          p.setBgColor(preferences.overdueColor.value);
           break;
-        case 'soon':
-          dueListItemsShadows[i].font = dueListDatesShadows[i].font = dueListItems[i].font = dueListDates[i].font = preferences.userSoonFont.value;
-          dueListItemsShadows[i].size = dueListDatesShadows[i].size = dueListItems[i].size = dueListDates[i].size = preferences.userSoonSize.value;
-          backgroundImages[i].colorize = preferences.soonColor.value;
-          if (preferences.soonDecoration.value == 'Glow') {
-            glowImages[i] = new Image();
-            glowImages[i].src = "Resources/YellowGlow.png";
-            glowImages[i].vOffset = itemHeight * i;
-            glowImages[i].hOffset = 0;
-          }
+        case "soon":
+          p.setBgColor(preferences.soonColor.value);
           break;
-        case 'normal':
-          dueListItemsShadows[i].font = dueListDatesShadows[i].font = dueListItems[i].font = dueListDates[i].font = preferences.userNormalFont.value;
-          dueListItemsShadows[i].size = dueListDatesShadows[i].size = dueListItems[i].size = dueListDates[i].size = preferences.userNormalSize.value;
-          backgroundImages[i].colorize = preferences.normalColor.value;
-          if (preferences.normalDecoration.value == 'Glow') {
-            glowImages[i] = new Image();
-            glowImages[i].src = "Resources/YellowGlow.png";
-            glowImages[i].vOffset = itemHeight * i;
-            glowImages[i].hOffset = 0;
-          }
+        case "normal":
+          p.setBgColor(preferences.normalColor.value);
           break;
       }
       
-      reflectionImages[i] = new Image();
-      reflectionImages[i].src = "Resources/ClearReflection.png";
-      reflectionImages[i].vOffset = (itemHeight * i) + itemVOffset;
-      reflectionImages[i].hOffset = itemHOffset;
-      reflectionImages[i].opacity = 255;
+      pillArray.push(p);
     }
-    resumeUpdates();
+    
   }
+  
+  alignList();
+  
+  for (var i in pillArray) {
+    pillArray[i].resizeText();
+  }
+  
+  resumeUpdates();
 }
 
-function escapeItem(theString, whichOne)
+function alignList()
 {
-  if ( whichOne == "decode" )
-  {
-    theString = theString.replace(/%%1/g, "|")
-    theString = theString.replace(/%%2/g, ",")
+  var maxWidth = 0;
+  if (preferences.itemWidth.value >= 350) {
+    for (var i in pillArray) {
+      pillArray[i].setAutosize(true);
+      maxWidth = Math.max(maxWidth, pillArray[i].width);
+    }
+  } else {
+    maxWidth = preferences.itemWidth.value;
   }
-  else
-  {
-    theString = theString.replace(/\|/g, "%%1")
-    theString = theString.replace(/\,/g, "%%2")
+  
+  var curVOffset = 0;
+  for (var i in pillArray) {
+    pillArray[i].setVOffset(curVOffset);
+    curVOffset += pillArray[i].height;
+  }
+  
+  for (var i in pillArray) {
+    pillArray[i].setAutosize(false);
+    pillArray[i].setWidth(maxWidth, false);
+  }
+  
+  var scale = pillArray[0].height / 27;
+  
+  main.height = curVOffset + scale * addButton.srcHeight;
+  main.width = maxWidth;  
+  
+}
+
+function escapeItem(theString, direction)
+{
+  switch (direction) {
+    case "decode":
+      theString = theString.replace(/%%1/g, "|")
+      theString = theString.replace(/%%2/g, ",")
+      break;
+    case "encode":
+      theString = theString.replace(/\|/g, "%%1")
+      theString = theString.replace(/\,/g, "%%2")
+      break;
   }
   return theString;
 }
 
-EditForm.prototype = Array.prototype;
 
 function EditForm()
 {
   var arr = new Array();
+  var ff;
   
   var d = new Date();
   var thisYear = d.getFullYear();
   
-  arr[0] = new FormField();
-  arr[0].name = "text";
-  arr[0].type = "text";
-  arr[0].title = "Item:";
-  arr[0].defaultValue = "Name of Item";
+  ff = new FormField();
+  ff.name = "text";
+  ff.type = "text";
+  ff.title = "Name:";
+  ff.defaultValue = "Due Item";
+  arr.push(ff);
+  
+  ff = new FormField();
+  ff.name = "description";
+  ff.title = "Description:";
+  ff.type = "text";
+  ff.defaultValue = "Extra Information";
+  arr.push(ff);
+  
+  ff = new FormField();
+  ff.name = "hasDueDate";
+  ff.title = "Has Due Date:";
+  ff.type = "popup";
+  ff.option = new Array("Yes", "No");
+  ff.defaultValue = "Yes";
+  ff.description = "If your item has a due date, select \"Yes\" and set the date below.\nOtherwise, select \"No\" and ignore fields below.";
+  arr.push(ff);
 
-  arr[1] = new FormField();
-  arr[1].name = "dueyear";
-  arr[1].title = "Due Year:";
-  arr[1].type = "popup";
-  arr[1].option = new Array();
+  ff = new FormField();
+  ff.name = "dueyear";
+  ff.title = "Due Year:";
+  ff.type = "popup";
+  ff.option = new Array();
   for (var i = 0; i < 3; i++) {
-    arr[1].option[i] = (thisYear + i).toString();
+    ff.option[i] = (thisYear + i).toString();
   }
-  arr[1].defaultValue = thisYear.toString();
-  
-  arr[2] = new FormField();
-  arr[2].name = "month";
-  arr[2].title = "Month:";
-  arr[2].type = "popup";
-  arr[2].option = new Array();
+  ff.defaultValue = thisYear.toString();
+  arr.push(ff);
+
+  ff = new FormField();
+  ff.name = "month";
+  ff.title = "Month:";
+  ff.type = "popup";
+  ff.option = new Array();
   for (var i = 1; i <= 12; i++) {
-    arr[2].option[i - 1] = i.toString();
+    ff.option[i - 1] = i.toString();
   }
-  arr[2].defaultValue = (d.getMonth() + 1).toString();
+  ff.defaultValue = (d.getMonth() + 1).toString();
+  arr.push(ff);
   
-  arr[3] = new FormField();
-  arr[3].name = "date";
-  arr[3].title = "Date:";
-  arr[3].type = "popup";
-  arr[3].option = new Array();
+  ff = new FormField();
+  ff.name = "date";
+  ff.title = "Date:";
+  ff.type = "popup";
+  ff.option = new Array();
   for (var i = 1; i <= 31; i++) {
-    arr[3].option[i - 1] = i.toString();
+    ff.option[i - 1] = i.toString();
   }
-  arr[3].defaultValue = (d.getDate()).toString();
+  ff.defaultValue = (d.getDate()).toString();
+  arr.push(ff);
   
-  arr[4] = new FormField();
-  arr[4].name = "warn";
-  arr[4].title = "Warn Days:";
-  arr[4].type = "text";
-  arr[4].defaultValue = "1";
-  
-  arr[5] = new FormField();
-  arr[5].name = "extra";
-  arr[5].title = "Extra:";
-  arr[5].type = "text";
-  arr[5].defaultValue = "Extra Information";
-  
-  arr[5].description = "Name your item, specify a due date, set the number of days you want to be warned about the item, and enter any extra information into the \"Extra\" field.";
+  ff = new FormField();
+  ff.name = "warn";
+  ff.title = "Warn Days:";
+  ff.type = "text";
+  ff.defaultValue = "1";
+  arr.push(ff);
   
   return arr;
   
@@ -397,12 +975,17 @@ function editItem(i)
   } else {
     var tForm = EditForm();
     var tArr = dueListPrefArray[i].split('|');
-    tForm[1].defaultValue = tArr[0].substring(0, 4);
-    tForm[2].defaultValue = parseInt(tArr[0].substring(4, 6), 10).toString();
-    tForm[3].defaultValue = parseInt(tArr[0].substring(6, 8), 10).toString();
-    tForm[4].defaultValue = tArr[1];
+    if (tArr[0].length == 8) {
+      tForm[2].defaultValue = "Yes";
+      tForm[3].defaultValue = tArr[0].substring(0, 4);
+      tForm[4].defaultValue = parseInt(tArr[0].substring(4, 6), 10).toString();
+      tForm[5].defaultValue = parseInt(tArr[0].substring(6, 8), 10).toString();
+      tForm[6].defaultValue = tArr[1];
+    } else {
+      tForm[2].defaultValue = "No";
+    }
     tForm[0].defaultValue = escapeItem(tArr[2], "decode");
-    tForm[5].defaultValue = escapeItem(tArr[3], "decode");
+    tForm[1].defaultValue = escapeItem(tArr[3], "decode");
     
     formResults = form(tForm, 'Edit Due Item', 'Modify');
   }
@@ -419,14 +1002,18 @@ function editItem(i)
   
   var tArr = new Array();
   
-  tArr[0] = formResults[1] + pad(formResults[2], 2, "0", "left") + pad(formResults[3], 2, "0", "left");
-  tArr[1] = parseInt(formResults[4], 10).toString();
-  if (isNaN(parseInt(tArr[1], 10))) {
-    tArr[1] = '0';
+  if (formResults[2] == "Yes") {
+    tArr[0] = formResults[3] + pad(formResults[4], 2, "0", "left") + pad(formResults[5], 2, "0", "left");
+    tArr[1] = parseInt(formResults[6], 10).toString();
+    if (isNaN(parseInt(tArr[1], 10))) {
+      tArr[1] = "1";
+    }
+  } else {
+    tArr[0] = "0";
+    tArr[1] = "0";
   }
   tArr[2] = escapeItem(formResults[0], "encode");
-  tArr[3] = escapeItem(formResults[5], "encode");
-  
+  tArr[3] = escapeItem(formResults[1], "encode");
   dueListPrefArray[i] = tArr.join('|');
   
   if (dueListPrefArray.length > 1) {
@@ -438,14 +1025,15 @@ function editItem(i)
   updateList();
   savePreferences();
   buildList();
+  moveAddButton();
   
 }
 
 
 function deleteItem(i)
 {
-  var confirm = alert("Really delete the item \"" + dueListItems[i].data + "\"?", "Delete", "Cancel");
-  if (confirm == 0) {
+  var confirm = alert("Really delete \"" + pillArray[i].text.data + "\"?", "Delete", "Cancel");
+  if (confirm != 1) {
     return;
   }
   var dueListPrefArray = preferences.dueListPref.value.split(',');
@@ -459,12 +1047,24 @@ function deleteItem(i)
   updateList();
   savePreferences();
   buildList();
+  moveAddButton();
 }
 
 
+function onWillChangePreferences()
+{
+  onLoseFocus();
+}
+
+function onPreferencesChanged()
+{
+  buildList();
+  moveAddButton();
+}
+
+
+initialize();
+
 
 buildList();
-
-main.visible = true;
-// windowMovement();
-windowActive = 0;
+moveAddButton();

@@ -1,10 +1,16 @@
-WIDGET COPYRIGHT (C) 2005 JAMES ALLEN (james.m.allen@gmail.com)
+WIDGET COPYRIGHT (C) 2005 JAMES M. ALLEN (james.m.allen@gmail.com)
 
-You are free to reuse the code portions of this widget, as long as proper credit is given to the original author.
+You are free to reuse the code portions of this widget, as long as proper
+credit is given to the original author and the author is notified of any
+reuse.
 
-You are not free to reuse the graphics without express written permission from the author.
+You are not free to reuse the graphics without express written permission
+from the author.
 
-Portions of this widget are copyright by Yahoo, and permission has been received to redistribute them with this widget - Specifically, Colors.png, Fonts.png, and some source code. The license for these items is as follows:
+Portions of this widget are copyright by Yahoo, and permission has been
+received to redistribute them with this widget - Specifically, Colors.png,
+Fonts.png, and some source code. The license for these items is as
+follows:
 
 COPYRIGHT (c) 2005 YAHOO! INC.
 

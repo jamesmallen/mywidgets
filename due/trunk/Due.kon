@@ -1,20 +1,27 @@
 <?xml version="1.0"?>
 <?konfabulator xml-strict="true"?>
-<widget version="1.0" minimumVersion="2.1" debug="verbose">
+<widget version="1.1" minimumVersion="2.1" debug="errors">
   
   <window name="main"
     title="Due"
-    width="241" height="150"
+    width="0" height="0"
     alignment="left"
     opacity="255"
     shadow="0"
-    visible="1"/>
+    visible="1"
+    onGainFocus="onGainFocus();"
+    onLoseFocus="onLoseFocus();"/>
     
   <action trigger="onLoad" file="Due.js"/>
   
-	<action trigger="onPreferencesChanged">
-		buildList();
+	<action trigger="onWillChangePreferences">
+    onWillChangePreferences();
 	</action>
+  
+  <action trigger="onPreferencesChanged">
+    onPreferencesChanged();
+	</action>
+  
   
   <prefGroup name="colorPanel"
     title="Colors"
@@ -32,13 +39,29 @@
 		defaultValue="Month/Date">
 		<option>Month/Date</option>
 		<option>Date/Month</option>
+    <option>Days Until Warning</option>
+    <option>Days Until Due</option>
+    <option>(-</option>
+    <option>None</option>
 	</preference>
+  
+  <preference name="itemWidth"
+    title="Item Width:"
+    type="slider"
+    ticks="10"
+    minLength="50"
+    maxLength="350"
+    defaultValue="350">
+    <tickLabel>50</tickLabel>
+    <tickLabel>200</tickLabel>
+    <tickLabel>Fit</tickLabel>
+  </preference>
   
   <preference name="bgOpacity"
     title="Background Opacity:"
     type="slider"
-    ticks="4"
-    minLength="0"
+    ticks="10"
+    minLength="5"
     maxLength="255"
     defaultValue="191">
     <tickLabel>0%</tickLabel>
@@ -50,66 +73,41 @@
     group="colorPanel"
     title="Normal:"
     type="Color"
-    defaultValue="#487C3F"/>
+    defaultValue="#487C3F"
+    description="The color for displaying a normal upcoming item."/>
   
-  <preference name="normalDecoration"
-    group="colorPanel"
-    title="Decoration:"
-    type="popup"
-    defaultValue="None"
-    description="The color and decoration for displaying a normal upcoming item.">
-    <option>Glow</option>
-    <option>(-</option>
-    <option>None</option>
-  </preference>
-
   <preference name="soonColor"
     group="colorPanel"
     title="Warning:"
     type="Color"
-    defaultValue="#87852C"/>
-  
-  <preference name="soonDecoration"
-    group="colorPanel"
-    title="Decoration:"
-    type="popup"
-    defaultValue="None"
-    description="The color and decoration for displaying an item that is coming soon.">
-    <option>Glow</option>
-    <option>(-</option>
-    <option>None</option>
-  </preference>
-
+    defaultValue="#87852C"
+    description="The color for displaying an item that is coming soon."/>
   
   <preference name="overdueColor"
     group="colorPanel"
     title="Overdue:"
     type="Color"
-    defaultValue="#614029"/>
+    defaultValue="#614029"
+    description="The color for displaying an item that is overdue."/>
   
-  <preference name="overdueDecoration"
-    group="colorPanel"
-    title="Decoration:"
-    type="popup"
-    defaultValue="None"
-    description="The color and decoration for displaying an item that is overdue.">
-    <option>Glow</option>
-    <option>(-</option>
-    <option>None</option>
-  </preference>
-  
-  <preference name="userNormalFont"
+  <preference name="userColor"
     group="fontPanel"
-    title="Normal:"
-    type="Font"
-    defaultValue="Arial Bold"/>
+    title="Color:"
+    type="Color"
+    defaultValue="#FFFFFF"/>
   
-  <preference name="userNormalSize"
+  <preference name="userFont"
+    group="fontPanel"
+    title="Font:"
+    type="Font"
+    defaultValue="Arial Bold,Helvetica Bold"/>
+  
+  <preference name="userSize"
     group="fontPanel"
     title="Size:"
     type="popup"
     defaultValue="12"
-    description="The font and size for displaying a normal upcoming item.">
+    description="The color, font, and size for displaying item text.">
     <option>8</option>
     <option>9</option>
     <option>10</option>
@@ -122,53 +120,6 @@
     <option>24</option>
   </preference>
   
-  <preference name="userSoonFont"
-    group="fontPanel"
-    title="Warning:"
-    type="Font"
-    defaultValue="Arial Bold"/>
-  
-  <preference name="userSoonSize"
-    group="fontPanel"
-    title="Size:"
-    type="popup"
-    defaultValue="12"
-    description="The font and size for displaying an item that is coming soon.">
-    <option>8</option>
-    <option>9</option>
-    <option>10</option>
-    <option>11</option>
-    <option>12</option>
-    <option>14</option>
-    <option>16</option>
-    <option>18</option>
-    <option>20</option>
-    <option>24</option>
-  </preference>
-  
-  <preference name="userOverdueFont"
-    group="fontPanel"
-    title="Overdue:"
-    type="Font"
-    defaultValue="Arial Bold"/>
-  
-  <preference name="userOverdueSize"
-    group="fontPanel"
-    title="Size:"
-    type="popup"
-    defaultValue="12"
-    description="The font and size for displaying an item that is overdue.">
-    <option>8</option>
-    <option>9</option>
-    <option>10</option>
-    <option>11</option>
-    <option>12</option>
-    <option>14</option>
-    <option>16</option>
-    <option>18</option>
-    <option>20</option>
-    <option>24</option>
-  </preference>
   
   <preference name="dueListPref"
     hidden="true"
@@ -177,7 +128,7 @@
   
   <about-box image="Resources/About.png">
     <about-version
-      font="Arial Bold"
+      font="Arial Bold, Helvetica Bold"
       size="13"
       hOffset="178" vOffset="112"
       color="#FFFFFF">
