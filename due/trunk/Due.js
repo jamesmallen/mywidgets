@@ -712,10 +712,10 @@ function updateList()
         // dueList[i].longDateString = (dueList[i].dueDate.getFullYear()).toString() + '/' + dateString;
         break;
       case "Days Until Warning":
-        dueList[i].dateString = Math.floor((warnTime - nowTime) / 86400000);
+        dueList[i].dateString = Math.ceil((dueList[i].warnTime - nowTime) / 86400000);
         break;
       case "Days Until Due":
-        dueList[i].dateString = Math.floor((dueTime - nowTime) / 86400000);
+        dueList[i].dateString = Math.ceil((dueList[i].dueTime - nowTime) / 86400000);
         // dueList[i].longDateString = dueList[i].dateString;
         break;
       default:
