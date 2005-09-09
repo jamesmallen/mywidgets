@@ -971,6 +971,7 @@ function editItem(i)
   }
   
   if (i < 0) {
+    onLoseFocus();
     formResults = form(EditForm(), 'New Due Item', 'Add');
   } else {
     var tForm = EditForm();
@@ -987,6 +988,7 @@ function editItem(i)
     tForm[0].defaultValue = escapeItem(tArr[2], "decode");
     tForm[1].defaultValue = escapeItem(tArr[3], "decode");
     
+    onLoseFocus();
     formResults = form(tForm, 'Edit Due Item', 'Modify');
   }
   
