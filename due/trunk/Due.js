@@ -393,6 +393,9 @@ Pill.prototype.cover = function()
   this.hiliteMiddle.height = this.backgroundMiddle.height;
   this.hiliteMiddle.hOffset = this.backgroundMiddle.hOffset;
   this.hiliteRight.hOffset = this.backgroundRight.hOffset;
+  this.hiliteLeft.vOffset = this.backgroundLeft.vOffset;
+  this.hiliteMiddle.vOffset = this.backgroundMiddle.vOffset;
+  this.hiliteRight.vOffset = this.backgroundRight.vOffset;
 }
 
 
