@@ -4,7 +4,7 @@
   
   <window name="main"
     title="Due"
-    width="0" height="0"
+    width="1" height="1"
     alignment="left"
     opacity="255"
     shadow="0"

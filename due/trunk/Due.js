@@ -72,6 +72,17 @@ function getCurrentMonthDay()
   return pad(d.getMonth() + 1, 2, 0, "left") + pad(d.getDate(), 2, 0, "left");
 }
 
+function debugShallow(el)
+{
+  log("### BEGIN debugShallow() ###");
+  for (e in el) {
+    if (typeof(el[e]) != "function") {
+      log("[" + e + "]:" + el[e]);
+    }
+  }
+  log("### END debugShallow() ###");
+}
+
 function debugElement(el, elStr, d)
 {
   if (elStr == undefined)
@@ -435,6 +446,9 @@ Pill.prototype.alignLayers = function()
 
 Pill.prototype.resizeText = function()
 {
+  if (this.text.data == null) {
+    return;
+  }
   this.alignLayers();
   if (this.fitData == true) {
     this.text.width = -1;
@@ -1037,6 +1051,7 @@ function editItem(i)
 
 function deleteItem(i)
 {
+  onLoseFocus();
   var confirm = alert("Really delete \"" + pillArray[i].text.data + "\"?", "Delete", "Cancel");
   if (confirm != 1) {
     return;
