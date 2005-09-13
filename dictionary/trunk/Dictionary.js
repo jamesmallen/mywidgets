@@ -43,17 +43,44 @@ var forwardButton;
 // Dropdown items
 var dropdownMenu = new Array();
 
+var contextMenu = new Array();
+
+var booksArray = new Array();
+
+var booksPrefArray = new Array();
 
 // Other objects
 var urlObj;
 var urlTimer;
 var history = new Array();
 var historyIndex = -1;
+var defaultColors;
 
-
+function main_onContextMenu()
+{
+  if (wm == wmOpen && !(state & stateLoading) && !(state & stateTrans)) {
+    contextMenu[0].enabled = true;
+  } else {
+    contextMenu[0].enabled = false;
+  }
+  
+  main.contextMenuItems = contextMenu;
+}
 
 function initialize()
 {
+  if (isNaN(parseInt(preferences.selectedBook.value))) {
+    preferences.selectedBook.value = 0;
+  }
+  
+  var mi = new MenuItem();
+  mi.title = "Copy";
+  mi.enabled = false;
+  mi.onSelect = "copy_onSelect()";
+  contextMenu.push(mi);
+  main.contextMenuItems = contextMenu;
+  main.onContextMenu = "main_onContextMenu()";
+  
   extenderBottom = new Image();
   extenderBottom.src = "Resources/ExtenderBottom.png";
   extenderBottom.opacity = 0;
@@ -356,7 +383,53 @@ function initialize()
   transObjects.backButton = backButton;
   transObjects.forwardButton = forwardButton;
   
+  defaultColors = new Array();
+  defaultColors.push("#483BAE"); // blue
+  defaultColors.push("#CB3434"); // red
+  defaultColors.push("#356E25"); // green
+  defaultColors.push("#896623"); // orange
+  defaultColors.push("#8D306D"); // purple
+  defaultColors.push("#111111"); // black
+  defaultColors.push("#777777"); // silver
+  defaultColors.push("#949513"); // gold
+  
+  buildBooksArray();
   buildDropdownMenu();
+}
+
+function exportBooksArray()
+{
+  var str;
+  if (booksArray.length > 0) {
+    str = "";
+    for (var i in booksArray) {
+      if (i > 0) {
+        str += "|";
+      }
+      str += escape(booksArray[i].name) + "," + escape(booksArray[i].url) + "," + escape(booksArray[i].filter) + "," + escape(booksArray[i].color);
+    }
+  } else {
+    str = preferences.books.defaultValue;
+  }
+  
+  preferences.books.value = str;
+}
+
+function buildBooksArray()
+{
+  var tArr = preferences.books.value.split("|");
+  
+  booksArray = new Array();
+  
+  for (var i in tArr) {
+    var uArr = tArr[i].split(",");
+    var b = new Object();
+    b.name = unescape(uArr[0]);
+    b.url = unescape(uArr[1]);
+    b.filter = unescape(uArr[2]);
+    b.color = unescape(uArr[3]);
+    booksArray.push(b);
+  }
 }
 
 function buildDropdownMenu()
@@ -364,41 +437,169 @@ function buildDropdownMenu()
   var mi;
   dropdownMenu = new Array();
   
+  if (preferences.selectedBook.value < 0 || preferences.selectedBook.value > booksArray.length - 1) {
+    preferences.selectedBook.value = 0;
+  }
+  
+  for (var i in booksArray) {
+    mi = new MenuItem();
+    mi.title = booksArray[i].name;
+    if (preferences.selectedBook.value == i) {
+      mi.checked = true;
+      dropdownButton.colorize = booksArray[i].color;
+    }
+    mi.onSelect = "preferences.selectedBook.value = " + i + "; buildDropdownMenu();";
+    dropdownMenu.push(mi);
+  }
+  
   mi = new MenuItem();
-  if (preferences.dictionaryURL.value.indexOf("http://dictionary.reference.com") >= 0) {
-    mi.title = "Dictionary (Results courtesy of Dictionary.com)";
-  } else {
-    mi.title = "Dictionary";
-  }
-  if (preferences.selectedBook.value == "Dictionary") {
-    mi.checked = true;
-  }
-  mi.onSelect ="preferences.selectedBook.value = \"Dictionary\"; buildDropdownMenu();";
+  mi.title = "\u2014\u2014\u2014";
+  mi.enabled = false;
   dropdownMenu.push(mi);
   
-  
   mi = new MenuItem();
-  if (preferences.thesaurusURL.value.indexOf("http://thesaurus.reference.com") >= 0) {
-    mi.title = "Thesaurus (Results courtesy of Thesaurus.com)";
-  } else {
-    mi.title = "Thesaurus";
-  }
-  if (preferences.selectedBook.value == "Thesaurus") {
-    mi.checked = true;
-  }
-  mi.onSelect = "preferences.selectedBook.value = \"Thesaurus\"; buildDropdownMenu();";
+  mi.title = "Edit this list...";
+  mi.onSelect = "editBooks();";
   dropdownMenu.push(mi);
-  
-  switch (preferences.selectedBook.value) {
-    case "Thesaurus":
-      dropdownButton.colorize = "#884444";
-      break;
-    case "Dictionary":
-    default:
-      dropdownButton.colorize = "#444488";
-      break;
-  }
+
+  defContent.hrefRelCallback = lookup_url;
 }
+
+
+function filterOption()
+{
+  var a = new Array();
+  a.push("Dictionary.com");
+  a.push("Thesaurus.com");
+  a.push("MediaWiki");
+  a.push("m-w.com");
+  a.push("None");
+  return a;
+}
+
+function editBook(index)
+{
+  var prefArray = new Array();
+  var bp;
+  
+  var curBook;
+  var formResults;
+  
+  if (index < 0) {
+    curBook = new Object();
+    curBook.name = "New Item";
+    curBook.url = "http://";
+    curBook.filter = "None";
+    curBook.color = defaultColors[(booksArray.length) % defaultColors.length];
+  } else {
+    curBook = booksArray[index];
+  }
+  
+  bp = new FormField();
+  bp.name = "bookName";
+  bp.title = "Name:";
+  bp.type = "text";
+  bp.defaultValue = curBook.name;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.name = "bookUrl";
+  bp.title = "URL:";
+  bp.type = "text";
+  bp.defaultValue = curBook.url;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.name = "bookFilter";
+  bp.title = "Filter:";
+  bp.type = "popup";
+  bp.option = filterOption();
+  bp.defaultValue = curBook.filter;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.name = "bookColor";
+  bp.title = "Color:";
+  bp.type = "color";
+  bp.defaultValue = curBook.color;
+  prefArray.push(bp);
+  
+  if (index >= 0) {
+    bp = new FormField();
+    bp.name = "bookDelete";
+    bp.title = "Delete this book";
+    bp.type = "checkbox";
+    bp.defaultValue = false;
+    prefArray.push(bp);
+    formResults = form(prefArray, "Edit Item", "Save", "Cancel");
+  } else {
+    formResults = form(prefArray, "New Item", "Save", "Cancel");
+  }
+  
+  if (formResults == null) {
+    return false;
+  }
+  
+  if (formResults[4] == true) {
+    // delete
+    booksArray.splice(index, 1);
+  } else {
+    curBook.name = formResults[0];
+    curBook.url = formResults[1];
+    curBook.filter = formResults[2];
+    curBook.color = formResults[3];
+    if (index < 0) {
+      // new
+      booksArray.push(curBook);
+    } else {
+      // modify
+      booksArray[index] = curBook;
+    }
+  }
+  return true;
+}
+
+
+function editBooks()
+{
+  var formFields = new Array();
+  var ff;
+  var formResults;
+  
+  buildBooksArray();
+  
+  var bookNamesArray = new Array();
+  var bookIndicesArray = new Array();
+  
+  for (var i in booksArray) {
+    bookNamesArray.push(booksArray[i].name);
+    bookIndicesArray.push(i);
+  }
+  
+  bookNamesArray.push("New...");
+  bookIndicesArray.push(-1);
+  
+  ff = new FormField();
+  ff.name = "bookIndex";
+  ff.title = "Item:";
+  ff.type = "popup";
+  ff.option = bookNamesArray;
+  ff.optionValue = bookIndicesArray;
+  ff.description = "\r\nSelect an item and click \"Next\" to edit or delete that item.\r\nTo add an item, select the \"New...\" item.\r\n";
+  formFields.push(ff);
+  
+  do {
+    formResults = form(formFields, "Edit List", "Next", "Cancel");
+    
+    if (formResults == null) {
+      return;
+    }
+  } while (editBook(formResults[0]) == false);
+  
+  exportBooksArray();
+  buildDropdownMenu();
+}
+
 
 function goBack()
 {
@@ -450,7 +651,7 @@ function query_onKeyPress()
   switch(keycode) {
     case "Enter":
     case "Return":
-      query.data = query.data.replace(/[\n\r]/g, '');
+      query.data = query.data.replace(/[\n\r]/g, "");
       lookup_word(query.data);
       break;
     default:
@@ -466,8 +667,7 @@ function query_onMultiClick()
 
 function dropdownButton_onMouseDown()
 {
-  print("dropdownButton_onMouseDown");
-  popupMenu(dropdownMenu, system.event.hOffset, system.event.vOffset);
+  popupMenu(dropdownMenu, dropdownButton.hOffset, dropdownButton.vOffset + dropdownButton.height);
 }
 
 
@@ -482,32 +682,36 @@ function cancelButton_onMouseUp()
     if (state & stateTrans) {
       state = state | stateCamp;
     } else {
-      smoothTransition(wmCompact);
+      if (wm == wmCompact) {
+        query.data = "";
+      } else {
+        smoothTransition(wmCompact);
+      }
     }
   }
 }
 
+
 function currentURL()
 {
-  switch (preferences.selectedBook.value) {
-    case "Thesaurus":
-      if (preferences.thesaurusURL.value == "Custom") {
-        return preferences.thesaurusURLCustom.value;
-      } else {
-        return preferences.thesaurusURL.value;
-      }
-      break;
-    case "Dictionary":
-    default:
-      if (preferences.dictionaryURL.value == "Custom") {
-        return preferences.dictionaryURLCustom.value;
-      } else {
-        return preferences.dictionaryURL.value;
-      }
-      break;
-  }
+  return booksArray[preferences.selectedBook.value].url;
 }
 
+function lookup_url(url)
+{
+  if (!(state & stateLoading)) {
+    urlObj = new URL();
+    urlObj.location = url;
+    state = state | stateLoading;
+    urlObj.fetchAsync(url_done);
+    if (!(wm == wmOpen) && !(state & stateTrans)) {
+      smoothTransition(wmOpen);
+    } else {
+      throbberAnimated.opacity2 = 255;
+      throbberAnimated.opacity = 255;
+    }
+  }
+}
 
 function lookup_word(query)
 {
@@ -566,7 +770,7 @@ function thesaurus_com_definition(str)
     }
   }
   
-  result = str.match(/(<h2[^>]*>.*<\/h2>([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[l]|<\/tabl[e]|<\/table[^>])*<\/table>)/i);
+  result = str.match(/<h2[^>]*>.*<\/h2>(([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>)/i);
   if (result) {
     return result[1];
   } else {
@@ -576,6 +780,52 @@ function thesaurus_com_definition(str)
   
 }
 
+
+function mediawiki_definition(str)
+{
+  var result;
+  
+  // pre-process
+  str = str.replace(/[\r\n]/gm, ' ');
+  
+  result = str.match(/<!-- start content -->(.*)<!-- end content -->/);
+  
+  if (result) {
+    str = result[1];
+  } else {
+    return false;
+  }
+  
+  // pull out table of contents
+  str = str.replace(/<table id='toc'[^>]*>([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/gi, "");
+  
+  return str;
+  
+}
+
+
+function m_w_com_definition(str)
+{
+  var result;
+  
+  // pre-process
+  str = str.replace(/[\r\n]/gm, ' ');
+  
+  result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*)<\/table>/i);
+  
+  if (result) {
+    str = result[1];
+  } else {
+    result = str.match(/<table cellpadding="5" width="400">([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/);
+    if (result) {
+      str = result[1];
+    } else {
+      return false;
+    }
+  }
+  
+  return str;
+}
 
 function dictionary_com_definition(str)
 {
@@ -649,8 +899,25 @@ function showError(str, extra)
 
 function show_definition(str)
 {
+  switch(booksArray[preferences.selectedBook.value].filter) {
+    case "Dictionary.com":
+      str = dictionary_com_definition(str);
+      break;
+    case "Thesaurus.com":
+      str = thesaurus_com_definition(str);
+      break;
+    case "MediaWiki":
+      str = mediawiki_definition(str);
+      break;
+    case "m-w.com":
+      str = m_w_com_definition(str);
+      break;
+    default:
+      break;
+  }
+  
   if (str == null || str == false) {
-    showError("No entry found for " + query.data);
+    str = "No entry found for <b>" + query.data + "</b>";
     return;
   }
   
@@ -664,7 +931,6 @@ function show_definition(str)
   historyIndex++;
   history.splice(historyIndex, history.length - historyIndex, html);
   updateHistoryButtons();
-  
 }
 
 
@@ -688,23 +954,7 @@ function url_done(url)
   }
   state = state & ~stateLoading;
   if (url.response == 200) {
-    switch (preferences.selectedBook.value) {
-      case "Thesaurus":
-        if (preferences.thesaurusURL.value == preferences.thesaurusURL.defaultValue) {
-          show_definition(thesaurus_com_definition(url.result));
-        } else {
-          show_definition(url.result);
-        }
-        break;
-      case "Dictionary":
-      default:
-        if (preferences.dictionaryURL.value == preferences.dictionaryURL.defaultValue) {
-          show_definition(dictionary_com_definition(url.result));
-        } else {
-          show_definition(url.result);
-        }
-        break;
-    }
+    show_definition(url.result);
   } else {
     showError('HTTP Error - server may be down, or connection may be lost.', url);
   }
@@ -896,9 +1146,23 @@ function TransitionAnimationUpdate()
 }
 
 
+
+
+function onWillChangePreferences()
+{
+  buildPreferences();
+}
+
+
 function onPreferencesChanged()
 {
   buildDropdownMenu();
+}
+
+
+function copy_onSelect()
+{
+  system.clipboard = defContent.plainText;
 }
 
 

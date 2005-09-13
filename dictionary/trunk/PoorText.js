@@ -111,6 +111,13 @@ function closeTags(s)
   // pull out comments
   s = s.replace(/<!--([^-]|-[^-]|--[^>])*-->/g, '')
   
+  // pull out script tags
+  s = s.replace(/<script[^>]*>([^<]|<[\/]|<\/[^s]|<\/s[^c]|<\/sc[^r]|<\/scr[^i]|<\/scri[^p]|<\/scrip[^t]|<\/script[^>])*<\/script>/gi, "");
+  
+  // pull out style tags
+  s = s.replace(/<style[^>]*>([^<]|<[\/]|<\/[^s]|<\/s[^t]|<\/st[^y]|<\/sty[^l]|<\/styl[^e]|<\/style[^>]|<\/script[^>])*<\/script>/gi, "");
+  
+  
   return s;
 }
 
@@ -442,6 +449,7 @@ PoorText.prototype.scrollGrabbedY = 0;
 
 // BEGIN READ ONLY VARIABLES
 PoorText.prototype.totalHeight = -1;
+PoorText.prototype.plainText = "";
 // END READ ONLY VARIABLES
 
 // PoorText.scrollSpeed - the speed at which to scroll when using the built-in
@@ -451,6 +459,13 @@ PoorText.prototype.scrollSpeed = 5;
 // When encountering <a href="..."> tags, the url to use as the base for
 // relative urls
 PoorText.prototype.hrefBase = '';
+
+// Callback function for handling href's.
+// Set this to something to override the default behavior of opening a new
+// browser window. Set to null to do default.
+PoorText.prototype.hrefAbsCallback = null;
+
+PoorText.prototype.hrefRelCallback = null;
 
 // PoorText.name - the JavaScript name of the object
 //                 (This must be manually set to use multiple PoorText objects)
@@ -663,7 +678,19 @@ PoorText.tagStart = function(name, atts) {
         proto.font = atts.face;
       }
       if (atts.size) {
-        proto.size = atts.size;
+        if (atts.size.charAt(0) == "-" || atts.size.charAt(0) == "+") {
+          var base = element.inherit('size');
+          if (base == null) {
+            base = 20;
+          }
+          if (atts.size.charAt(0) == "-") {
+            proto.size = base - atts.size.substr(1);
+          } else {
+            proto.size = base + atts.size.substr(1);
+          }
+        } else {
+          proto.size = atts.size;
+        }
       }
       if (atts.color) {
         proto.color = atts.color;
@@ -690,11 +717,30 @@ PoorText.tagStart = function(name, atts) {
         var absHref;
         proto.color = '#0000FF';
         if (/:\/\//.test(atts.href)) {
+          // absolute
           absHref = atts.href;
+          if (PoorText.cur.hrefAbsCallback != null) {
+            proto.onMouseUp = PoorText.cur.name + ".hrefAbsCallback('" + absHref + "');";
+          } else {
+            proto.onMouseUp = "openURL('" + absHref + "');";
+          }
         } else {
-          absHref = PoorText.cur.hrefBase + atts.href;
+          // relative
+          if (atts.href.charAt(0) == "/") {
+            var result = PoorText.cur.hrefBase.match(/^([^:]*:\/\/[^\/]*)/);
+            if (result) {
+              absHref = result[1] + atts.href;
+            } else {
+              absHref = PoorText.cur.hrefBase + atts.href;
+            }
+            
+            if (PoorText.cur.hrefRelCallback != null) {
+              proto.onMouseUp = PoorText.cur.name + ".hrefRelCallback('" + absHref + "');";
+            } else {
+              proto.onMouseUp = "openURL('" + absHref + "');";
+            }
+          }
         }
-        proto.onMouseUp = "openURL('" + absHref + "')";
         proto.tooltip = absHref;
       }
       break;
@@ -791,7 +837,6 @@ PoorText.tagContents = function(data) {
       }
       
       cur.obj.data = words[i];
-      
     }
       
   }
@@ -891,6 +936,7 @@ PoorText.prototype.clear = function()
   resumeUpdates();
   
   this.totalHeight = -1;
+  this.plainText = "";
 }
 
 
@@ -1028,6 +1074,9 @@ PoorText.prototype.render = function()
           line.maxWidth = this.width - this.scrollBarImage.width;
           line.spacing = this.wordSpacing;
           line.fixedWidth = this.fixedWidth;
+          
+          this.plainText += "\r\n";
+          
           // HACK - give blank lines a starting height, so that multiple
           // <br/>'s will be displayed as multiple breaks
           line.height = oldHeight;
@@ -1044,7 +1093,12 @@ PoorText.prototype.render = function()
         line.maxWidth = this.width - this.scrollBarImage.width;
         line.spacing = this.wordSpacing;
         line.fixedWidth = this.fixedWidth;
+        
         line.push(this.elements[e].obj);
+      }
+      
+      if (this.elements[e].obj.data != null) {
+        this.plainText += this.elements[e].obj.data + " ";
       }
     }
   }
