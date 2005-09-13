@@ -1,6 +1,6 @@
 /*
  * --------------------------
- * PoorText v0.5
+ * PoorText v0.6
  * --------------------------
  *   A not-quite-RichText class for Konfabulator.
  * 
@@ -16,6 +16,9 @@
  * ---------------
  * Release History
  * ---------------
+ * 0.6 - 13 September 2005
+ * - Various bugfixes, additional features for use in Dictionary
+ *
  * 0.5 - 07 September 2005
  * - First public release
  * - Able to display limited html tags:
