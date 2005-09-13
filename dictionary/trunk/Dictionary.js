@@ -1150,12 +1150,19 @@ function TransitionAnimationUpdate()
 
 function onWillChangePreferences()
 {
-  buildPreferences();
+  
 }
 
 
 function onPreferencesChanged()
 {
+  if (preferences.revertToDefaults.value == true) {
+    preferences.books.value = preferences.books.defaultValue;
+    preferences.selectedBook.value = preferences.selectedBook.defaultValue;
+    preferences.revertToDefaults.value = false;
+  }
+  
+  buildBooksArray();
   buildDropdownMenu();
 }
 
