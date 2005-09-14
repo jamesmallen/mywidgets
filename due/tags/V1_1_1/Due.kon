@@ -1,0 +1,143 @@
+<?xml version="1.0"?>
+<?konfabulator xml-strict="true"?>
+<widget version="1.1.1" minimumVersion="2.1" debug="errors">
+  
+  <window name="main"
+    title="Due"
+    width="1" height="1"
+    alignment="left"
+    opacity="255"
+    shadow="0"
+    visible="1"
+    onGainFocus="onGainFocus();"
+    onLoseFocus="onLoseFocus();"/>
+    
+  <action trigger="onLoad" file="Due.js"/>
+  
+	<action trigger="onWillChangePreferences">
+    onWillChangePreferences();
+	</action>
+  
+  <action trigger="onPreferencesChanged">
+    onPreferencesChanged();
+	</action>
+  
+  
+  <prefGroup name="colorPanel"
+    title="Colors"
+    icon="Resources/Colors.png"
+    order="2"/>
+  
+  <prefGroup name="fontPanel"
+    title="Fonts"
+    icon="Resources/Fonts.png"
+    order="3"/>
+  
+  <preference name="dateDisplay"
+		title="Show date as:"
+		type="popup"
+		defaultValue="Month/Date">
+		<option>Month/Date</option>
+		<option>Date/Month</option>
+    <option>Days Until Warning</option>
+    <option>Days Until Due</option>
+    <option>(-</option>
+    <option>None</option>
+	</preference>
+  
+  <preference name="itemWidth"
+    title="Item Width:"
+    type="slider"
+    ticks="10"
+    minLength="50"
+    maxLength="350"
+    defaultValue="350">
+    <tickLabel>50</tickLabel>
+    <tickLabel>200</tickLabel>
+    <tickLabel>Fit</tickLabel>
+  </preference>
+  
+  <preference name="bgOpacity"
+    title="Background Opacity:"
+    type="slider"
+    ticks="10"
+    minLength="5"
+    maxLength="255"
+    defaultValue="191">
+    <tickLabel>0%</tickLabel>
+    <tickLabel>50%</tickLabel>
+    <tickLabel>100%</tickLabel>
+  </preference>
+  
+  <preference name="normalColor"
+    group="colorPanel"
+    title="Normal:"
+    type="Color"
+    defaultValue="#487C3F"
+    description="The color for displaying a normal upcoming item."/>
+  
+  <preference name="soonColor"
+    group="colorPanel"
+    title="Warning:"
+    type="Color"
+    defaultValue="#87852C"
+    description="The color for displaying an item that is coming soon."/>
+  
+  <preference name="overdueColor"
+    group="colorPanel"
+    title="Overdue:"
+    type="Color"
+    defaultValue="#614029"
+    description="The color for displaying an item that is overdue."/>
+  
+  <preference name="userColor"
+    group="fontPanel"
+    title="Color:"
+    type="Color"
+    defaultValue="#FFFFFF"/>
+  
+  <preference name="userFont"
+    group="fontPanel"
+    title="Font:"
+    type="Font"
+    defaultValue="Arial Bold,Helvetica Bold"/>
+  
+  <preference name="userSize"
+    group="fontPanel"
+    title="Size:"
+    type="popup"
+    defaultValue="12"
+    description="The color, font, and size for displaying item text.">
+    <option>8</option>
+    <option>9</option>
+    <option>10</option>
+    <option>11</option>
+    <option>12</option>
+    <option>14</option>
+    <option>16</option>
+    <option>18</option>
+    <option>20</option>
+    <option>24</option>
+  </preference>
+  
+  
+  <preference name="dueListPref"
+    hidden="true"
+    defaultValue=""
+    type="text"/>
+  
+  <about-box image="Resources/About.png">
+    <about-version
+      font="Arial Bold, Helvetica Bold"
+      size="13"
+      hOffset="178" vOffset="112"
+      color="#FFFFFF">
+      <shadow>
+        <color>#000000</color>
+        <hOffset>1</hOffset>
+        <vOffset>1</vOffset>
+      </shadow>
+    </about-version>
+  </about-box>
+
+</widget>
