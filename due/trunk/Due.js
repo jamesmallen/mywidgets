@@ -59,8 +59,8 @@ function updateNextDay()
 {
   if (curDay != getCurrentMonthDay()) {
     curDay = getCurrentMonthDay();
-    onLoseFocus();
-    sleep(animDuration);
+    // onLoseFocus();
+    // sleep(animDuration);
     onPreferencesChanged();
   }
 }
@@ -186,11 +186,11 @@ function transition()
   state = state | stateTrans;
   if (nextButtonState == buttonsOuttie) {
     var a = new CustomAnimation(1, slide, startFadeIn);
-    a.startWidth = pillArray[0].width;
-    a.endWidth = parseInt(pillArray[0].width) + parseInt(pillArray[0].modifyButton.width) + parseInt(pillArray[0].deleteButton.width) + parseInt(pillArray[0].modifyButton.width) * 0.25;
+    a.startWidth = 0;
+    a.endWidth = pillArray[0].modifyButton.width + pillArray[0].deleteButton.width + (pillArray[0].modifyButton.width * 0.25);
     a.duration = animDuration;
     
-    main.width = a.endWidth;
+    main.width = pillArray[0].width + a.endWidth;
     animator.start(a);
   } else {
     for (var i in pillArray) {
@@ -226,7 +226,7 @@ function slide()
   }
   
   for (var i in pillArray) {
-    pillArray[i].setWidth(newWidth, true);
+    pillArray[i].setExtWidth(newWidth);
   }
   
   return ret;
@@ -277,8 +277,8 @@ function startFadeIn()
 function startSlideIn()
 {
   var a = new CustomAnimation(1, slide, doneShowButtons);
-  a.startWidth = pillArray[0].width;
-  a.endWidth = parseInt(pillArray[0].width) - (parseInt(pillArray[0].modifyButton.width) + parseInt(pillArray[0].deleteButton.width) + parseInt(pillArray[0].modifyButton.width) * 0.25);
+  a.startWidth = pillArray[0].modifyButton.width + pillArray[0].deleteButton.width + (pillArray[0].modifyButton.width * 0.25);
+  a.endWidth = 0;
   a.duration = animDuration;
   animator.start(a);
 }
@@ -290,7 +290,7 @@ function doneShowButtons()
       pillArray[i].resizeText();
     }
   }
-  main.width = pillArray[0].width;
+  main.width = pillArray[0].width + pillArray[0].extWidth;
   
   buttonState = nextButtonState;
   if (nextNextButtonState != nextButtonState) {
@@ -356,6 +356,12 @@ Pill.prototype.setVOffset = function(y)
   this.vOffset = y;
 }
 
+Pill.prototype.setExtWidth = function(x)
+{
+  this.extWidth = x;
+  this.setWidth(this.width, true);
+}
+
 Pill.prototype.setWidth = function(x, holdStill)
 {
   if (x < this.backgroundLeft.srcWidth + this.backgroundRight.srcWidth) {
@@ -367,7 +373,7 @@ Pill.prototype.setWidth = function(x, holdStill)
   } else {
     this.backgroundLeft.width = this.backgroundLeft.srcWidth;
     this.backgroundRight.width = this.backgroundRight.srcWidth;
-    this.backgroundMiddle.width = x - this.backgroundLeft.width - this.backgroundRight.width;
+    this.backgroundMiddle.width = x + this.extWidth - this.backgroundLeft.width - this.backgroundRight.width;
     this.backgroundMiddle.hOffset = this.backgroundLeft.width;
     this.backgroundRight.hOffset = this.backgroundMiddle.hOffset + this.backgroundMiddle.width;
   }
@@ -419,7 +425,7 @@ Pill.prototype.alignLayers = function()
   this.deleteButton.height = this.deleteButton.srcHeight * scale;
   
   this.text.hOffset = this.hOffset + this.backgroundLeft.width;
-  this.text.vOffset = this.vOffset + ((this.height + this.text.height) / 2) - (this.text.size * 0.2) - (this.height * 0.05);
+  this.text.vOffset = this.vOffset + ((this.height + this.text.height) / 2) - (this.text.size * 0.2) - (this.height * 0.08);
   
   this.modifyButton.hOffset = this.backgroundRight.hOffset - (this.modifyButton.width + this.deleteButton.width);
   this.deleteButton.hOffset = this.backgroundRight.hOffset - this.deleteButton.width;
@@ -427,11 +433,15 @@ Pill.prototype.alignLayers = function()
   this.modifyButton.vOffset = this.backgroundLeft.vOffset + scale * 5;
   this.deleteButton.vOffset = this.backgroundLeft.vOffset + scale * 5;
   
+  /*
   if (this.showButtons == true) {
     this.date.hOffset = this.modifyButton.hOffset - this.modifyButton.width * 0.25;
   } else {
-    this.date.hOffset = this.hOffset + this.width - this.backgroundRight.width;
+  */
+  this.date.hOffset = this.hOffset + this.width - this.backgroundRight.width;
+  /*
   }
+  */
   this.date.vOffset = this.text.vOffset;
   
   
@@ -457,19 +467,13 @@ Pill.prototype.resizeText = function()
     this.date.height = -1;
     var height = this.text.height + 13;
     this.setHeight(height);
-    var width = parseInt(this.backgroundLeft.width) + parseInt(this.text.width) + parseInt(this.date.width) + parseInt(this.backgroundRight.width);
-    if (this.showButtons == true) {
-      width += (parseInt(this.modifyButton.width) + parseInt(this.deleteButton.width) + parseInt(this.modifyButton.width) * 0.25);
-    }
+    var width = this.backgroundLeft.width + this.text.width + this.date.width + this.backgroundRight.width;
     this.text.truncation = "none";
     this.textShadow.truncation = "none";
     this.setWidth(width);
   } else {
     this.date.width = -1;
-    var width = parseInt(this.width) - (parseInt(this.backgroundLeft.width) + parseInt(this.date.width) + parseInt(this.backgroundRight.width));
-    if (this.showButtons == true) {
-      width -= (parseInt(this.modifyButton.width) + parseInt(this.deleteButton.width) + parseInt(this.modifyButton.width) * 0.25);
-    }
+    var width = this.width - (this.backgroundLeft.width + this.date.width + this.backgroundRight.width);
     this.text.truncation = "end";
     this.textShadow.truncation = "end";
     this.text.width = width;
@@ -590,6 +594,8 @@ function Pill()
   
   this.width = this.backgroundLeft.width + this.backgroundRight.width;
   this.height = this.backgroundLeft.height;
+  
+  this.extWidth = 0;
   
   this.textShadow = new Text();
   this.textShadow.alignment = "left";
@@ -854,6 +860,16 @@ function buildList()
   }
   
   resumeUpdates();
+  
+  if (buttonState == buttonsOuttie) {
+    buttonState = buttonsInnie;
+    state = 0;
+    onGainFocus();
+  } else {
+    buttonState = buttonsInnie;
+    state = 0;
+  }
+  
 }
 
 function alignList()
@@ -865,7 +881,7 @@ function alignList()
       maxWidth = Math.max(maxWidth, pillArray[i].width);
     }
   } else {
-    maxWidth = preferences.itemWidth.value;
+    maxWidth = parseInt(preferences.itemWidth.value);
   }
   
   var curVOffset = 0;
@@ -882,7 +898,7 @@ function alignList()
   var scale = pillArray[0].height / 27;
   
   main.height = curVOffset + scale * addButton.srcHeight;
-  main.width = maxWidth;  
+  main.width = maxWidth + pillArray[0].extWidth;
   
 }
 
@@ -988,7 +1004,7 @@ function editItem(i)
   }
   
   if (i < 0) {
-    onLoseFocus();
+    // onLoseFocus();
     formResults = form(EditForm(), 'New Due Item', 'Add');
   } else {
     var tForm = EditForm();
@@ -1005,7 +1021,7 @@ function editItem(i)
     tForm[0].defaultValue = escapeItem(tArr[2], "decode");
     tForm[1].defaultValue = escapeItem(tArr[3], "decode");
     
-    onLoseFocus();
+    // onLoseFocus();
     formResults = form(tForm, 'Edit Due Item', 'Modify');
   }
   
@@ -1051,7 +1067,7 @@ function editItem(i)
 
 function deleteItem(i)
 {
-  onLoseFocus();
+  // onLoseFocus();
   var confirm = alert("Really delete \"" + pillArray[i].text.data + "\"?", "Delete", "Cancel");
   if (confirm != 1) {
     return;
@@ -1073,7 +1089,7 @@ function deleteItem(i)
 
 function onWillChangePreferences()
 {
-  onLoseFocus();
+  // onLoseFocus();
 }
 
 function onPreferencesChanged()
