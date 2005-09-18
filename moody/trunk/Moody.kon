@@ -1,0 +1,47 @@
+﻿<?xml version="1.0"?>
+
+<?konfabulator xml-strict="true"?>
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0" minimumVersion="2.1" debug="errors">
+  <window name="main"
+    title="Moody"
+    width="512" height="512"
+    opacity="255"
+    shadow="0"
+    visible="1">
+
+  </window>
+
+  <action trigger="onLoad" file="Moody.js"/>
+  
+  <action trigger="onPreferencesChanged">
+    onPreferencesChanged();
+  </action>
+  
+  <preference name="moodySize"
+    title="Size:"
+    type="slider"
+    ticks="15"
+    defaultValue="128"
+    minLength="16"
+    maxLength="512">
+    <tickLabel>Tiny</tickLabel>
+    <tickLabel>Small</tickLabel>
+    <tickLabel>Medium</tickLabel>
+    <tickLabel>Large</tickLabel>
+  </preference>
+  
+  <about-box>
+    <image>Resources/AboutBox.png</image>
+    <about-version
+      font="Arial Bold"
+      size="13"
+      hOffset="221" vOffset="112"
+      color="#FFFFFF">
+      <shadow>
+        <color>#000000</color>
+        <hOffset>1</hOffset>
+        <vOffset>1</vOffset>
+      </shadow>
+    </about-version>
+  </about-box>
+</widget>
