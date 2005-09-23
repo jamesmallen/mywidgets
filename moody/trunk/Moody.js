@@ -1,5 +1,17 @@
+include("JamesMAllen.js");
+
 function Initialize()
 {
+  var contextMenu = new Array();
+  contextMenu[0] = new MenuItem();
+  contextMenu[0].title = "About the Author";
+  contextMenu[0].onSelect = "AboutTheAuthor();";
+  contextMenu[1] = new MenuItem();
+  contextMenu[1].title = "Make a Donation";
+  contextMenu[1].onSelect = "Donate();";
+  main.contextMenuItems = contextMenu;
+  
+  
   stones = new Array();
   stones[6] = new Image();
   stones[6].src = "Resources/Stone6.png";
@@ -23,12 +35,12 @@ function Initialize()
   
   moodDial = new SmoothDial();
   moodDial.forceValue(curMood);
-  moodDial.baseAccel = 0.005;
-  moodDial.maxVelocity = 0.01;
-  moodDial.closeEnough = 0.01;
+  moodDial.accelBase = 0.005;
+  moodDial.maxVelocity = 0.05;
+  moodDial.closeEnough = 0.02;
   
   updateTimer = new Timer();
-  updateTimer.interval = 1;
+  updateTimer.interval = preferences.moodySensitivity.value;
   updateTimer.onTimerFired = "updateTimer_onTimerFired()";
   updateTimer.ticking = true;
   
@@ -103,7 +115,7 @@ function getNewMood()
   
   memMood = Math.sin(system.memory.load / 100 * Math.PI / 2) * 7;
   
-  if (system.battery[0].isPresent && system.battery[0].currentCapacity < 50) {
+  if (system.batteryCount > 0 && system.battery[0].isPresent && system.battery[0].currentCapacity < 50) {
     batteryMood = (100 - system.battery[0].currentCapacity) / 100 * 4 + 3;
   } else {
     batteryMood = null;
@@ -128,6 +140,14 @@ function average()
 function onPreferencesChanged()
 {
   resize();
+  if (preferences.moodySensitivity.value <= 0.1) {
+    preferences.moodySensitivity.value = 0.1;
+  }
+  updateTimer.interval = preferences.moodySensitivity.value;
+  moodDial.accelBase = preferences.moodySensitivity.value / 200;
+  moodDial.maxVelocity = preferences.moodySensitivity.value / 100;
+  moodDial.closeEnough = preferences.moodySensitivity.value / 100;
+
 }
 
 function updateTimer_onTimerFired()

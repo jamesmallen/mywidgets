@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0" minimumVersion="2.1" debug="errors">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="verbose">
   <window name="main"
     title="Moody"
     width="512" height="512"
@@ -28,6 +28,20 @@
     <tickLabel>Small</tickLabel>
     <tickLabel>Medium</tickLabel>
     <tickLabel>Large</tickLabel>
+  </preference>
+  
+  <preference name="moodySensitivity"
+    title="Sensitivity:"
+    type="slider"
+    ticks="15"
+    defaultValue="4"
+    minLength="0.1"
+    maxLength="30"
+    description="Adjust how quickly Moody responds to changes in your system's mood. Hyper sensitivity will lead to erratic results as well as use up more CPU time.">
+    <tickLabel>Hyper</tickLabel>
+    <tickLabel>Delayed</tickLabel>
+    <tickLabel>Mellow</tickLabel>
+    <tickLabel>Mule</tickLabel>
   </preference>
   
   <about-box>
