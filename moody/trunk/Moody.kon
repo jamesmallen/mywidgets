@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="verbose">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="errors">
   <window name="main"
     title="Moody"
     width="512" height="512"
