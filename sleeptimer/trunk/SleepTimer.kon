@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0" minimumVersion="2.1" debug="errors">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="errors">
   <window name="main"
     title="Sleep Timer"
-    width="0" height="0"
+    width="136" height="78"
     opacity="255"
     shadow="0"
     visible="1">
@@ -36,6 +36,7 @@
     title="Action:"
     defaultValue="Sleep"
     description="Select the action to take when the timer finishes.">
+    <option>Log Off</option>
     <option>Sleep</option>
     <option>Restart</option>
     <option>Shut Down</option>

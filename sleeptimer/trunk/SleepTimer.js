@@ -1,10 +1,8 @@
+include("JamesMAllen.js");
 
 const stateCompact    = 0;
 const stateExpanded   = 1;
 const animDuration    = 300;
-
-Initialize();
-
 
 
 function Initialize()
@@ -128,8 +126,8 @@ function Initialize()
   
   setHeight(compactHeight);
   
-  main.width = bgTop.srcWidth;
-  main.height = expandedHeight;
+  // main.width = bgTop.srcWidth;
+  // main.height = expandedHeight;
   
   contextMenuItems = new Array();
   contextMenuItems[0] = new MenuItem();
@@ -140,6 +138,13 @@ function Initialize()
   contextMenuItems[1].title = "Stop";
   contextMenuItems[1].onSelect = "cancel_onMouseUp()";
   contextMenuItems[1].enabled = false;
+  
+  contextMenuItems[2] = new MenuItem();
+  contextMenuItems[2].title = "About the Author";
+  contextMenuItems[2].onSelect = "AboutTheAuthor();";
+  contextMenuItems[3] = new MenuItem();
+  contextMenuItems[3].title = "Make a Donation";
+  contextMenuItems[3].onSelect = "Donate();";
   
   main.contextMenuItems = contextMenuItems;
 }
@@ -318,14 +323,16 @@ function goToSleep()
     case "macintosh":
       switch (preferences.sleepType.value) {
         case "Sleep":
-          cmd = "osascript -e 'tell application \"Finder\" to sleep'";
+          cmd = "osascript -e 'tell application \"System Events\" to sleep'";
           break;
         case "Shut Down":
-          cmd = "osascript -e 'tell application \"Finder\" to shut down'";
+          cmd = "osascript -e 'tell application \"System Events\" to shut down'";
           break;
         case "Restart":
-          cmd = "osascript -e 'tell application \"Finder\" to restart'";
+          cmd = "osascript -e 'tell application \"System Events\" to restart'";
           break;
+        case "Log Off":
+          cmd = "osascript -e 'tell application\"System Events\" to log out'";
       }
       break;
     case "windows":
@@ -334,11 +341,15 @@ function goToSleep()
           cmd = "rundll32.exe PowrProf.dll,SetSuspendState";
           break;
         case "Shut Down":
-          cmd = "shutdown.exe -s -t 0 -c \"Shutdown forced by SleepTimer\"";
+          // cmd = "shutdown.exe -s -t 0 -c \"Shutdown forced by SleepTimer\"";
+          cmd = "cscript.exe Shutdown.vbs";
           break;
         case "Restart":
-          cmd = "shutdown.exe -r -t 0 -c \"Shutdown forced by SleepTimer\"";
+          // cmd = "shutdown.exe -r -t 0 -c \"Restart forced by SleepTimer\"";
+          cmd = "cscript.exe Restart.vbs";
           break;
+        case "Log Off":
+          cmd = "shutdown.exe -l -t 0 -c \"Log Off forced by SleepTimer\"";
       }
       break;
   }
@@ -410,4 +421,13 @@ function timeLeft(showColon)
   }
   
 }
+
+
+Initialize();
+
+
+
+
+
+
 
