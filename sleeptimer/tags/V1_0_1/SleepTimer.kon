@@ -1,0 +1,59 @@
+﻿<?xml version="1.0"?>
+
+<?konfabulator xml-strict="true"?>
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="errors">
+  <window name="main"
+    title="Sleep Timer"
+    width="136" height="78"
+    opacity="255"
+    shadow="0"
+    visible="1">
+
+  </window>
+
+  <action trigger="onLoad" file="SleepTimer.js"/>
+  
+  <action trigger="onPreferencesChanged">
+    onPreferencesChanged();
+  </action>
+  
+  <action trigger="onWillChangePreferences">
+    onWillChangePreferences();
+  </action>
+  
+  <action trigger="onWakeFromSleep">
+    onWakeFromSleep();
+  </action>
+  
+  <preference name="sleepTime"
+    type="text"
+    title="Sleep Time:"
+    defaultValue="20"
+    description="Enter the time in minutes to keep the computer awake before falling asleep."/>
+  
+  <preference name="sleepType"
+    type="popup"
+    title="Action:"
+    defaultValue="Sleep"
+    description="Select the action to take when the timer finishes.">
+    <option>Log Off</option>
+    <option>Sleep</option>
+    <option>Restart</option>
+    <option>Shut Down</option>
+  </preference>
+  
+  <about-box>
+    <image>Resources/about_box.png</image>
+    <about-version
+      font="Arial Bold"
+      size="13"
+      hOffset="261" vOffset="112"
+      color="#FFFFFF">
+      <shadow>
+        <color>#000000</color>
+        <hOffset>1</hOffset>
+        <vOffset>1</vOffset>
+      </shadow>
+    </about-version>
+  </about-box>
+</widget>
