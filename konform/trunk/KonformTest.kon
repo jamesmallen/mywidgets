@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<?konfabulator xml-strict="true"?>
+
+<widget debug="verbose">
+  
+  <window name="main"
+    title="Konform Test (Source)"
+    width="400" height="400"
+    visible="true"
+    shadow="false"/>
+  
+  <action trigger="onLoad" file="KonformTest.js"/>
+  
+</widget>
+
