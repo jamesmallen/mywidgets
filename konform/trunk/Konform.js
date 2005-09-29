@@ -257,42 +257,6 @@ Konform.prototype.set = function(property, value)
     this.hWnd = value;
   }
   
-  if (property == "skin") {
-    this.skin = value;
-    if (this.skin.options["AllowWindowColor"]) {
-      this.bgColor.set("images", this.skin.paths["WindowColor"]);
-      this.bgColor.set("window", this.hWnd);
-      this.bgColor.set("tile", this.skin.options["TileBG"]);
-    } else {
-      this.bgColor.clear();
-    }
-    this.bg.set("images", this.skin.paths["Window"]);
-    this.bg.set("window", this.hWnd);
-    this.bg.set("tile", this.skin.options["TileBG"]);
-    this.windowTitle.color = this.skin.colors["WindowTitle"];
-    this.windowTitleShadow.hAlign = this.windowTitle.hAlign = this.skin.aligns["WindowTitle"];
-    this.windowTitleShadow.style = this.windowTitle.style = "";
-    this.windowTitleShadow.font = this.windowTitle.font = this.skin.fonts["WindowTitle"];
-    this.windowTitleShadow.size = this.windowTitle.size = this.skin.sizes["WindowTitle"];
-    if (this.skin.shadows["WindowTitle"]) {
-      this.windowTitleShadow.opacity = 255;
-    } else {
-      this.windowTitleShadow.opacity = 0;
-    }
-    
-    this.width = this.bg.width;
-    this.height = this.bg.height;
-    
-    this.minWidth = this.width;
-    this.minHeight = this.height;
-    this.maxWidth = -1;
-    this.maxHeight = -1;
-    
-    this.set("width", this.width);
-    this.set("height", this.height);
-    this.set("resizable", this.resizable);
-  }
-  
   switch (property) {
     case "bgColor":
       if (this.skin.options["AllowWindowColor"]) {
@@ -413,6 +377,43 @@ Konform.prototype.set = function(property, value)
       }
       break;
   }
+  
+  if (property == "skin") {
+    this.skin = value;
+    if (this.skin.options["AllowWindowColor"]) {
+      this.bgColor.set("images", this.skin.paths["WindowColor"]);
+      this.bgColor.set("window", this.hWnd);
+      this.bgColor.set("tile", this.skin.options["TileBG"]);
+    } else {
+      this.bgColor.clear();
+    }
+    this.bg.set("images", this.skin.paths["Window"]);
+    this.bg.set("window", this.hWnd);
+    this.bg.set("tile", this.skin.options["TileBG"]);
+    this.windowTitle.color = this.skin.colors["WindowTitle"];
+    this.windowTitleShadow.hAlign = this.windowTitle.hAlign = this.skin.aligns["WindowTitle"];
+    this.windowTitleShadow.style = this.windowTitle.style = "";
+    this.windowTitleShadow.font = this.windowTitle.font = this.skin.fonts["WindowTitle"];
+    this.windowTitleShadow.size = this.windowTitle.size = this.skin.sizes["WindowTitle"];
+    if (this.skin.shadows["WindowTitle"]) {
+      this.windowTitleShadow.opacity = 255;
+    } else {
+      this.windowTitleShadow.opacity = 0;
+    }
+    
+    this.width = this.bg.width;
+    this.height = this.bg.height;
+    
+    this.minWidth = this.width;
+    this.minHeight = this.height;
+    this.maxWidth = -1;
+    this.maxHeight = -1;
+    
+    this.set("width", this.width);
+    this.set("height", this.height);
+    this.set("resizable", this.resizable);
+  }
+
 }
 
 /**

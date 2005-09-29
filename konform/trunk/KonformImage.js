@@ -17,11 +17,13 @@ function KonformImage()
   this.vOffset = 0;
   this.width = -1;
   this.height = -1;
-  this.minHeight = 0;
   this.minWidth = 0;
+  this.minHeight = 0;
+  this.srcWidth = -1;
+  this.srcHeight = -1;
   var placerImage = new Image();
   this.zOrder = placerImage.zOrder;
-  this.set("pattern", "1x1");
+  this.pattern = null;
   delete placerImage;
   
   this.fillmode = "stretch";
@@ -53,7 +55,6 @@ KonformImage.prototype.align = function(cheap)
   
   switch (this.pattern) {
     case "3x3":
-      // print("Aligning 3x3");
       if (typeof(cheap) == "undefined" || !cheap) {
         this.img["TopLeft"].hOffset =
             this.img["MiddleLeft"].hOffset = 
@@ -83,7 +84,6 @@ KonformImage.prototype.align = function(cheap)
           this.img["MiddleLeft"].vOffset + this.img["MiddleLeft"].height;
       break;
     case "1x3":
-      // print("Aligning 1x3");
       if (typeof(cheap) == "undefined" || !cheap) {
         this.img["Top"].hOffset =
             this.img["Middle"].hOffset = 
@@ -97,7 +97,6 @@ KonformImage.prototype.align = function(cheap)
           this.img["Middle"].vOffset + this.img["Middle"].height;
       break;
     case "3x1":
-      // print("Aligning 3x1");
       if (typeof(cheap) == "undefined" || !cheap) {
         this.img["Left"].hOffset = this.hOffset;
         this.img["Center"].hOffset = 
@@ -112,7 +111,6 @@ KonformImage.prototype.align = function(cheap)
       break;
     
     default:
-      // print("Aligning default");
       for (var i in this.img) {
         this.img[i].hOffset = this.hOffset;
         this.img[i].vOffset = this.vOffset;
@@ -145,8 +143,6 @@ KonformImage.prototype.refresh = function()
   this.set("onMultiClick", this.onMultiClickEval);
   this.set("onMouseEnter", this.onMouseEnterEval);
   this.set("onMouseExit", this.onMouseExitEval);
-
-
 }
 
 
@@ -201,6 +197,14 @@ KonformImage.prototype.set = function(property, value)
       break;
     case "image":
     case "images":
+      // print("Setting Images of Konform.ids[" + this.id + "] to...");
+      // for (var i = 1; i < arguments.length; i++) {
+      //   print("  " + arguments[i]);
+      // }
+      
+      // print("IMG before");
+      // pdump(this.img);
+      
       if (this.img) {
         for (var i in this.img) {
           this.img[i].src = "";
@@ -215,10 +219,14 @@ KonformImage.prototype.set = function(property, value)
       }
       
       if (value.indexOf("*") != -1) {
+        // print("IMG middle");
+        // pdump(this.img);
         this.set("pattern", "3x3");
         for (var i in this.img) {
           this.img[i].src = value.replace("*", i);
         }
+        // print("IMG after");
+        // pdump(this.img);
       } else if (value.indexOf("<") != -1) {
         this.set("pattern", "3x1");
         for (var i in this.img) {
@@ -230,36 +238,20 @@ KonformImage.prototype.set = function(property, value)
           this.img[i].src = value.replace("|", i);
         }
       } else {
-        if (arguments.length == 2) {
-          this.set("pattern", "1x1");
-        } else if (arguments.length == 10) {
+        if (arguments.length == 10) {
           this.set("pattern", "3x3");
-        }
-        switch (this.pattern) {
-          case "3x3":
-            this.img["TopLeft"].src = arguments[1];
-            this.img["TopCenter"].src = arguments[2];
-            this.img["TopRight"].src = arguments[3];
-            this.img["MiddleLeft"].src = arguments[4];
-            this.img["MiddleCenter"].src = arguments[5];
-            this.img["MiddleRight"].src = arguments[6];
-            this.img["BottomLeft"].src = arguments[7];
-            this.img["BottomCenter"].src = arguments[8];
-            this.img["BottomRight"].src = arguments[9];
-            break;
-          case "1x3":
-            this.img["Top"].src = arguments[1];
-            this.img["Middle"].src = arguments[2];
-            this.img["Bottom"].src = arguments[3];
-            break;
-          case "3x1":
-            this.img["Left"].src = arguments[1];
-            this.img["Center"].src = arguments[2];
-            this.img["Right"].src = arguments[3];
-            break;
-          default:
-            this.img[0].src = arguments[1];
-            break;
+          this.img["TopLeft"].src = arguments[1];
+          this.img["TopCenter"].src = arguments[2];
+          this.img["TopRight"].src = arguments[3];
+          this.img["MiddleLeft"].src = arguments[4];
+          this.img["MiddleCenter"].src = arguments[5];
+          this.img["MiddleRight"].src = arguments[6];
+          this.img["BottomLeft"].src = arguments[7];
+          this.img["BottomCenter"].src = arguments[8];
+          this.img["BottomRight"].src = arguments[9];
+        } else {
+          this.set("pattern", "1x1");
+          this.img[0].src = arguments[1];
         }
       }
       
@@ -268,27 +260,40 @@ KonformImage.prototype.set = function(property, value)
       
       switch (this.pattern) {
         case "3x3":
+          // pdump(this);
+          // pdump(this.img);
           this.minHeight = this.img["TopLeft"].srcHeight + this.img["BottomLeft"].srcHeight;
           this.minWidth = this.img["TopLeft"].srcWidth + this.img["TopRight"].srcWidth;
-          this.width = this.minWidth + this.img["TopCenter"].width;
-          this.height = this.minHeight + this.img["MiddleLeft"].height;
+          this.srcWidth = this.minWidth + this.img["TopCenter"].srcWidth;
+          this.srcHeight = this.minHeight + this.img["MiddleLeft"].srcHeight;
           break;
         case "1x3":
           this.minHeight = this.img["Top"].srcHeight + this.img["Bottom"].srcHeight;
-          this.width = this.img["Top"].srcWidth;
-          this.height = this.minHeight + this.img["Middle"].srcHeight;
+          this.srcWidth = this.img["Top"].srcWidth;
+          this.srcHeight = this.minHeight + this.img["Middle"].srcHeight;
           break;
         case "3x1":
           this.minWidth = this.img["Left"].srcWidth + this.img["Right"].srcWidth;
-          this.width = this.minWidth + this.img["Center"].srcWidth;
-          this.height = this.img["Left"].srcHeight;
+          this.srcWidth = this.minWidth + this.img["Center"].srcWidth;
+          this.srcHeight = this.img["Left"].srcHeight;
           break;
         default:
-          this.width = this.img[0].srcWidth;
-          this.height = this.img[0].srcHeight;
+          this.srcWidth = this.img[0].srcWidth;
+          this.srcHeight = this.img[0].srcHeight;
           break;
       }
+      
+      if (this.width < 0) {
+        this.width = this.srcWidth;
+      }
+      if (this.height < 0) {
+        this.height = this.srcHeight;
+      }
+      
       this.align();
+      this.refresh();
+      // print("IMG last");
+      // pdump(this.img);
       break;
     case "onContextMenu":
     case "onMouseDown":
@@ -327,7 +332,7 @@ KonformImage.prototype.set = function(property, value)
       }
       this.pattern = value;
       this.clear();
-      switch (value) {
+      switch (this.pattern) {
         case "3x3":
           this.img["TopLeft"] = new Image();
           this.img["TopCenter"] = new Image();
@@ -353,7 +358,6 @@ KonformImage.prototype.set = function(property, value)
           this.img[0] = new Image();
           break;
       }
-      this.refresh();
       break;
     case "tile":
       this.tile = value;
@@ -411,7 +415,7 @@ KonformImage.prototype.set = function(property, value)
 
 KonformImage.onMouseEnterWrapper = function(id, indexStr)
 {
-  print("onMouseExitWrapper(" + id + ", " + indexStr);
+  // print("onMouseExitWrapper(" + id + ", " + indexStr);
   Konform.ids[id].onMouseEnter(indexStr);
 }
 

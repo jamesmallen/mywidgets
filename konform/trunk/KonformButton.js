@@ -95,6 +95,8 @@ KonformButton.prototype.set = function(property, value)
     case "skin":
       this.skin = value;
       this.bg.set("images", this.skin.paths["Button"]);
+      this.bg.set("width", this.bg.srcWidth);
+      this.bg.set("height", this.bg.srcHeight);
       this.label.color = this.skin.colors["ButtonLabel"];
       this.labelShadow.hAlign = this.label.hAlign = this.skin.aligns["ButtonLabel"];
       this.labelShadow.style = this.label.style = "";
