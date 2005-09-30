@@ -8,6 +8,11 @@ function AboutTheAuthor()
     authorWindow.width = 450;
     authorWindow.height = 266;
     
+    var authorContextMenu = new Array();
+    authorContextMenu[0] = new MenuItem();
+    authorContextMenu[0].title = "Make a Donation";
+    authorContextMenu[0].onSelect = "Donate();";
+    authorWindow.contextMenuItems = authorContextMenu;
     
     authorBg = new Image();
     authorBg.window = authorWindow;

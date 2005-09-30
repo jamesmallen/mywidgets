@@ -4,6 +4,76 @@ const stateCompact    = 0;
 const stateExpanded   = 1;
 const animDuration    = 300;
 
+var multiplier = 1.0;
+
+function resize()
+{
+  switch (preferences.size.value) {
+    case "Small":
+      multiplier = 0.5;
+      break;
+    case "Medium":
+      multiplier = 0.75;
+      break;
+    case "Large":
+    default:
+      multiplier = 1.0;
+      break;
+  }
+  
+  bed.hOffset = multiplier * 15;
+  bed.vOffset = multiplier * 14;
+
+  timeDisplay.hOffset = multiplier * 118; // (main.width - 18)
+  timeDisplay.vOffset = multiplier * 32;
+  //timeDisplay.size = multiplier * 18;
+  timeLeft();
+  
+  Zs[0].size = multiplier * 19;
+  Zs[0].hOffset = multiplier * 17;
+  Zs[0].vOffset = multiplier * 59;
+  
+  Zs[1].size = multiplier * 13;
+  Zs[1].hOffset = multiplier * 32;
+  Zs[1].vOffset = multiplier * 60;
+  
+  Zs[2].size = multiplier * 8;
+  Zs[2].hOffset = multiplier * 43;
+  Zs[2].vOffset = multiplier * 59;
+  
+  cancel.size = multiplier * 12;
+  cancel.hOffset = multiplier * 77;
+  cancel.vOffset = multiplier * 60;
+  
+  reflection.hOffset = 0;
+  reflection.vOffset = 0;
+  
+  bed.width = multiplier * bed.srcWidth;
+  bed.height = multiplier * bed.srcHeight;
+  
+  reflection.width = multiplier * reflection.srcWidth;
+  reflection.height = multiplier * reflection.srcHeight;
+  bgTopShine.width = bgTop.width = multiplier * bgTop.srcWidth;
+  bgTopShine.height = bgTop.height = multiplier * bgTop.srcHeight;
+  bgMiddleShine.width = bgMiddle.width = multiplier * bgMiddle.srcWidth;
+  bgBottomShine.width = bgBottom.width = multiplier * bgBottom.srcWidth;
+  bgBottomShine.height = bgBottom.height = multiplier * bgBottom.srcHeight;
+  
+  bgTopShine.hOffset = bgTop.hOffset = 0;
+  bgTopShine.vOffset = bgTop.vOffset = 0;
+  
+  bgMiddleShine.hOffset = bgMiddle.hOffset = bgTop.hOffset;
+  bgMiddleShine.vOffset = bgMiddle.vOffset = bgTop.vOffset + bgTop.height;
+  
+  bgBottomShine.hOffset = bgBottom.hOffset = bgMiddle.hOffset;
+  bgBottomShine.vOffset = bgBottom.vOffset = bgMiddle.vOffset + bgMiddle.height;
+  
+  compactHeight = multiplier * 57;
+  expandedHeight = multiplier * (bgTop.srcHeight + bgMiddle.srcHeight + bgBottom.srcHeight);
+  
+  setHeight(compactHeight);
+  
+}
 
 function Initialize()
 {
@@ -12,6 +82,7 @@ function Initialize()
       myFont = "Lucida Grande Bold";
       break;
     case "windows":
+    default:
       myFont = "Lucida Sans Unicode Bold";
       break;
   }
@@ -37,53 +108,35 @@ function Initialize()
   bed = new Image();
   bed.name = "bed";
   bed.src = "Resources/bed.png";
-  bed.hOffset = 15;
-  bed.vOffset = 14;
   bed.tracking = "rectangle";
   bed.onMouseUp = "bed_onMouseUp()";
   
   timeDisplay = new Text();
   timeDisplay.font = myFont;
-  timeDisplay.size = 18;
   timeDisplay.opacity = 209;
   timeDisplay.color = "#000000";
   timeDisplay.alignment = "right";
-  timeDisplay.hOffset = 118; // (main.width - 18)
-  timeDisplay.vOffset = 32;
   timeDisplay.onMouseUp = "timeDisplay_onMouseUp()";
-  timeLeft(true);
   
   Zs = new Array();
   Zs[0] = new Text();
   Zs[0].data = "Z";
   Zs[0].font = myFont;
-  Zs[0].size = 19;
-  Zs[0].hOffset = 17;
-  Zs[0].vOffset = 59;
   Zs[0].opacity = 0;
   
   Zs[1] = new Text();
   Zs[1].data = "Z";
   Zs[1].font = myFont;
-  Zs[1].size = 13;
-  Zs[1].hOffset = 32;
-  Zs[1].vOffset = 60;
   Zs[1].opacity = 0;
   
   Zs[2] = new Text();
   Zs[2].data = "Z";
   Zs[2].font = myFont;
-  Zs[2].size = 8;
-  Zs[2].hOffset = 43;
-  Zs[2].vOffset = 59;
   Zs[2].opacity = 0;
   
   cancel = new Text();
   cancel.data = "Cancel";
   cancel.font = myFont;
-  cancel.size = 12;
-  cancel.hOffset = 77;
-  cancel.vOffset = 60;
   cancel.opacity = 0;
   cancel.onMouseUp = "cancel_onMouseUp()";
   
@@ -104,27 +157,13 @@ function Initialize()
   reflection = new Image();
   reflection.name = "reflection";
   reflection.src = "Resources/reflection.png";
-  reflection.hOffset = 0;
-  reflection.vOffset = 0;
-  
-  bgTopShine.hOffset = bgTop.hOffset = 0;
-  bgTopShine.vOffset = bgTop.vOffset = 0;
-  
-  bgMiddleShine.hOffset = bgMiddle.hOffset = bgTop.hOffset;
-  bgMiddleShine.vOffset = bgMiddle.vOffset = bgTop.vOffset + bgTop.height;
-  
-  bgBottomShine.hOffset = bgBottom.hOffset = bgMiddle.hOffset;
-  bgBottomShine.vOffset = bgBottom.vOffset = bgMiddle.vOffset + bgMiddle.height;
   
   flashTimer = new Timer();
   flashTimer.ticking = false;
   flashTimer.interval = .5;
   flashTimer.onTimerFired = "flashTimer_onTimerFired()";
   
-  compactHeight = 57;
-  expandedHeight = bgTop.srcHeight + bgMiddle.srcHeight + bgBottom.srcHeight;
-  
-  setHeight(compactHeight);
+  resize();
   
   // main.width = bgTop.srcWidth;
   // main.height = expandedHeight;
@@ -140,11 +179,14 @@ function Initialize()
   contextMenuItems[1].enabled = false;
   
   contextMenuItems[2] = new MenuItem();
-  contextMenuItems[2].title = "About the Author";
-  contextMenuItems[2].onSelect = "AboutTheAuthor();";
+  contextMenuItems[2].title = "-";
+  
   contextMenuItems[3] = new MenuItem();
-  contextMenuItems[3].title = "Make a Donation";
-  contextMenuItems[3].onSelect = "Donate();";
+  contextMenuItems[3].title = "About the Author";
+  contextMenuItems[3].onSelect = "AboutTheAuthor();";
+  contextMenuItems[4] = new MenuItem();
+  contextMenuItems[4].title = "Make a Donation";
+  contextMenuItems[4].onSelect = "Donate();";
   
   main.contextMenuItems = contextMenuItems;
 }
@@ -273,7 +315,7 @@ function setHeight(y)
   
   curHeight = y;
   
-  y -= (bgTop.srcHeight + bgBottom.srcHeight);
+  y -= (bgTop.height + bgBottom.height);
   if (y < 0) {
     y = 0;
   }
@@ -366,6 +408,7 @@ function onWillChangePreferences()
 
 function onPreferencesChanged()
 {
+  resize();
   if (isNaN(parseFloat(preferences.sleepTime.value))) {
     preferences.sleepTime.value = "5";
   }
@@ -413,11 +456,11 @@ function timeLeft(showColon)
     timeStr = timeStr.substring(0, timeStr.length - 2) + " " + timeStr.substring(timeStr.length - 2, timeStr.length);
   }
   
-  timeDisplay.size = 18;
+  timeDisplay.size = multiplier * 18;
   timeDisplay.data = timeStr;
   timeDisplay.width = -1;
-  if (timeDisplay.width > 65) {
-    timeDisplay.size = Math.floor(100 / timeStr.length);
+  if (timeDisplay.width > multiplier * 65) {
+    timeDisplay.size = Math.floor(multiplier * 100 / timeStr.length);
   }
   
 }

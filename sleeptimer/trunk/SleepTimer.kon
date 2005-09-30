@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.0.1" minimumVersion="2.1" debug="errors">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.1" minimumVersion="2.1" debug="verbose">
   <window name="main"
     title="Sleep Timer"
     width="136" height="78"
@@ -40,6 +40,15 @@
     <option>Sleep</option>
     <option>Restart</option>
     <option>Shut Down</option>
+  </preference>
+  
+  <preference name="size"
+    type="popup"
+    title="Size:"
+    defaultValue="Large">
+    <option>Small</option>
+    <option>Medium</option>
+    <option>Large</option>
   </preference>
   
   <about-box>
