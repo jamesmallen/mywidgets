@@ -38,6 +38,7 @@ KonformObject.prototype.set = function(property, value)
   switch (property) {
     case "hOffset":
     case "vOffset":
+      value = parseInt(value);
       for (var i in this) {
         if (i == "window") {
           continue;

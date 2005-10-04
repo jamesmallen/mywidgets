@@ -15,6 +15,8 @@ function KonformImage()
   this.img = null;
   this.hOffset = 0;
   this.vOffset = 0;
+  this.hAlign = "left";
+  this.vAlign = "top";
   this.width = -1;
   this.height = -1;
   this.minWidth = 0;
@@ -53,13 +55,41 @@ KonformImage.prototype.align = function(cheap)
     return;
   }
   
+  var tHOffset;
+  var tVOffset;
+  switch (this.hAlign) {
+    case "right":
+      tHOffset = this.hOffset - this.width;
+      break;
+    case "center":
+      tHOffset = this.hOffset - (this.width / 2);
+      break;
+    case "left":
+    default:
+      tHOffset = this.hOffset;
+      break;
+  }
+  
+  switch (this.vAlign) {
+    case "bottom":
+      tVOffset = this.vOffset - this.height;
+      break;
+    case "middle":
+      tVOffset = this.vOffset - (this.height / 2);
+      break;
+    case "top":
+    default:
+      tVOffset = this.vOffset;
+      break;
+  }
+  
   switch (this.pattern) {
     case "3x3":
       if (typeof(cheap) == "undefined" || !cheap) {
         this.img["TopLeft"].hOffset =
             this.img["MiddleLeft"].hOffset = 
             this.img["BottomLeft"].hOffset = 
-            this.hOffset;
+            tHOffset;
         this.img["TopCenter"].hOffset = 
             this.img["MiddleCenter"].hOffset = 
             this.img["BottomCenter"].hOffset = 
@@ -67,7 +97,7 @@ KonformImage.prototype.align = function(cheap)
         this.img["TopLeft"].vOffset = 
             this.img["TopCenter"].vOffset = 
             this.img["TopRight"].vOffset = 
-            this.vOffset;
+            tVOffset;
         this.img["MiddleLeft"].vOffset = 
             this.img["MiddleCenter"].vOffset = 
             this.img["MiddleRight"].vOffset = 
@@ -88,8 +118,8 @@ KonformImage.prototype.align = function(cheap)
         this.img["Top"].hOffset =
             this.img["Middle"].hOffset = 
             this.img["Bottom"].hOffset = 
-            this.hOffset;
-        this.img["Top"].vOffset = this.vOffset;
+            tHOffset;
+        this.img["Top"].vOffset = tVOffset;
         this.img["Middle"].vOffset = 
             this.img["Top"].vOffset + this.img["Top"].height;
       }
@@ -98,13 +128,13 @@ KonformImage.prototype.align = function(cheap)
       break;
     case "3x1":
       if (typeof(cheap) == "undefined" || !cheap) {
-        this.img["Left"].hOffset = this.hOffset;
+        this.img["Left"].hOffset = tHOffset;
         this.img["Center"].hOffset = 
             this.img["Left"].hOffset + this.img["Left"].width;
         this.img["Left"].vOffset =
             this.img["Center"].vOffset = 
             this.img["Right"].vOffset = 
-            this.vOffset;
+            tVOffset;
       }
       this.img["Right"].hOffset = 
           this.img["Center"].hOffset + this.img["Center"].width;
@@ -112,8 +142,8 @@ KonformImage.prototype.align = function(cheap)
     
     default:
       for (var i in this.img) {
-        this.img[i].hOffset = this.hOffset;
-        this.img[i].vOffset = this.vOffset;
+        this.img[i].hOffset = tHOffset;
+        this.img[i].vOffset = tVOffset;
       }
       break;
   }
@@ -168,7 +198,44 @@ KonformImage.prototype.set = function(property, value)
 {
   // print("(KonformImage).set(" + property + ", " + value + ")");
   switch (property) {
+    case "alignment":
+    case "hAlign":
+      switch (value) {
+        case "right":
+          this.hAlign = "right";
+          break;
+        case "center":
+        case "middle":
+          this.hAlign = "center";
+          break;
+        case "left":
+        default:
+          this.hAlign = "left";
+          break;
+      }
+      this.align();
+      break;
+    case "vAlign":
+      switch (value) {
+        case "bottom":
+          this.vAlign = "bottom";
+          break;
+        case "center":
+        case "middle":
+          this.vAlign = "middle";
+          break;
+        case "top":
+        default:
+          this.vAlign = "top";
+          break;
+      }
+      this.align();
+      break;
     case "height":
+      if (value == -1) {
+        this.set("height", this.srcHeight);
+        break;
+      }
       switch (this.pattern) {
         case "3x3":
           var middleHeight = Math.max(value - this.minHeight, 0);
@@ -371,6 +438,10 @@ KonformImage.prototype.set = function(property, value)
       this.align();
       break;
     case "width":
+      if (value == -1) {
+        this.set("width", this.srcWidth);
+        break;
+      }
       switch (this.pattern) {
         case "3x3":
           var middleWidth = Math.max(value - this.minWidth, 0);

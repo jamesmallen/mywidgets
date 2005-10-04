@@ -115,7 +115,7 @@ KonformCheckbox.prototype.set = function(property, value)
       this.set("width", this.bg.width);
       this.set("height", this.bg.height);
       this.set("opacity", this.opacity);
-      this.set("value", this.value3);
+      this.set("value", this.value);
       break;
     case "visible":
       this.visible = value;

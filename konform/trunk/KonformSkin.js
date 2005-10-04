@@ -10,94 +10,44 @@ function KonformSkin(path)
   this.reset();
   
   if (typeof(path) != "undefined") {
-    this.setPrefix(path);
+    this.setPath(path);
   }
 }
 
 KonformSkin.prototype.reset = function()
 {
-  this.options = new Array();
-  this.options["AnchorIndent"] = 16;
-  this.options["AnchorSpacing"] = 16;
-  this.options["TileBG"] = 0;
-  this.options["AllowWindowColor"] = 0;
-  
-  this.paths = new Array();
-  this.paths["Window"] = "Window.png";
-  this.paths["WindowColor"] = "WindowColor.png";
-  this.paths["ButtonBG"] = "Button.png";
-  this.paths["ButtonBGDown"] = "ButtonDown.png";
-  this.paths["ButtonBGOver"] = "ButtonOver.png";
-  this.paths["Checkbox"] = "Checkbox.png";
-  this.paths["CheckboxDown"] = "CheckboxDown.png";
-  this.paths["CheckboxOver"] = "CheckboxOver.png";
-  this.paths["CheckboxCheck"] = "CheckboxCheck.png";
-  this.paths["Resizer"] = "Resizer.png";
-  
-  this.fonts = new Array();
-  this.fonts["WindowTitle"] = "";
-  this.fonts["ButtonLabel"] = "";
-  this.fonts["CheckboxLabel"] = "";
-  this.fonts["Label"] = "";
-  this.fonts["Default"] = "";
-  
-  this.colors = new Array();
-  this.colors["WindowTitle"] = "";
-  this.colors["ButtonLabel"] = "";
-  this.colors["CheckboxLabel"] = "";
-  this.colors["Label"] = "";
-  this.colors["Default"] = "";
-  
-  this.shadows = new Array();
-  this.shadows["WindowTitle"] = 1;
-  this.shadows["ButtonLabel"] = 1;
-  this.shadows["CheckboxLabel"] = 1;
-  this.shadows["Label"] = 1;
-  this.shadows["Default"] = 0;
-  
-  this.sizes = new Array();
-  this.sizes["WindowTitle"] = 20;
-  this.sizes["ButtonLabel"] = 14;
-  this.sizes["CheckboxLabel"] = 14;
-  this.sizes["Label"] = 14;
-  this.sizes["Default"] = 12;
-  
-  this.xratios = new Array();
-  this.xratios["WindowTitle"] = 0.5
-  this.xratios["ButtonLabel"] = 0.5;
-  this.xratios["CheckboxLabel"] = 20;
-  this.xratios["Label"] = 0;
-  this.xratios["Default"] = 0.5;
-  
-  this.yratios = new Array();
-  this.yratios["WindowTitle"] = 0.5;
-  this.yratios["ButtonLabel"] = 0.5;
-  this.yratios["CheckboxLabel"] = 0.5;
-  this.yratios["Label"] = 0;
-  this.yratios["Default"] = 0.5;
-  
-  this.aligns = new Array();
-  this.aligns["WindowTitle"] = "center";
-  this.aligns["ButtonLabel"] = "center";
-  this.aligns["CheckboxLabel"] = "left";
-  this.aligns["Label"] = "left";
-  this.aligns["Default"] = "center";
+  if (Konform.defaultSkin instanceof KonformSkin) {
+    for (var i in Konform.defaultSkin) {
+      if (Konform.defaultSkin[i] instanceof Array) {
+        this[i] = new Array();
+        for (var j in Konform.defaultSkin[i]) {
+          this[i][j] = Konform.defaultSkin[i][j];
+        }
+      }
+    }
+  } else {
+    this.options = new Array();
+    this.paths = new Array();
+    this.fonts = new Array();
+    this.colors = new Array();
+    this.shadows = new Array();
+    this.sizes = new Array();
+    this.xratios = new Array();
+    this.yratios = new Array();
+    this.aligns = new Array();
+  }
 }
 
-KonformSkin.prototype.setPrefix = function(str)
+KonformSkin.prototype.setPath = function(str)
 {
   if (filesystem.itemExists(str + "Skin.ini")) {
-    this.parseIni(str + "Skin.ini");
-  }
-  
-  for (var i in this.paths) {
-    this.paths[i] = str + this.paths[i];
+    this.parseIni(str);
   }
 }
 
 KonformSkin.prototype.parseIni = function(iniPath)
 {
-  var lines = filesystem.readFile(iniPath, true);
+  var lines = filesystem.readFile(iniPath + "Skin.ini", true);
   var curArray = "";
   
   for (var i in lines) {
@@ -118,17 +68,27 @@ KonformSkin.prototype.parseIni = function(iniPath)
       var value = result[2];
       result = value.match(/"(([^"]|\\")*)"/);
       if (result) {
-        this[curArray][key] = result[1];
+        value = result[1];
       } else {
         var numValue = parseFloat(value);
-        if (isNaN(numValue)) {
-          this[curArray][key] = value;
-        } else {
-          this[curArray][key] = numValue;
+        if (!isNaN(numValue)) {
+          value = numValue;
         }
+      }
+      if (curArray == "paths") {
+        value = iniPath + value;
+      }
+      if (key.toLowerCase() == "default") {
+        for (var j in this[curArray]) {
+          this[curArray][j] = value;
+        }
+      } else {
+        this[curArray][key] = value;
       }
     }
   }
 }
 
+
+Konform.defaultSkin = new KonformSkin("Resources/Konform/DimPlastic/");
 

@@ -8,16 +8,35 @@ function initialize()
   form1.set("resizable", true);
   
   button1 = form1.add(new KonformButton());
-  button1.set("hOffset", 150);
-  button1.set("vOffset", 80);
   button1.set("label", "Test");
   button1.set("onClick", "alert('clicked!');");
+  form1.anchor("bottomright", button1);
   
+  /*
+  popup1 = form1.add(new KonformPopup());
+  popup1.set("hOffset", 30);
+  */
+  
+  /*
+  list1 = form1.add(new KonformList());
+  list1.set("options", ["1", "Two", "III", "100", "0x5"]);
+  list1.set("hOffset", 100);
+  list1.set("vOffset", 100);
+  */
+  
+  scroll1 = form1.add(new KonformScrollbar());
+  scroll1.set("hOffset", 40);
+  scroll1.set("vOffset", 80);
+  
+  
+  /*
   label1 = form1.add(new KonformLabel());
   label1.set("hOffset", 145);
   label1.set("vOffset", 100);
   label1.set("label", "Test Button:");
   label1.set("alignment", "right");
+  */
+  
   
   checkbox1 = form1.add(new KonformCheckbox());
   checkbox1.set("label", "Checkbox");

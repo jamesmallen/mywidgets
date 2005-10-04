@@ -49,6 +49,8 @@ include("KonformObject.js");
 include("KonformButton.js");
 include("KonformCheckbox.js");
 include("KonformLabel.js");
+include("KonformScrollbar.js");
+include("KonformList.js");
 
 
 /**
@@ -89,9 +91,9 @@ function Konform(useWindow)
   this.resizerButton.hAlign = "right";
   this.resizerButton.vAlign = "bottom";
   this.resizerButton.tracking = "rectangle";
-  this.resizerButton.onMouseDown = "Konform.resizerButton_onMouseDownWrapper(" + this.id + ")";
-  this.resizerButton.onMouseUp = "Konform.resizerButton_onMouseUpWrapper(" + this.id + ")";
-  this.resizerButton.onMouseMove = "Konform.resizerButton_onMouseMoveWrapper(" + this.id + ")";
+  this.resizerButton.onMouseDown = "Konform.ids[" + this.id + "].resizerButton_onMouseDown()";
+  this.resizerButton.onMouseUp = "Konform.ids[" + this.id + "].resizerButton_onMouseUp()";
+  this.resizerButton.onMouseMove = "Konform.ids[" + this.id + "].resizerButton_onMouseMove()";
   
   this.lightResize = new KonformImage();
   this.lightResize.set("pattern", "3x3");
@@ -114,11 +116,6 @@ function Konform(useWindow)
   
 }
 
-Konform.resizerButton_onMouseDownWrapper = function(id)
-{
-  Konform.ids[id].resizerButton_onMouseDown();
-}
-
 Konform.prototype.resizerButton_onMouseDown = function()
 {
   this.dragStart = new Object();
@@ -133,11 +130,6 @@ Konform.prototype.resizerButton_onMouseDown = function()
   }
 }
 
-Konform.resizerButton_onMouseUpWrapper = function(id)
-{
-  Konform.ids[id].resizerButton_onMouseUp();
-}
-
 Konform.prototype.resizerButton_onMouseUp = function()
 {
   if (!this.liveResize) {
@@ -150,11 +142,6 @@ Konform.prototype.resizerButton_onMouseUp = function()
   this.dragStart = new Object();
 }
 
-
-Konform.resizerButton_onMouseMoveWrapper = function(id)
-{
-  Konform.ids[id].resizerButton_onMouseMove();
-}
 
 Konform.prototype.resizerButton_onMouseMove = function()
 {
@@ -362,6 +349,7 @@ Konform.prototype.set = function(property, value)
       this.windowTitleShadow.hOffset = this.windowTitle.hOffset + 1;
       this.resizerButton.hOffset = this.width;
       
+      this.snug("center", this.skin.options["AnchorIndent"], this.skin.options["AnchorSpacing"], this.anchors["center"]);
       this.snug("topright", this.skin.options["AnchorIndent"], this.skin.options["AnchorSpacing"], this.anchors["topright"]);
       this.snug("right", this.skin.options["AnchorIndent"], this.skin.options["AnchorSpacing"], this.anchors["right"]);
       this.snug("bottomright", this.skin.options["AnchorIndent"], this.skin.options["AnchorSpacing"], this.anchors["bottomright"]);
@@ -430,9 +418,9 @@ Konform.prototype.add = function(obj)
 /**
  * Calls .moveTo() of the window
  */
-Konform.prototype.moveTo = function(x, y)
+Konform.prototype.moveTo = function(x, y, duration)
 {
-  this.hWnd.moveTo(x, y);
+  this.hWnd.moveTo(x, y, duration);
 }
 
 /**
@@ -446,7 +434,6 @@ Konform.prototype.center = function(obj)
 
 Konform.prototype.anchor = function(corner, obj)
 {
-  
   for (var i in this.anchors) {
     for (var j in this.anchors[i]) {
       if (this.anchors[i][j] == obj) {
@@ -513,7 +500,7 @@ Konform.prototype.snug = function(corner, indent, spacing)
   }
   
   var totalWidth = eval(widths.join("+spacing+"));
-  var startingPoint;
+  var startingPoint = 0;
   switch (corner) {
     case "topleft":
     case "left":
@@ -543,7 +530,7 @@ Konform.prototype.snug = function(corner, indent, spacing)
     case "topleft":
     case "top":
     case "topright":
-      var newVOffset = this.height * this.skin.yratios["WindowTitle"] + indent;
+      var newVOffset = indent;
       for (var i in obj) {
         obj[i].set("vOffset", newVOffset);
       }
@@ -560,5 +547,3 @@ Konform.prototype.snug = function(corner, indent, spacing)
 }
 
 
-
-Konform.defaultSkin = new KonformSkin("Resources/Konform/DimPlastic/");

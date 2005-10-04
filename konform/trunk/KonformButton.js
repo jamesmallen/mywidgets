@@ -137,11 +137,6 @@ KonformButton.prototype.set = function(property, value)
 }
 
 
-KonformButton.onMouseEnterWrapper = function(id)
-{
-  Konform.ids[id].onMouseEnter();
-}
-
 KonformButton.prototype.onMouseEnter = function()
 {
   if (this.pushed) {
@@ -152,20 +147,10 @@ KonformButton.prototype.onMouseEnter = function()
   this.highlight = true;
 }
 
-KonformButton.onMouseExitWrapper = function(id)
-{
-  Konform.ids[id].onMouseExit();
-}
-
 KonformButton.prototype.onMouseExit = function()
 {
   this.bg.set("images", this.skin.paths["Button"]);
   this.highlight = false;
-}
-
-KonformButton.onMouseDownWrapper = function(id)
-{
-  Konform.ids[id].onMouseDown();
 }
 
 KonformButton.prototype.onMouseDown = function()
@@ -174,11 +159,6 @@ KonformButton.prototype.onMouseDown = function()
     this.bg.set("images", this.skin.paths["ButtonDown"]);
     this.pushed = true;
   }
-}
-
-KonformButton.onMouseUpWrapper = function(id)
-{
-  Konform.ids[id].onMouseUp();
 }
 
 KonformButton.prototype.onMouseUp = function()
