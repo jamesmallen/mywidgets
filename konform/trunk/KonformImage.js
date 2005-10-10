@@ -49,6 +49,21 @@ function KonformImage()
   this.refresh();
 }
 
+KonformImage.prototype.resetMouseActions = function()
+{
+  this.set("onDragDrop", this.onDragDropEval);
+  this.set("onDragEnter", this.onDragEnterEval);
+  this.set("onDragExit", this.onDragExitEval);
+  this.set("onMouseDown", this.onMouseDownEval);
+  this.set("onMouseEnter", this.onMouseEnterEval);
+  this.set("onMouseExit", this.onMouseExitEval);
+  this.set("onMouseMove", this.onMouseMoveEval);
+  this.set("onMouseUp", this.onMouseUpEval);
+  this.set("onMultiClick", this.onMultiClickEval);
+  
+}
+
+
 KonformImage.prototype.align = function(cheap)
 {
   if (!this.img instanceof Array) {
@@ -425,6 +440,7 @@ KonformImage.prototype.set = function(property, value)
           this.img[0] = new Image();
           break;
       }
+      this.resetMouseActions();
       break;
     case "tile":
       this.tile = value;

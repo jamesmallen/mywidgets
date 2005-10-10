@@ -58,7 +58,7 @@ KonformScrollbar.prototype.constructor = KonformScrollbar; // differentiate Konf
  */
 KonformScrollbar.prototype.set = function(property, value)
 {
-  // print("(KonformScrollbar) " + this.name + ".set(" + property + ", " + value + ")");
+  print("(KonformScrollbar) " + this.name + ".set(" + property + ", " + value + ")");
   switch (property) {
     case "disabledOpacity":
       this.disabledOpacity = value;
@@ -109,12 +109,27 @@ KonformScrollbar.prototype.set = function(property, value)
       this.height = this.bg.height;
       this.downButton.set("vOffset", this.vOffset + this.height);
       this.availableHeight = this.height - (this.upButton.height + this.downButton.height + this.handle.height);
+      if (this.availableHeight <= 0) {
+        this.availableHeight = 0;
+        print("setting opacity...");
+        this.handle.set("opacity", 0);
+      } else {
+        this.handle.set("opacity", this.opacity);
+      }
       this.scrollTo(this.scrollValue);
+      break;
+    case "onScroll":
+      this.onScroll = value;
       break;
     case "opacity":
       this.opacity = value;
       if (this.visible) {
         KonformObject.prototype.set.apply(this, ["opacity", this.opacity]);
+      }
+      if (this.availableHeight <= 0) {
+        this.availableHeight = 0;
+        print("setting opacity...");
+        this.handle.set("opacity", 0);
       }
       break;
     case "scrollHeight":
@@ -130,9 +145,9 @@ KonformScrollbar.prototype.set = function(property, value)
       
       this.scrollTop = this.upButton.height;
       
+      this.set("opacity", this.opacity);
       this.set("width", this.bg.width);
       this.set("height", this.bg.height);
-      this.set("opacity", this.opacity);
       break;
     case "visible":
       this.visible = value;

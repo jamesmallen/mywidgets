@@ -401,7 +401,7 @@ Konform.prototype.set = function(property, value)
     this.set("height", this.height);
     this.set("resizable", this.resizable);
   }
-
+  
 }
 
 /**

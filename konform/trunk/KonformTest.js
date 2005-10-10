@@ -17,17 +17,12 @@ function initialize()
   popup1.set("hOffset", 30);
   */
   
-  /*
-  list1 = form1.add(new KonformList());
-  list1.set("options", ["1", "Two", "III", "100", "0x5"]);
-  list1.set("hOffset", 100);
-  list1.set("vOffset", 100);
-  */
   
+  /*
   scroll1 = form1.add(new KonformScrollbar());
   scroll1.set("hOffset", 40);
   scroll1.set("vOffset", 80);
-  
+  */
   
   /*
   label1 = form1.add(new KonformLabel());
@@ -62,6 +57,10 @@ function initialize()
   
   form2.set("liveResize", false);
   
+  list1 = form2.add(new KonformList());
+  list1.set("hOffset", 40);
+  list1.set("vOffset", 80);
+  list1.set("options", ["1", "Two", "III", "100", "0x5"]);
   
   AguaSkin = new KonformSkin("Resources/Konform/Agua/");
   
@@ -76,9 +75,13 @@ function initialize()
   
   form3.anchor("bottomright", buttonCancel2);
   
+
+  list2 = form3.add(new KonformList());
+  list2.set("hOffset", 40);
+  list2.set("vOffset", 80);
+  list2.set("options", ["1", "Two", "III", "100", "0x5"]);
+
 }
-
-
 
 
 initialize();
