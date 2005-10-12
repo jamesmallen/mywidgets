@@ -1,4 +1,7 @@
-include("PoorText.js")
+include("PoorText.js");
+include("JamesMAllen.js");
+
+
 
 const wmCompact         = 0x0000;
 const wmWide            = 0x0001;
@@ -78,6 +81,17 @@ function initialize()
   mi.enabled = false;
   mi.onSelect = "copy_onSelect()";
   contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "About the Author";
+  mi.onSelect = "AboutTheAuthor();";
+  contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "Make a Donation";
+  mi.onSelect = "Donate();";
+  contextMenu.push(mi);
+  
   main.contextMenuItems = contextMenu;
   main.onContextMenu = "main_onContextMenu()";
   
@@ -202,7 +216,6 @@ function initialize()
   throbberStill.opacity2 = 255;
   
   throbberAnimated = new Image();
-  throbberAnimated.src = "Resources/ThrobberAnimated.gif";
   throbberAnimated.hOffset = 129;
   throbberAnimated.vOffset = 7;
   throbberAnimated.width = 32;
@@ -704,29 +717,19 @@ function lookup_url(url)
     urlObj.location = url;
     state = state | stateLoading;
     urlObj.fetchAsync(url_done);
+    throbberAnimated.src = "Resources/ThrobberAnimated.gif";
+    throbberAnimated.opacity2 = 255;
     if (!(wm == wmOpen) && !(state & stateTrans)) {
       smoothTransition(wmOpen);
     } else {
-      throbberAnimated.opacity2 = 255;
-      throbberAnimated.opacity = 255;
+      throbberAnimated.opacity = throbberAnimated.opacity2;
     }
   }
 }
 
 function lookup_word(query)
 {
-  if (!(state & stateLoading)) {
-    urlObj = new URL();
-    urlObj.location = currentURL() + escape(query);
-    state = state | stateLoading;
-    urlObj.fetchAsync(url_done);
-    if (!(wm == wmOpen) && !(state & stateTrans)) {
-      smoothTransition(wmOpen);
-    } else {
-      throbberAnimated.opacity2 = 255;
-      throbberAnimated.opacity = 255;
-    }
-  }
+  lookup_url(currentURL() + escape(query));
 }
 
 
@@ -936,6 +939,7 @@ function show_definition(str)
 
 function url_done(url)
 {
+  throbberAnimated.src = "";
   throbberAnimated.opacity = 0;
   throbberAnimated.opacity2 = 0;
   urlTimer.ticking = false;

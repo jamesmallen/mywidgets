@@ -3,9 +3,9 @@
 <plist version="0.9">
 <dict>
 	<key>CFBundleGetInfoString</key>
-	<string>Version 1.1
+	<string>Version 1.1.1
 James M. Allen 2005</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1</string>
+	<string>1.1.1</string>
 </dict>
 </plist>
