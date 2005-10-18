@@ -5,7 +5,6 @@
  */
 function KonformObject()
 {
-  this.opacity = 255;
   this.hOffset = 0;
   this.vOffset = 0;
   this.height = 0;
@@ -27,10 +26,6 @@ KonformObject.prototype.set = function(property, value)
 {
   // print("BASE: " + this.name + ".set(" + property + ", " + value + ")");
   
-  if (property == "opacity") {
-    this.opacity = value;
-  }
-    
   if (property == "window") {
     this.window = value;
   }

@@ -51,6 +51,7 @@ include("KonformCheckbox.js");
 include("KonformLabel.js");
 include("KonformScrollbar.js");
 include("KonformList.js");
+include("KonformPopup.js");
 
 
 /**

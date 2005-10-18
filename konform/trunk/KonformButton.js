@@ -12,6 +12,8 @@ function KonformButton()
   this.labelShadow = new Text();
   this.labelShadow.color = "#000000";
   
+  this.picture = new KonformImage();
+  
   this.label = new Text();
   
   this.highlight = false;
@@ -46,6 +48,14 @@ KonformButton.prototype.set = function(property, value)
 {
   // print("(KonformButton) " + this.name + ".set(" + property + ", " + value + ")");
   switch (property) {
+    case "buttonSize":
+      switch(value) {
+        case "small":
+          this.set("width", this.skin.widths["ButtonSmall"]);
+          this.set("height", this.skin.heights["ButtonSmall"]);
+          break;
+      }
+      break;
     case "disabledOpacity":
       this.disabledOpacity = value;
       break;
@@ -89,6 +99,9 @@ KonformButton.prototype.set = function(property, value)
         this.labelShadow.opacity = 0;
       }
       break;
+    case "picture":
+      this.picture.set("images", value);
+      break;
     case "size":
       KonformObject.prototype.set.apply(this, [property, value]);
       break;
@@ -99,6 +112,7 @@ KonformButton.prototype.set = function(property, value)
       this.bg.set("height", this.bg.srcHeight);
       this.label.color = this.skin.colors["ButtonLabel"];
       this.labelShadow.hAlign = this.label.hAlign = this.skin.aligns["ButtonLabel"];
+      this.picture.set("hAlign", this.skin.aligns["ButtonLabel"]);
       this.labelShadow.style = this.label.style = "";
       this.labelShadow.font = this.label.font = this.skin.fonts["ButtonLabel"];
       this.labelShadow.size = this.label.size = this.skin.sizes["ButtonLabel"];
@@ -129,6 +143,7 @@ KonformButton.prototype.set = function(property, value)
           break;
       }
       this.labelShadow.hOffset = this.label.hOffset + 1;
+      this.picture.hOffset = this.label.hOffset;
       break;
     default:
       KonformObject.prototype.set.apply(this, [property, value]);

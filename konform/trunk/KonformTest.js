@@ -39,6 +39,13 @@ function initialize()
   checkbox1.set("vOffset", 140);
   checkbox1.set("onClick", "log('Checkbox value is ' + checkbox1.value);");
   
+  popup1 = form1.add(new KonformPopup());
+  popup1.set("hOffset", 40);
+  popup1.set("vOffset", 60);
+  popup1.set("options", "English", "Spanish", "French", "Italian", "German", "Latin");
+  
+  
+  
   WindozeSkin = new KonformSkin("Resources/Konform/Windoze/");
   
   form2 = new Konform();

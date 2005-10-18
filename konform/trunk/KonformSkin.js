@@ -32,9 +32,11 @@ KonformSkin.prototype.reset = function()
     this.colors = new Array();
     this.shadows = new Array();
     this.sizes = new Array();
+    this.aligns = new Array();
+    this.widths = new Array();
+    this.heights = new Array();
     this.xratios = new Array();
     this.yratios = new Array();
-    this.aligns = new Array();
   }
 }
 

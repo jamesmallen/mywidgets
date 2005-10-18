@@ -32,7 +32,8 @@ function KonformList()
   this.value = "";
   
   this.pushed = false;
-  this.onClick = "";
+  this.onChanged = "";
+  this.onMouseUp = "";
   this.enabled = true;
   this.visible = true;
   this.opacity = 255;
@@ -74,7 +75,9 @@ KonformList.prototype.align = function()
     
     if (i + this.rowOffset == this.selectedIndex) {
       this.highlight.set("vOffset", curY + this.skin.yratios["ListHighlight"]);
-      this.highlight.set("opacity", this.opacity);
+      if (this.visible) {
+        this.highlight.set("opacity", this.opacity);
+      }
     }
     
     curY += this.skin.yratios["ListSpacing"];
@@ -153,13 +156,14 @@ KonformList.prototype.set = function(property, value)
       if (this.enabled) {
         this.bg.set("onMouseDown", "Konform.ids[" + this.id + "].selectHandler();");
         this.bg.set("onMouseMove", "Konform.ids[" + this.id + "].selectHandler();");
+        this.bg.set("onMouseUp", "Konform.ids[" + this.id + "].bg_onMouseUp();");
       } else {
         this.bg.set("onMouseDown", "");
         this.bg.set("onMouseMove", "");
+        this.bg.set("onMouseUp", "");
       }
       break;
     case "height":
-      print("height, " + value);
       if (value == -1) {
         this.set("rows", -1);
         break;
@@ -212,21 +216,28 @@ KonformList.prototype.set = function(property, value)
       break;
     case "width":
       this.width = Math.max(this.minWidth, value);
-      this.bg.set("width", this.width - this.scrollbar.width + this.skin.yratios["ListScrollbar"]);
+      // this.bg.set("width", this.width - this.scrollbar.width + this.skin.yratios["ListScrollbar"]);
+      this.bg.set("width", this.width - this.scrollbar.width - this.skin.yratios["ListScrollbar"]);
       this.highlight.set("width", this.bg.width);
       this.scrollbar.set("hOffset", this.hOffset + this.bg.width + this.skin.yratios["ListScrollbar"]);
       break;
-    case "onClick":
-      this.onClick = value;
+    case "onChanged":
+      this.onChanged = value;
+      break;
+    case "onMouseUp":
+      this.onMouseUp = value;
       break;
     case "opacity":
       this.opacity = value;
       if (this.visible) {
         KonformObject.prototype.set.apply(this, ["opacity", this.opacity]);
       }
-      if (!this.skin.shadows["List"]) {
+      for (var i in this.texts) {
+        this.texts[i].opacity = this.opacity;
+      }
+      if (this.skin.shadows["List"]) {
         for (var i in this.textShadows) {
-          this.textShadows[i].opacity = 0;
+          this.textShadows[i].opacity = this.opacity;
         }
       }
       break;
@@ -278,6 +289,7 @@ KonformList.prototype.set = function(property, value)
       this.selectedIndex = value;
       this.refreshValue();
       this.align();
+      eval(this.onChanged);
       break;
     case "size":
       KonformObject.prototype.set.apply(this, [property, value]);
@@ -311,7 +323,7 @@ KonformList.prototype.set = function(property, value)
         for (var i in this.optionValues) {
           if (this.optionValues[i] == value) {
             found = true;
-            this.select(i);
+            this.set("selectedIndex", i);
             break;
           }
         }
@@ -319,7 +331,7 @@ KonformList.prototype.set = function(property, value)
           for (var i in this.options) {
             if (this.options[i] == value) {
               found = true;
-              this.select(i);
+              this.set("selectedIndex", i);
               break;
             }
           }
@@ -334,13 +346,26 @@ KonformList.prototype.set = function(property, value)
     case "visible":
       this.visible = value;
       if (this.visible) {
-        KonformObject.prototype.set.apply(this, ["opacity", this.opacity]);
+        var newOpacity = this.opacity;
       } else {
-        KonformObject.prototype.set.apply(this, ["opacity", 0]);
+        var newOpacity = 0;
       }
+        KonformObject.prototype.set.apply(this, ["opacity", newOpacity]);
+        for (var i in this.texts) {
+          this.texts[i].opacity = newOpacity;
+        }
+        if (this.skin.shadows["List"]) {
+          for (var i in this.textShadows) {
+            this.textShadows[i].opacity = newOpacity;
+          }
+        }
+      break;
+    case "hOffset":
+    case "vOffset":
+      KonformObject.prototype.set.apply(this, [property, value]);
+      this.align();
       break;
     default:
-      print("set " + property + " = " + value);
       KonformObject.prototype.set.apply(this, [property, value]);
       for (var i in this.texts) {
         if (typeof(this.texts[i][property]) != "undefined") {
@@ -352,19 +377,8 @@ KonformList.prototype.set = function(property, value)
 }
 
 
-KonformList.prototype.onMouseEnter = function()
+KonformList.prototype.bg_onMouseUp = function()
 {
-}
-
-KonformList.prototype.onMouseExit = function()
-{
-}
-
-KonformList.prototype.onMouseDown = function()
-{
-}
-
-KonformList.prototype.onMouseUp = function()
-{
+  eval(this.onMouseUp);
 }
 
