@@ -229,6 +229,7 @@ function shrink()
 
 function shrink_done()
 {
+  unblock();
   killPearlAnimations();
   pearlA[0] = new FadeAnimation(pearl, 255, 500, animator.kEaseOut);
   for (var i in iconsArray) {
@@ -270,6 +271,7 @@ function grow()
 
 function grow_done()
 {
+  unblock();
   killSizeAnimations();
   sizeA = new CustomAnimation(1, size_update);
   sizeA.duration = 1500;
@@ -636,11 +638,22 @@ function calcGrowFilename()
 
 function background_onDragDrop()
 {
+  if (bgBlock) {
+    log("Unable to drop files - blocking operation in progress");
+    return;
+  }
   if (system.event.data[0] != "filenames") {
     log("Non-files dropped - taking no action");
     return;
   } else {
     log("Files dropped");
+  }
+  
+  killPearlAnimations();
+  killSizeAnimations();
+  pearl.opacity = 0;
+  for (var i in iconsArray) {
+    iconsArray[i].opacity = 0;
   }
   
   filesArray = new Array();
@@ -700,7 +713,7 @@ function arrangeIcons(arr)
     for (var i = 0; i < iconsArray.length; i++) {
       if (i < arr.length) {
         icon = iconsArray[i];
-        if (preferences.useFileIcons.value) {
+        if (preferences.useFileIcons.value == "1") {
           icon.useFileIcon = true;
           icon.src = arr[i];
         } else {
@@ -851,8 +864,6 @@ function onRunCommandInBgComplete()
   var success = false;
   eval("result = " + system.event.data + ";");
   
-  bgBlock = false;
-  
   log(result);
   
   switch (system.event.data) {
@@ -940,6 +951,11 @@ function currentExtension()
       }
       break;
   }
+}
+
+function unblock()
+{
+  bgBlock = false;
 }
 
 
