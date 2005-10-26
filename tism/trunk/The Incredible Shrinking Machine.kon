@@ -1,0 +1,115 @@
+﻿<?xml version="1.0"?>
+
+<?konfabulator xml-strict="true"?>
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="verbose">
+  <option>allowCustomObjectAttributes</option>
+  
+  <window name="main" title="The Incredible Shrinking Machine" width="125" height="150" opacity="255" shadow="0" visible="0">
+    <onFirstDisplay>main_onFirstDisplay();</onFirstDisplay>
+  </window>
+  
+  <action trigger="onLoad" file="Tism.js"/>
+  
+  <action trigger="onRunCommandInBgComplete">
+    onRunCommandInBgComplete();
+  </action>
+  
+  <action trigger="onPreferencesChanged">
+    onPreferencesChanged();
+  </action>
+  
+  <preferenceGroup name="shrinking" title="Shrinking" icon="Resources/ShrinkingIcon.png" />
+  
+  <preferenceGroup name="growing" title="Growing" icon="Resources/GrowingIcon.png" />
+  
+  <preferenceGroup name="appearance" title="Appearance" icon="Resources/AppearanceIcon.png" />
+  
+  <preference name="shrinkFormat" group="shrinking" title="Output format:" type="popup" defaultValue="zip">
+    <option>zip</option>
+    <optionValue>zip</optionValue>
+    <option>gz/tar.gz</option>
+    <optionValue>gz</optionValue>
+    <option>bz2/tar.bz2</option>
+    <optionValue>bz2</optionValue>
+  </preference>
+  
+  <preference name="namingScheme" group="shrinking" title="Output filename:" type="popup" defaultValue="zip">
+    <option>Filename.zip</option>
+    <optionValue>zip</optionValue>
+    <option>Filename.ext.zip</option>
+    <optionValue>ext.zip</optionValue>
+  </preference>
+  
+  <preference name="shrinkOutputFolder" group="shrinking" title="Output folder:" type="popup" defaultValue="containing">
+    <option>Containing folder</option>
+    <optionValue>containing</optionValue>
+    <option>Desktop</option>
+    <optionValue>desktop</optionValue>
+    <option>My Documents</option>
+    <optionValue>documents</optionValue>
+    <option>Ask me each time</option>
+    <optionValue>ask</optionValue>
+  </preference>
+  
+  <preference name="shrinkExistsAction" group="shrinking" title="When output file exists:" type="popup" defaultValue="unique">
+    <option>Make filename unique</option>
+    <optionValue>unique</optionValue>
+    <option>Overwrite existing file</option>
+    <optionValue>overwrite</optionValue>
+    <option>Ask me each time</option>
+    <optionValue>ask</optionValue>
+  </preference>
+  
+  
+  <preference name="growOutputFolder" group="growing" title="Output folder:" type="popup" defaultValue="containing">
+    <option>Containing folder</option>
+    <optionValue>containing</optionValue>
+    <option>Desktop</option>
+    <optionValue>desktop</optionValue>
+    <option>My Documents</option>
+    <optionValue>documents</optionValue>
+    <option>Ask me each time</option>
+    <optionValue>ask</optionValue>
+  </preference>
+  
+  <preference name="growExistsAction" group="growing" title="Within output folder:" type="popup" defaultValue="unique">
+    <option>Create a new folder</option>
+    <optionValue>unique</optionValue>
+    <option>Overwrite existing file(s) in place</option>
+    <optionValue>overwrite</optionValue>
+  </preference>
+  
+  
+  <!--
+  <preference name="tismSize" group="appearance" title="Size:" type="popup" defaultValue="0.6">
+    <option>Small</option>
+    <optionValue>0.3</optionValue>
+    <option>Medium</option>
+    <optionValue>0.6</optionValue>
+    <option>Large</option>
+    <optionValue>1.0</optionValue>
+  </preference>
+  -->
+  
+  <preference name="tismSize" group="appearance" title="Size:" type="slider" minLength="30" maxLength="100" ticks="7" defaultValue="60">
+    <tickLabel>Small</tickLabel>
+    <tickLabel>Large</tickLabel>
+  </preference>
+  
+  <preference name="rayColor" group="appearance" title="Zapper color:" type="color" defaultValue="#FF00FF" />
+  
+  <preference name="pearlColor" group="appearance" title="Shrunken color:" type="color" defaultValue="#9761B3" />
+  
+  <preference name="altNamingScheme" hidden="true" defaultValue="Filename.zip"/>
+  
+  <preference name="useFileIcons" group="appearance" title="Use file icons" type="checkbox" defaultValue="0">
+    <description>(May have unexpected results)</description>
+  </preference>
+  
+  <about-box image="Resources/AboutBox.png">
+    <about-version font="Arial Bold" size="13" hOffset="358" vOffset="104" color="#FFFFFF">
+      <shadow color="#000000" hOffset="1" vOffset="1" />
+    </about-version>
+  </about-box>
+  
+</widget>
