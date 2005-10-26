@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="verbose">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="errors">
   <option>allowCustomObjectAttributes</option>
   
   <window name="main" title="The Incredible Shrinking Machine" width="125" height="150" opacity="255" shadow="0" visible="0">
