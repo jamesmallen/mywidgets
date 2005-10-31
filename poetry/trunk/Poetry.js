@@ -25,22 +25,8 @@ function main_onLoad()
   kimBackground.set("hOffset", 0);
   kimBackground.set("vOffset", 0);
   
-  kimDivider = new KonformImage();
-  kimDivider.set("window", main);
-  kimDivider.set("images", "Resources/Divider<.png");
-  kimDivider.set("hOffset", 25);
-  kimDivider.set("onMouseDown", "kimDivider_onMouseDown()");
-  kimDivider.set("onMouseMove", "kimDivider_onMouseMove()");
-  kimDivider.set("onMouseUp", "kimDivider_onMouseUp()");
-  kimDivider.set("opacity", 0);
-  
-  intDividerPosition = 0;
-  
   anmBackground = null;
-  anmDivider = null;
   anmButtons = null;
-  
-  objDividerGrab = null;
   
   imgTrashButton = new Image();
   imgTrashButton.window = main;
@@ -107,22 +93,29 @@ function generic_onMouseUp(img)
 
 function imgTrashButton_onMouseUp()
 {
-  clearTrash();
+  clearAll();
 }
 
 function imgAddButton_onMouseUp()
 {
-  // popupAddWords();
-  var w = new Word();
-  arrWords.push(w);
-  w.set("data", "foo " + arrWords.length);
-  w.align();
+  popupAddWords();
 }
 
 
-function clearTrash()
+function clearAll()
 {
+  var result = alert("Are you sure you want to clear all the words?", "No", "Yes");
+  if (result == 1) {
+    // No
+    return;
+  }
   
+  for (var i in arrWords) {
+    arrWords[i].clear();
+    arrWords[i] = null;
+  }
+  
+  arrWords = new Array();
   
 }
 
@@ -130,42 +123,19 @@ function popupAddWords()
 {
   
   
-}
-
-
-
-function kimDivider_onMouseDown()
-{
-  objDividerGrab = new Object();
-  objDividerGrab.x = kimDivider.hOffset - system.event.hOffset;
-  objDividerGrab.y = kimDivider.vOffset - system.event.vOffset;
-}
-
-function kimDivider_onMouseMove()
-{
-  if (!objDividerGrab) {
-    kimDivider_onMouseDown();
-  }
   
-  var intNewVOffset = objDividerGrab.y + system.event.vOffset;
-  var intNewHeight = kimBackground.height - intNewVOffset;
   
-  if (intNewVOffset != kimDivider.vOffset) {
-    resizeDivider(intNewHeight);
-  }
 }
 
-function kimDivider_onMouseUp()
+function addWord(data)
 {
-  var intNewVOffset = objDividerGrab.y + system.event.vOffset;
-  var intNewHeight = kimBackground.height - intNewVOffset;
-  resizeDivider(intNewHeight, true);
-  
-  objDividerGrab = null;
+  var w = new Word();
+  arrWords.push(w);
+  w.set("data", data);
+  w.set("hOffset", random(0 + w.width, main.width - w.width));
+  w.set("vOffset", random(0 + w.height, main.height - w.height));
+  w.align();
 }
-
-
-
 
 
 
@@ -208,13 +178,11 @@ function resize(intWidth, intHeight, optimize)
   
   if (intWidth != main.width) {
     kimBackground.set("width", intWidth);
-    kimDivider.set("width", intWidth - 50);
     rzr.img.hOffset = intWidth;
     imgAddButton.hOffset = intWidth;
   }
   if (intHeight != main.height) {
     kimBackground.set("height", intHeight);
-    resizeDivider();
     rzr.img.vOffset = intHeight;
     
     imgTrashButton.vOffset = intHeight;
@@ -236,29 +204,6 @@ function resize(intWidth, intHeight, optimize)
   }
   
 }
-
-function resizeDivider(intHeight, save) {
-  if (typeof(intHeight) != "number") {
-    intHeight = parseInt(preferences.dividerHeight.value);
-  }
-  if (typeof(save) == "undefined") {
-    save = false;
-  }
-  
-  intHeight = Math.max(intHeight, 50);
-  intHeight = Math.min(intHeight, kimBackground.height - 50);
-  
-  var intVOffset = kimBackground.height - intHeight;
-  
-  kimDivider.set("vOffset", intVOffset);
-  
-  if (save) {
-    preferences.dividerHeight.value = intHeight;
-  }
-  
-}
-
-
 
 function onPreferencesChanged()
 {
@@ -292,13 +237,7 @@ function main_onGainFocus()
     anmBackground = null;
   }
   anmBackground = new KonformFadeAnimation(kimBackground, Math.min(255, parseInt(preferences.bgOpacity.value) + 63), intFadeInTime, intFadeStyle);
-  
-  if (anmDivider instanceof CustomAnimation) {
-    anmDivider.kill();
-    anmDivider = null;
-  }
-  anmDivider = new KonformFadeAnimation(kimDivider, 255, intFadeInTime, intFadeStyle);
-  
+    
   if (anmButtons instanceof Array) {
     for (var i in anmButtons) {
       anmButtons[i].kill();
@@ -310,7 +249,6 @@ function main_onGainFocus()
   anmButtons.push(new FadeAnimation(imgTrashButton, 127, intFadeInTime, intFadeStyle));
   
   animator.start(anmBackground);
-  animator.start(anmDivider);
   animator.start(anmButtons);
 }
 
@@ -327,12 +265,6 @@ function main_onLoseFocus()
   }
   anmBackground = new KonformFadeAnimation(kimBackground, parseInt(preferences.bgOpacity.value), intFadeOutTime, intFadeStyle);
   
-  if (anmDivider instanceof CustomAnimation) {
-    anmDivider.kill();
-    anmDivider = null;
-  }
-  anmDivider = new KonformFadeAnimation(kimDivider, 0, intFadeOutTime, intFadeStyle);
-  
   if (anmButtons instanceof Array) {
     for (var i in anmButtons) {
       anmButtons[i].kill();
@@ -344,7 +276,6 @@ function main_onLoseFocus()
   anmButtons.push(new FadeAnimation(imgTrashButton, 0, intFadeOutTime, intFadeStyle));
   
   animator.start(anmBackground);
-  animator.start(anmDivider);
   animator.start(anmButtons);
 }
 
@@ -592,7 +523,6 @@ Word.prototype.kimBg_onMouseUp = function()
     var i;
     for (i = 0; i < arrWords.length; i++) {
       if (arrWords[i] == this) {
-        print("destroying index " + i);
         arrWords.splice(i, 1);
         break;
       }
@@ -626,28 +556,24 @@ Word.prototype.keepOn = function()
 {
   // off the left side
   if ((this.hOffset + this.width / 2) < 0) {
-    print("left");
     this.set("hOffset", this.width / -2);
     this.align();
   }
   
   // off the top
   if ((this.vOffset + this.height / 2) < 0) {
-    print("top");
     this.set("vOffset", this.height / -2);
     this.align();
   }
   
   // off the right side
   if ((this.hOffset + this.width / 2) > main.width) {
-    print("right");
     this.set("hOffset", main.width - this.width / 2);
     this.align();
   }
   
   // off the bottom
   if ((this.vOffset + this.height / 2) > main.height) {
-    print("bottom");
     this.set("vOffset", main.height - this.height / 2);
     this.align();
   }
