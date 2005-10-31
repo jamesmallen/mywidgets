@@ -1,0 +1,7 @@
+The wordlists that are distributed with this widget come from various sources, including:
+* Dictionary Thesaurus.com - Word Lists (http://dictionary-thesaurus.com/Wordlists.html)
+  Copyright (c) 2000 Xerostar Holdings
+
+
+
+All images and code are copyright 2005 James M. Allen, and may not be used without permission.
