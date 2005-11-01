@@ -356,6 +356,41 @@ function addWordsFromFile(fileIndex, numWords)
   
 }
 
+function addWordsFromUrl(urlIndex, numWords)
+{
+  if (typeof(numWords) == "undefined") {
+    numWords = parseInt(preferences.wordsPerClick.value);
+  }
+  
+  var url = new URL();
+  url.location = arrWordSourceURLs[urlIndex].path;
+  url.numWords = numWords;
+  url.fetchAsync(addWordsFromUrl_done);
+  
+  
+}
+
+function addWordsFromUrl_done(url)
+{
+  if (url.response > 400) {
+    return;
+  }
+  
+  var str = url.result;
+  str = str.replace(/<script>[^<]*<\/script>/g, "");
+  str = str.replace(/<[^>]*>/g, "");
+  str = str.replace(/\&.{1,5};/, "");
+  
+  var wordArray = str.match(/\w+/g);
+  for (var i = 0; i < url.numWords; i++) {
+    addWord(wordArray[random(0, wordArray.length)]);
+  }
+  
+  Word.serialize();
+  
+
+}
+
 function popupAddWords()
 {
   var arrPopupMenu = new Array();
@@ -385,7 +420,7 @@ function popupAddWords()
     for (var i in arrWordSourceURLs) {
       var mi = new MenuItem();
       mi.title = arrWordSourceURLs[i].title;
-      mi.onSelect = "addWordsFromURL(" + i + ")";
+      mi.onSelect = "addWordsFromUrl(" + i + ")";
       arrPopupMenu.push(mi);
     }
   }

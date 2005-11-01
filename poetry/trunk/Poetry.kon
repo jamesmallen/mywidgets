@@ -9,7 +9,7 @@
  -->
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="v0.7" minimumVersion="2.1" debug="off">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="v0.7" minimumVersion="2.1" debug="verbose">
   <option>allowCustomObjectAttributes</option>
   
   <window name="main" title="Poetry" width="300" height="300" opacity="255" shadow="0" visible="1"/>
