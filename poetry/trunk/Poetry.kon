@@ -1,26 +1,41 @@
 ﻿<?xml version="1.0"?>
 
+<!--
+ Poetry
+ by James M. Allen
+ 
+ Please see the CREDITS.txt file for license and copyright information.
+ You may not redistribute this widget without including the CREDITS.txt file.
+ -->
+
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="on">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="v0.7" minimumVersion="2.1" debug="off">
   <option>allowCustomObjectAttributes</option>
   
-  <window name="main" title="Poetry" width="300" height="300" opacity="255" shadow="0" visible="1">
-    <onFirstDisplay>main_onFirstDisplay()</onFirstDisplay>
-  </window>
+  <window name="main" title="Poetry" width="300" height="300" opacity="255" shadow="0" visible="1"/>
   
   <action trigger="onLoad" file="Poetry.js" />
-  
   <action trigger="onPreferencesChanged">onPreferencesChanged()</action>
-  
   <action trigger="onGainFocus">main_onGainFocus()</action>
-  
   <action trigger="onLoseFocus">main_onLoseFocus()</action>
   
   <preferenceGroup name="appearance" title="Appearance" icon="Resources/AppearanceIcon.png"/>
-  
   <preferenceGroup name="font" title="Font" icon="Resources/FontIcon.png"/>
   
-  <preference name="bgColor" group="appearance" title="Background Color:" type="color" defaultValue="#EEEEEE"/>
+  <preference name="wordsPerClick" title="Words/click:" type="popup" defaultValue="10">
+    <option>1</option>
+    <option>5</option>
+    <option>10</option>
+    <option>20</option>
+    <option>50</option>
+    <description>The number of words that will be added when you click the Add button.</description>
+  </preference>
+  
+  <preference name="revertSources" title="Reset sources" type="checkbox" defaultValue="0" notSaved="true">
+    <description>Checking the above box will reset the word sources list to its default contents, deleting any custom sources you have created.</description>
+  </preference>
+  
+  <preference name="bgColor" group="appearance" title="Background Color:" type="color" defaultValue="#BFBFBF"/>
   
   <preference name="bgOpacity" group="appearance" title="Background Opacity:" type="slider" minLength="1" maxLength="255" defaultValue="191">
     <tickLabel>Transparent</tickLabel>
@@ -35,27 +50,30 @@
   </preference>
   
   <preference name="wordColor" group="font" title="Text Color:" type="color" defaultValue="#000000"/>
-  
   <preference name="wordFont" group="font" title="Font:" type="font" defaultValue="Times New Roman"/>
-  
-  <preference name="wordSize" group="font" title="Size:" type="text" defaultValue="12"/>
-  
+  <preference name="wordSize" group="font" title="Size:" type="text" defaultValue="14"/>
   <preference name="wordVTweak" group="font" title="Vertical Tweak:" type="text" defaultValue="0">
     <description>Enter a positive or negative number to adjust the vertical offset of text (With many fonts, you can leave this at 0).</description>
   </preference>
   
+  <preference name="doNotCache" hidden="true" defaultValue="0"/>
   <preference name="width" hidden="true" defaultValue="-1"/>
-  
   <preference name="height" hidden="true" defaultValue="-1"/>
-  
   <preference name="dividerHeight" hidden="true" defaultValue="50"/>
-  
   <preference name="wordPositions" hidden="true">
-    <defaultValue>hi,15,80|jiggyyo,45,90</defaultValue>
+    <defaultValue>poetry,17,20|by,64,42|james,94,43|click%20or%20right%2Dclick%20on%20the%20plus%20icon%20to%20add%20some%20words,69,124|click%20on%20the%20trash%20icon%20to%20clear%20them%20all,62,149|click%20on%20the%20window%20to%20activate%20it,16,101|drag%20words%20off%20the%20window%20to%20get%20rid%20of%20them,63.5,172|allen,154,43|m,135,42</defaultValue>
+  </preference>
+  <preference name="customFiles" hidden="true">
+    <defaultValue>Words%2FAdjectives,Words%2FAdverbs,Words%2FInterjections,Words%2FNouns,Words%2FPrepositions,Words%2FPronouns,Words%2FProper%20Names,Words%2FTransitions,Words%2FVerbs</defaultValue>
   </preference>
   
-  <about-box image="Resources/AboutBox.png">
-    <about-version font="Arial Bold" size="13" hOffset="358" vOffset="104" color="#FFFFFF">
+  <preference name="customURLs" hidden="true">
+    <defaultValue>http%3A%2F%2Fslashdot%2Eorg,Slashdot|http%3A%2F%2Fen%2Ewikipedia%2Eorg%2Fwiki%2FSpecial%3ARandompage,Random%20Wikipedia%20Article</defaultValue>
+  </preference>
+  
+  <about-box>
+    <image>Resources/AboutBox.png</image>
+    <about-version font="Arial Bold" size="12" hOffset="280" vOffset="157" color="#FFFFFF">
       <shadow color="#000000" hOffset="1" vOffset="1" />
     </about-version>
   </about-box>

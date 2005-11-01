@@ -1,11 +1,20 @@
-include("JamesMAllen.js");
+/**
+ * Poetry
+ * by James M. Allen
+ *
+ * Please see the CREDITS.txt file for license and copyright information.
+ * You may not redistribute this widget without including the CREDITS.txt file.
+ */
 
-Konform = new Object();
-Konform.ids = new Array();
+
+
+include("Lib.js");
+include("KonformImage.js");
+include("JamesMAllen.js");
+include("Word.js");
+include("Resizer.js");
 
 generic_mouseOver = null;
-
-include("KonformImage.js");
 
 function main_onLoad()
 {
@@ -44,10 +53,12 @@ function main_onLoad()
   imgAddButton.onMouseEnter = "generic_onMouseEnter('imgAddButton'); imgAddButton.opacity = 255;";
   imgAddButton.onMouseExit = "generic_onMouseExit('imgAddButton'); imgAddButton.opacity = 127;";
   imgAddButton.onMouseUp = "generic_onMouseUp('imgAddButton')";
+  imgAddButton.onContextMenu = "imgAddButton_onContextMenu()";
   imgAddButton.hAlign = "right";
   imgAddButton.vAlign = "bottom";
   
   arrWords = new Array();
+  objFileCache = new Object();;
   
   rzr = new Resizer();
   rzr.img.window = main;
@@ -56,17 +67,18 @@ function main_onLoad()
   rzr.saveHeight = "preferences.height.value";
   
   if (preferences.width.value == "-1" || preferences.height.value == "-1") {
-    autoPosition("center");
-  } else {
-    resize(parseInt(preferences.width.value), parseInt(preferences.height.value));
+    autoPosition();
   }
   
+  resize(parseInt(preferences.width.value), parseInt(preferences.height.value));  
   
   var imgDummy = new Image();
   Word.baseZOrder = imgDummy.zOrder;
   imgDummy = null;
   
   Word.unserialize();
+  
+  unserializeWordSources();
   
   onPreferencesChanged();
   
@@ -98,40 +110,310 @@ function imgTrashButton_onMouseUp()
 
 function imgAddButton_onMouseUp()
 {
+  addWordsFromAllFiles();
+}
+
+function imgAddButton_onContextMenu()
+{
   popupAddWords();
 }
 
-
 function clearAll()
 {
-  var result = alert("Are you sure you want to clear all the words?", "No", "Yes");
+  var result = alert("Are you sure you want to clear all the words?", "Yes", "No");
   if (result == 1) {
-    // No
+    // Yes
+    for (var i in arrWords) {
+      arrWords[i].clear();
+      arrWords[i] = null;
+    }
+    
+    arrWords = new Array();
+  }
+  Word.serialize();
+}
+
+function serializeWordSources()
+{
+  var arrCustomFiles = new Array();
+  for (var i in arrWordSourceFiles) {
+    arrCustomFiles.push(escape(arrWordSourceFiles[i].path));
+  }
+  preferences.customFiles.value = arrCustomFiles.join(",");
+  
+  var arrCustomURLs = new Array();
+  for (var i in arrWordSourceURLs) {
+    var arrCurURL = new Array();
+    arrCurURL.push(escape(arrWordSourceURLs[i].path));
+    arrCurURL.push(escape(arrWordSourceURLs[i].title));
+    arrCustomURLs.push(arrCurURL.join(","));
+  }
+  preferences.customURLs.value = arrCustomURLs.join("|");
+}
+
+function unserializeWordSources()
+{
+  arrWordSourceFiles = new Array();
+  var customFilePaths = preferences.customFiles.value.split(",");
+  for (var i in customFilePaths) {
+    var o = new Object();
+    o.path = unescape(customFilePaths[i]);
+    o.title = getFilename(o.path);
+    arrWordSourceFiles.push(o);
+  }
+  
+  arrWordSourceURLs = new Array();
+  var customURLPaths = preferences.customURLs.value.split("|");
+  for (var i in customURLPaths) {
+    var curURL = customURLPaths[i].split(",");
+    var o = new Object();
+    o.path = unescape(curURL[0]);
+    o.title = unescape(curURL[1]);
+    arrWordSourceURLs.push(o);
+  }
+}
+
+
+function editWordSources()
+{
+  var arrOptions = new Array();
+  var arrOptionValues = new Array();
+  
+  for (var i in arrWordSourceFiles) {
+    arrOptions.push(arrWordSourceFiles[i].title);
+    arrOptionValues.push("f" + i);
+  }
+  for (var i in arrWordSourceURLs) {
+    arrOptions.push(arrWordSourceURLs[i].title);
+    arrOptionValues.push("u" + i);
+  }
+  
+  arrOptions.push("New file...");
+  arrOptionValues.push("fnew");
+  
+  arrOptions.push("New URL...");
+  arrOptionValues.push("unew");
+  
+  var arrFormFields = new Array();
+  var ff = new FormField();
+  ff.title = "Source:";
+  ff.type = "popup";
+  ff.option = arrOptions;
+  ff.optionValue = arrOptionValues;
+  ff.description = "Select a source and click Next to edit or delete that item.";
+  arrFormFields.push(ff);
+  
+  var result = form(arrFormFields, "Edit word sources", "Next", "Cancel");
+  
+  if (!result) {
     return;
   }
   
-  for (var i in arrWords) {
-    arrWords[i].clear();
-    arrWords[i] = null;
+  var arrFormFields = new Array();
+  
+  switch (result[0].charAt(0)) {
+    case "f":
+      var ff = new FormField();
+      ff.title = "Word source:";
+      ff.type = "selector";
+      ff.style = "open";
+      ff.kind = "files";
+      arrFormFields.push(ff);
+      
+      var ff = new FormField();
+      ff.type = "checkbox";
+      ff.title = "Delete this source";
+      ff.defaultValue = 0;
+      arrFormFields.push(ff);
+      
+      var fileIndex;
+      var formTitle;
+      
+      if (result[0].substr(1) == "new") {
+        fileIndex = arrWordSourceFiles.length;
+        formTitle = "New file";
+      } else {
+        fileIndex = parseInt(result[0].substr(1));
+        arrFormFields[0].value = arrWordSourceFiles[fileIndex].path;
+        formTitle = "Editing file";
+      }
+      
+      var result = form(arrFormFields, formTitle, "Save", "Cancel");
+      
+      if (!result) {
+        return;
+      }
+      
+      if (result[1] == 1) {
+        arrWordSourceFiles.splice(fileIndex, 1);
+      } else {
+        o = new Object();
+        o.path = result[0];
+        o.title = getFilename(o.path);
+        arrWordSourceFiles[fileIndex] = o;
+      }
+      
+      break;
+    case "u":
+      var ff = new FormField();
+      ff.title = "Name:";
+      ff.type = "text";
+      arrFormFields.push(ff);
+      
+      var ff = new FormField();
+      ff.title = "URL:";
+      ff.type = "text";
+      arrFormFields.push(ff);
+      
+      var ff = new FormField();
+      ff.type = "checkbox";
+      ff.title = "Delete this source";
+      ff.defaultValue = 0;
+      arrFormFields.push(ff);
+      
+      var urlIndex;
+      var formTitle;
+      
+      if (result[0].substr(1) == "new") {
+        urlIndex = arrWordSourceURLs.length;
+        formTitle = "New URL";
+      } else {
+        urlIndex = parseInt(result[0].substr(1));
+        arrFormFields[0].defaultValue = arrWordSourceURLs[urlIndex].title;
+        arrFormFields[1].defaultValue = arrWordSourceURLs[urlIndex].path;
+        formTitle = "Editing URL";
+      }
+      
+      var result = form(arrFormFields, formTitle, "Save", "Cancel");
+      
+      if (!result) {
+        return;
+      }
+      
+      if (result[1] == 1) {
+        arrWordSourceURLs.splice(urlIndex, 1);
+      } else {
+        o = new Object();
+        o.title = result[0];
+        o.path = result[1];
+        arrWordSourceURLs[urlIndex] = o;
+      }
+      
+      break;
   }
   
-  arrWords = new Array();
+  serializeWordSources();
+  
+}
+
+
+function addWordsFromAllFiles(numWords)
+{
+  if (typeof(numWords) == "undefined") {
+    numWords = parseInt(preferences.wordsPerClick.value);
+  }
+  
+  var modValue = 0;
+  var lens = new Array();
+  for (var i = 0; i < arrWordSourceFiles.length; i++) {
+    addWordsFromFile(i, 0);
+    lens[i] = objFileCache[arrWordSourceFiles[i].path].length;
+    modValue += lens[i];
+  }
+  for (var i = 0; i < numWords; i++) {
+    var wordIndex = random(0, modValue);
+    var lenSum = 0;
+    for (var j = 0; j < lens.length; j++) {
+      lenSum += lens[j];
+      if (wordIndex < lenSum) {
+        addWordsFromFile(j, 1);
+        break;
+      }
+    }
+  }
+  
+}
+
+
+
+function addWordsFromFile(fileIndex, numWords)
+{
+  if (typeof(numWords) == "undefined") {
+    numWords = parseInt(preferences.wordsPerClick.value);
+  }
+  
+  var path = arrWordSourceFiles[fileIndex].path;
+  
+  if (typeof(objFileCache[path]) == "undefined" || preferences.doNotCache.value == "1") {
+    objFileCache[path] = filesystem.readFile(path, true);
+  }
+  
+  for (var i = 0; i < numWords; i++) {
+    addWord(objFileCache[path][random(0, objFileCache[path].length)]);
+  }
+  
+  Word.serialize();
   
 }
 
 function popupAddWords()
 {
+  var arrPopupMenu = new Array();
   
+  if (arrWordSourceFiles.length > 0) {
+    var mi = new MenuItem();
+    mi.enabled = false;
+    mi.title = "Files";
+    arrPopupMenu.push(mi);
+    for (var i in arrWordSourceFiles) {
+      var mi = new MenuItem();
+      mi.title = arrWordSourceFiles[i].title;
+      mi.onSelect = "addWordsFromFile(" + i + ")";
+      arrPopupMenu.push(mi);
+    }
+  }
   
+  var mi = new MenuItem();
+  mi.title = "-";
+  arrPopupMenu.push(mi);
+  
+  if (arrWordSourceURLs.length > 0) {
+    var mi = new MenuItem();
+    mi.enabled = false;
+    mi.title = "URLs";
+    arrPopupMenu.push(mi);
+    for (var i in arrWordSourceURLs) {
+      var mi = new MenuItem();
+      mi.title = arrWordSourceURLs[i].title;
+      mi.onSelect = "addWordsFromURL(" + i + ")";
+      arrPopupMenu.push(mi);
+    }
+  }
+  
+  var mi = new MenuItem();
+  mi.title = "-";
+  arrPopupMenu.push(mi);
+  
+  var mi = new MenuItem();
+  mi.title = "Edit sources...";
+  mi.onSelect = "editWordSources()";
+  arrPopupMenu.push(mi);
+  
+  // popupMenu(arrPopupMenu, system.event.hOffset, system.event.vOffset);
+  imgAddButton.contextMenuItems = arrPopupMenu;
   
   
 }
+
+
+
 
 function addWord(data)
 {
   var w = new Word();
   arrWords.push(w);
   w.set("data", data);
+  w.align();
   w.set("hOffset", random(0 + w.width, main.width - w.width));
   w.set("vOffset", random(0 + w.height, main.height - w.height));
   w.align();
@@ -149,16 +431,20 @@ function autoPosition(spot)
     case "center":
       preferences.width.value = screen.availWidth / 2;
       preferences.height.value = screen.availHeight / 2;
-      main.hOffset = screen.availLeft + screen.availWidth / 4;
+      main.hOffset = screen.availLeft + screen.availWidth / 2;
       main.vOffset = screen.availTop + screen.availHeight / 4;
       break;
     case "tallcenter":
-    default:
       preferences.width.value = screen.availWidth / 2;
       preferences.height.value = screen.availHeight;
       main.hOffset = screen.availLeft + screen.availWidth / 4;
       main.vOffset = screen.availTop;
       break;
+    default:
+      preferences.width.value = 400;
+      preferences.height.value = 240;
+      main.hOffset = screen.availLeft + screen.availWidth / 2;
+      main.vOffset = screen.availTop + screen.availHeight / 4;
   }
   
 }
@@ -207,17 +493,21 @@ function resize(intWidth, intHeight, optimize)
 
 function onPreferencesChanged()
 {
+  if (preferences.revertSources.value == "1") {
+    preferences.revertSources.value = "0";
+    preferences.customFiles.value = preferences.customFiles.defaultValue;
+    preferences.customURLs.value = preferences.customURLs.defaultValue;
+    
+  }
+  
+  
   kimBackground.set("opacity", parseInt(preferences.bgOpacity.value));
   kimBackground.set("colorize", preferences.bgColor.value);
   
   for (var i in arrWords) {
     arrWords[i].align();
   }
-  
-  // I don't think we need to resize here
-  // resize();
 }
-
 
 function main_onFirstDisplay()
 {
@@ -279,389 +569,6 @@ function main_onLoseFocus()
   animator.start(anmButtons);
 }
 
-
-function Word()
-{
-  this.id = Word.ids.length;
-  Word.ids.push(this);
-  
-  this.kim = new KonformImage();
-  this.kim.set("images", "Resources/Word*.png");
-  
-  this.hOffset = 0;
-  this.vOffset = 0;
-  
-  this.txt = new Text();
-  
-  this.applyPreferences();
-}
-
-Word.ids = new Array();
-
-
-Word.prototype.align = function(quick)
-{
-  if (typeof(quick) == "undefined") {
-    var quick = false;
-  }
-  
-  this.kim.set("hOffset", this.hOffset);
-  this.kim.set("vOffset", this.vOffset);
-  
-  if (!quick) {
-    this.kim.set("width", this.txt.width + 18);
-    this.kim.set("height", this.txt.height + 18);
-  }
-  
-  this.txt.hOffset = this.hOffset + 9;
-  this.txt.vOffset = this.vOffset + this.txt.height - 9 + parseInt(preferences.wordVTweak.value);
-  
-}
-
-
-Word.prototype.applyPreferences = function()
-{
-  this.kim.set("colorize", preference.wordBgColor.value);
-  this.txt.color = preferences.wordColor.value;
-  this.txt.font = preferences.wordFont.value;
-  this.txt.size = parseInt(preferences.wordSize.value);
-  
-  this.align();
-}
-
-
-
-
-function Resizer()
-{
-  this.id = Resizer.ids.length;
-  Resizer.ids.push(this);
-  
-  this.img = new Image();
-  this.img.src = "Resources/Resizer.png";
-  this.img.hAlign = "right";
-  this.img.vAlign = "bottom";
-  this.img.opacity = 0;
-  this.img.tracking = "rectangle";
-  this.img.onMouseDown = "Resizer.ids[" + this.id + "].img_onMouseDown()";
-  this.img.onMouseUp = "Resizer.ids[" + this.id + "].img_onMouseUp()";
-  this.img.onMouseMove = "Resizer.ids[" + this.id + "].img_onMouseMove()";
-  
-  this.onResize = null;
-  this.dragStart = null;
-  this.saveWidth = null;
-  this.saveHeight = null;
-}
-
-Resizer.ids = new Array();
-
-Resizer.prototype.img_onMouseDown = function()
-{
-  this.dragStart = new Object();
-  this.dragStart.x = this.img.hOffset - system.event.hOffset;
-  this.dragStart.y = this.img.vOffset - system.event.vOffset;
-}
-
-Resizer.prototype.img_onMouseUp = function()
-{
-  this.dragStart = null;
-  
-  if (this.saveWidth) {
-    eval(this.saveWidth + " = " + this.img.hOffset);
-  }
-  
-  if (this.saveHeight) {
-    eval(this.saveHeight + " = " + this.img.vOffset);
-  }
-  
-  if (this.onResize) {
-    this.onResize();
-  }
-  
-  Word.fitOnPage();
-}
-
-Resizer.prototype.img_onMouseMove = function()
-{
-  if (!this.dragStart) {
-    this.img_onMouseDown();
-  }
-  
-  var intNewWidth = this.dragStart.x + system.event.hOffset;
-  var intNewHeight = this.dragStart.y + system.event.vOffset;
-  
-  if (this.onResize) {
-    this.onResize(intNewWidth, intNewHeight, true);
-  }
-  
-}
-
-
-function Word()
-{
-  this.id = Word.ids.length;
-  Word.ids.push(this);
-  
-  this.zOrder = Word.zArr.length + Word.baseZOrder;
-  Word.zArr.push(this);
-  
-  this.hOffset = 0;
-  this.vOffset = 0;
-  this.hPadding = 5
-  this.vPadding = 2;
-  
-  this.width = this.hPadding + this.hPadding;
-  this.height = this.vPadding + this.vPadding;
-  
-  this.kimBg = new KonformImage();
-  this.kimBg.set("images", "Resources/Word*.png");
-  this.kimBg.set("onMouseDown", "Word.ids[" + this.id + "].kimBg_onMouseDown()");
-  this.kimBg.set("onMouseMove", "Word.ids[" + this.id + "].kimBg_onMouseMove()");
-  this.kimBg.set("onMouseUp", "Word.ids[" + this.id + "].kimBg_onMouseUp()");
-  
-  this.kimBg.set("zOrder", this.zOrder);
-  
-  this.txt = new Text();
-  this.txt.hAlign = "center";
-  this.txt.zOrder = this.zOrder;
-}
-
-Word.ids = new Array();
-Word.zArr = new Array();
-Word.baseZOrder = 0;
-
-Word.reZOrder = function()
-{
-  for (var i = 0; i < Word.zArr.length; i++) {
-    Word.zArr[i].set("zOrder", parseInt(i) + Word.baseZOrder);
-  }
-}
-
-Word.serialize = function()
-{
-  var arrInternal = new Array();
-  for (var i in Word.zArr) {
-    var arrI = new Array();
-    arrI[0] = escape(Word.zArr[i].txt.data);
-    arrI[1] = Word.zArr[i].hOffset;
-    arrI[2] = Word.zArr[i].vOffset;
-    arrInternal.push(arrI.join(","));
-  }
-  preferences.wordPositions.value = arrInternal.join("|");
-}
-
-Word.unserialize = function()
-{
-  for (var i in arrWords) {
-    arrWords[i].clear();
-  }
-  
-  arrWords = new Array();
-  
-  var arrInternal = preferences.wordPositions.value.split("|");
-  for (var i in arrInternal) {
-    var wrd = new Word();
-    arrWords.push(wrd);
-    var arrI = arrInternal[i].split(",");
-    wrd.set("window", main);
-    wrd.set("data", unescape(arrI[0]));
-    wrd.align();
-    wrd.set("hOffset", parseInt(arrI[1]));
-    wrd.set("vOffset", parseInt(arrI[2]));
-    wrd.align();
-  }
-  
-  Word.fitOnPage();
-}
-
-Word.fitOnPage = function()
-{
-  for (var i in arrWords) {
-    arrWords[i].keepOn();
-  }
-}
-
-
-Word.prototype.clear = function(cheap)
-{
-  if (typeof(cheap) == "undefined") {
-    cheap = false;
-  }
-  
-  this.kimBg.clear();
-  this.kimBg = null;
-  this.txt = null;
-  
-  // Word.ids.splice(this.id, 1);
-  Word.ids[this.id] = null;
-  Word.zArr.splice(this.zOrder - Word.baseZOrder, 1);
-  
-  if (!cheap) {
-    Word.reZOrder();
-  }
-}
-
-Word.prototype.kimBg_onMouseDown = function()
-{
-  this.dragStart = new Object();
-  this.dragStart.x = this.kimBg.hOffset - system.event.hOffset;
-  this.dragStart.y = this.kimBg.vOffset - system.event.vOffset;
-  
-  // resplice zArr
-  Word.zArr.splice(this.zOrder - Word.baseZOrder, 1);
-  Word.zArr.push(this);
-  
-  Word.reZOrder();
-}
-
-Word.prototype.kimBg_onMouseUp = function()
-{
-  this.dragStart = null;
-  
-  if (((this.hOffset + this.width) < 0) || ((this.vOffset + this.height) < 0) || (this.hOffset > main.width) || (this.vOffset > main.height)) {
-    // off the edges - destroy this word!
-    var i;
-    for (i = 0; i < arrWords.length; i++) {
-      if (arrWords[i] == this) {
-        arrWords.splice(i, 1);
-        break;
-      }
-    }
-    this.clear();
-  } else {
-    this.keepOn();
-  }
-  
-  Word.serialize();
-  savePreferences();
-}
-
-Word.prototype.kimBg_onMouseMove = function()
-{
-  if (!this.dragStart) {
-    this.kimBg_onMouseDown();
-  }
-  
-  var intNewHOffset = this.dragStart.x + system.event.hOffset;
-  var intNewVOffset = this.dragStart.y + system.event.vOffset;
-  
-  this.set("hOffset", intNewHOffset);
-  this.set("vOffset", intNewVOffset);
-  
-  this.align(true);
-}
-
-
-Word.prototype.keepOn = function()
-{
-  // off the left side
-  if ((this.hOffset + this.width / 2) < 0) {
-    this.set("hOffset", this.width / -2);
-    this.align();
-  }
-  
-  // off the top
-  if ((this.vOffset + this.height / 2) < 0) {
-    this.set("vOffset", this.height / -2);
-    this.align();
-  }
-  
-  // off the right side
-  if ((this.hOffset + this.width / 2) > main.width) {
-    this.set("hOffset", main.width - this.width / 2);
-    this.align();
-  }
-  
-  // off the bottom
-  if ((this.vOffset + this.height / 2) > main.height) {
-    this.set("vOffset", main.height - this.height / 2);
-    this.align();
-  }
-}
-
-
-Word.prototype.set = function(property, value)
-{
-  switch (property) {
-    case "data":
-      this.txt[property] = value;
-      // Call align manually after all changes are done per update cycle
-      // this.align();
-      break;
-    case "hOffset":
-    case "vOffset":
-      this[property] = value;
-      // Call align manually after all changes are done per update cycle
-      // this.align();
-      break;
-    case "window":
-      this.kimBg.set(property, value);
-      this.txt[property] = value;
-      break;
-    case "zOrder":
-      this.zOrder = value;
-      this.kimBg.set("zOrder", this.zOrder);
-      this.txt.zOrder = this.zOrder;
-      break;
-  }
-}
-
-
-Word.prototype.align = function(boolCheap)
-{
-  if (typeof(boolCheap) == "undefined") {
-    boolCheap = false;
-  }
-  
-  this.kimBg.set("hOffset", this.hOffset);
-  this.kimBg.set("vOffset", this.vOffset);
-  
-  if (!boolCheap) {
-    this.txt.style = "";
-    this.txt.color = preferences.wordColor.value;
-    this.txt.font = preferences.wordFont.value;
-    this.txt.size = preferences.wordSize.value;
-    this.txt.width = -1;
-    this.txt.height = -1;
-    this.width = this.txt.width + this.hPadding + this.hPadding;
-    this.height = this.txt.height + this.vPadding + this.vPadding;
-    this.kimBg.set("opacity", parseInt(preferences.wordBgOpacity.value));
-    this.kimBg.set("colorize", preferences.wordBgColor.value);
-    this.kimBg.set("width", this.width);
-    this.kimBg.set("height", this.height);
-  }
-  
-  this.txt.hOffset = this.hOffset + this.width / 2;
-  if (this.txt.hOffset == -1) {
-    this.txt.hOffset = 0;
-  }
-  this.txt.vOffset = this.vOffset + (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
-  
-}
-
-function zArrDump()
-{
-  for (var i in Word.zArr) {
-    print("zArr[" + i + "]: " + ((!Word.zArr[i].txt) ? "undef" : Word.zArr[i].txt.data));
-  }
-}
-
-function idDump()
-{
-  for (var i in Word.ids) {
-    print("ids[" + i + "]: " + (typeof(Word.ids[i].txt) != "object" ? "undef" : Word.ids[i].txt.data));
-  }
-}
-
-function pdump(obj)
-{
-  print("PDUMP");
-  for (var i in obj) {
-    if (typeof(obj[i]) != "function") {
-      print("  [" + i + "]: " + obj[i]);
-    }
-  }
-}
 
 
 

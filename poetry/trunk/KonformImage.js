@@ -5,9 +5,15 @@
  * pattern, and will only scale certain images in the pattern.
  *
  * Copyright 2005, James M. Allen
- * You are free to use this code as long as this entire comment header
- * is distributed with your code.
  */
+
+
+// Compatibility outside of full Konform library
+if (typeof(Konform) == "undefined") {
+  Konform = new Object();
+  Konform.ids = new Array();
+}
+
 
  /**
   *
