@@ -1,12 +1,8 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
 <widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="verbose">
   <option>allowCustomObjectAttributes</option>
-  
-  <window name="main" title="The Incredible Shrinking Machine" width="125" height="150" opacity="255" shadow="0" visible="0">
-    <onFirstDisplay>main_onFirstDisplay();</onFirstDisplay>
-  </window>
   
   <action trigger="onLoad" file="Tism.js"/>
   
@@ -14,9 +10,21 @@
     onRunCommandInBgComplete();
   </action>
   
+  <action trigger="onWillChangePreferences">
+    onWillChangePreferences();
+  </action>
+  
   <action trigger="onPreferencesChanged">
     onPreferencesChanged();
   </action>
+  
+  <window name="main" title="The Incredible Shrinking Machine" width="125" height="150" opacity="255" shadow="0" visible="0">
+    <onFirstDisplay><![CDATA[
+      if (system.platform == "macintosh") {
+        preferences.useFileIcons.value = 1;
+      }
+    ]]></onFirstDisplay>
+  </window>
   
   <preferenceGroup name="shrinking" title="Shrinking" icon="Resources/ShrinkingIcon.png" />
   
@@ -78,6 +86,7 @@
     <optionValue>unique</optionValue>
     <option>Overwrite existing file(s) in place</option>
     <optionValue>overwrite</optionValue>
+    <description>Gzip and Bzip2 files will always be extracted directly into the output folder.</description>
   </preference>
   
   

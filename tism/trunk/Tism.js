@@ -45,6 +45,7 @@ function Initialize()
   shrinkButton.scaleHOffset = 31;
   shrinkButton.scaleVOffset = 253;
   shrinkButton.opacity = 0;
+  shrinkButtonOver = false;
   
   growButton = new Image();
   growButton.window = main;
@@ -54,6 +55,7 @@ function Initialize()
   growButton.scaleHOffset = 186;
   growButton.scaleVOffset = 253;
   growButton.opacity = 0;
+  growButtonOver = false;
   
   iconsArray = new Array();
   for (var i = 0; i < 6; i++) {
@@ -327,6 +329,7 @@ function clearIcons()
   for (var i in iconsArray) {
     iconsArray[i].opacity = 0;
   }
+  pearl.opacity = 0;
 }
 
 
@@ -431,7 +434,7 @@ function doShrink()
 
 function cancelOperation()
 {
-  hidePearl();
+  hideResults();
   bgBlock = false;
 }
 
@@ -459,10 +462,10 @@ function calcOutputFilename()
     if (filesystem.isDirectory(filesArray[0])) {
       ret = getFilename(filesArray[0]);
     } else {
-      if (preferences.namingScheme.value == "ext.zip") {
-        ret = getFilename(filesArray[0]);
-      } else {
+      if (preferences.shrinkFormat.value == "zip" && preferences.namingScheme.value == "zip") {
         ret = getFilenameWithoutExtension(filesArray[0]);
+      } else {
+        ret = getFilename(filesArray[0]);
       }
     }
   } else {
@@ -472,7 +475,7 @@ function calcOutputFilename()
   
   switch (preferences.shrinkOutputFolder.value) {
     case "ask":
-      outputDirectory = chooseFolder();
+      outputDirectory = chooseFolder() + "/";
       if (!outputDirectory) {
         return null;
       }
@@ -514,8 +517,6 @@ function calcOutputFilename()
       }
       break;
   }
-  
-  print("outputDirectory:" + outputDirectory);
   
   var filename = outputDirectory + ret + currentExtension()
   if (filesystem.itemExists(filename)) {
@@ -575,7 +576,6 @@ function doGrow()
   
   clearButtons();
   zapper(-1);
-  
   
   var commandLine;
   
@@ -641,7 +641,7 @@ function calcGrowFilename()
   
   ret = outputFolder;
   
-  if (preferences.growExistsAction.value != "overwrite") {
+  if (preferences.growExistsAction.value != "overwrite" && getExtension(filesArray[0]) == "zip") {
     ret = outputFolder = outputFolder + getFilenameWithoutExtension(filesArray[0]);
     for (var i = 1; filesystem.itemExists(ret); i++) {
       ret = outputFolder + " (" + i + ")";
@@ -680,6 +680,8 @@ function background_onDragDrop()
   
   killPearlAnimations();
   killSizeAnimations();
+  clearTimer.ticking = false;
+  documentShadow.opacity = 0;
   pearl.opacity = 0;
   for (var i in iconsArray) {
     iconsArray[i].opacity = 0;
@@ -710,16 +712,11 @@ function background_onDragDrop()
 
 function main_onFirstDisplay()
 {
-  if (system.platform == "macintosh") {
-    preferences.useFileIcons.value = 1;
-  }
 }
 
 
 function arrangeIcons(arr)
 {
-  print("Running arrangeIcons");
-  
   if (typeof(arr) == "undefined") {
     icon = iconsArray[0];
     /*
@@ -730,6 +727,7 @@ function arrangeIcons(arr)
     }
     */
     icon.src = "Resources/DocumentIcon.png";
+    icon.useFileIcon = false;
     icon.opacity = 255;
     
     for (var i = 1; i < iconsArray.length; i++) {
@@ -742,15 +740,17 @@ function arrangeIcons(arr)
     for (var i = 0; i < iconsArray.length; i++) {
       if (i < arr.length) {
         icon = iconsArray[i];
+        pdump
         if (preferences.useFileIcons.value == "1") {
-          icon.useFileIcon = true;
           icon.src = arr[i];
+          icon.useFileIcon = true;
         } else {
           if (filesystem.isDirectory(arr[i])) {
             icon.src = "Resources/FolderIcon.png";
           } else {
             icon.src = "Resources/DocumentIcon.png";
           }
+          icon.useFileIcon = false;
         }
         icon.opacity = 255;
       } else {
@@ -885,24 +885,38 @@ function resize()
 }
 
 
+function onWillChangePreferences()
+{
+  oldUseFileIcons = preferences.useFileIcons.value;
+  oldTismSize = preferences.tismSize.value;
+}
+
 function onPreferencesChanged()
 {
+  if (oldUseFileIcons != preferences.useFileIcons.value || oldTismSize != preferences.tismSize.value) {
+    reloadWidget();
+  }
   resize();
 }
 
 
 function onRunCommandInBgComplete()
 {
+  var tag = system.event.data;
+  // Workaround - system.event.data is of type object on Mac
+  if (tag instanceof Array) {
+    tag = tag[0];
+  }
   var result;
   var success = false;
   eval("result = " + system.event.data + ";");
   
   log(result);
   
-  switch (system.event.data) {
-    case "zipResult":
+  switch (tag) {
     case "gzipResult":
     case "bzip2Result":
+    case "zipResult":
       zapper();
       shrink();
       pearl.onMouseUp = "filesystem.reveal(outputFilename);";
@@ -913,7 +927,14 @@ function onRunCommandInBgComplete()
     case "untarResult":
       zapper();
       grow();
+      if (system.platform == "windows") {
+        if (outputFilename.charAt(outputFilename.length - 1) == "/" || outputFilename.charAt(outputFilename.length - 1) == "\\") {
+          outputFilename = outputFilename.substr(0, outputFilename.length - 1);
+        }
+      }
       iconsArray[0].onMouseUp = "filesystem.reveal(outputFilename);";
+      break;
+    default:
       break;
   }
   
@@ -995,6 +1016,14 @@ function unblock()
 function quoteFilename(str)
 {
   return "\"" + str.replace(/[\\"]/g, "\\$&") + "\"";
+}
+
+function pdump(obj)
+{
+  print("PDUMP");
+  for (var i in obj) {
+    print("  [" + i + "]: " + obj[i] + " (" + typeof(obj[i]) + ")");
+  }
 }
 
 
