@@ -16,6 +16,8 @@ function Initialize()
   background.window = main;
   background.src = "Resources/Background.png";
   background.onDragDrop = "background_onDragDrop();";
+  background.onDragEnter = "background_onDragEnter();";
+  background.onDragExit = "background_onDragExit();";
   
   background.scaleHOffset = 0;
   background.scaleVOffset = 0;
@@ -59,12 +61,23 @@ function Initialize()
     iconsArray[i].window = main;
     iconsArray[i].hAlign = "center";
     iconsArray[i].vAlign = "bottom";
+    iconsArray[i].src = "Resources/DocumentIcon.png";
     iconsArray[i].scaleWidth = 64;
     iconsArray[i].scaleHeight = 64;
     iconsArray[i].scaleHOffset = 0;
     iconsArray[i].scaleVOffset = 0;
-    
   }
+  
+  documentShadow = new Image();
+  documentShadow.window = main;
+  documentShadow.src = "Resources/DocumentShadow.png"
+  documentShadow.hAlign = "center";
+  documentShadow.vAlign = "bottom";
+  documentShadow.scaleWidth = 97;
+  documentShadow.scaleHeight = 36;
+  documentShadow.scaleHOffset = 125;
+  documentShadow.scaleVOffset = 222;
+  documentShadow.opacity = 0;
   
   glowOverlay = new Image();
   glowOverlay.window = main;
@@ -80,6 +93,7 @@ function Initialize()
   smartObjects.push(pearl);
   smartObjects.push(shrinkButton);
   smartObjects.push(growButton);
+  smartObjects.push(documentShadow);
   smartObjects.push(glowOverlay);
   
   clearTimer = new Timer();
@@ -308,6 +322,14 @@ function clearButtons(done_func)
   animator.start(buttonFadeA);
 }
 
+function clearIcons()
+{
+  for (var i in iconsArray) {
+    iconsArray[i].opacity = 0;
+  }
+}
+
+
 
 function readyForShrink()
 {
@@ -433,18 +455,6 @@ function calcOutputFilename()
     }
   }
   
-  if (preferences.shrinkOutputFolder.value == "ask") {
-    ret = saveAs();
-    if (!ret) {
-      return null;
-    }
-    if (isCompressedExtension(getExtension(ret))) {
-      return ret;
-    } else {
-      return ret + currentExtension();
-    }
-  }
-  
   if (filesArray.length == 1) {
     if (filesystem.isDirectory(filesArray[0])) {
       ret = getFilename(filesArray[0]);
@@ -461,6 +471,12 @@ function calcOutputFilename()
   }
   
   switch (preferences.shrinkOutputFolder.value) {
+    case "ask":
+      outputDirectory = chooseFolder();
+      if (!outputDirectory) {
+        return null;
+      }
+      break;
     case "desktop":
       outputDirectory = system.desktopFolder + "/";
       break;
@@ -635,6 +651,19 @@ function calcGrowFilename()
   return ret;
 }
 
+function background_onDragEnter()
+{
+  if (system.event.data[0] == "filenames") {
+    clearButtons();
+    clearIcons();
+    documentShadow.opacity = 255;
+  }
+}
+
+function background_onDragExit()
+{
+  documentShadow.opacity = 0;
+}
 
 function background_onDragDrop()
 {
@@ -731,7 +760,11 @@ function arrangeIcons(arr)
     
     var numIcons = Math.min(arr.length, iconsArray.length);
     
-    var newSize = 128 * Math.sqrt(numIcons) / numIcons;
+    if (system.platform == "windows") {
+      var newSize = 64;
+    } else {
+      var newSize = 128 * Math.sqrt(numIcons) / numIcons;
+    }
   
   }
   

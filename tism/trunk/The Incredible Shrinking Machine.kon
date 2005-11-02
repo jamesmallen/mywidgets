@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="errors">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="0.9" minimumVersion="2.1" debug="verbose">
   <option>allowCustomObjectAttributes</option>
   
   <window name="main" title="The Incredible Shrinking Machine" width="125" height="150" opacity="255" shadow="0" visible="0">
@@ -38,6 +38,7 @@
     <optionValue>zip</optionValue>
     <option>Filename.ext.zip</option>
     <optionValue>ext.zip</optionValue>
+    <description>This only affects filenames when using ZIP compression. Gzip and Bzip2 files will automatically keep the original extension.</description>
   </preference>
   
   <preference name="shrinkOutputFolder" group="shrinking" title="Output folder:" type="popup" defaultValue="containing">
