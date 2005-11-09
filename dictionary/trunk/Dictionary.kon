@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget version="1.1.1" minimumVersion="2.1" debug="errors">
+<widget version="1.1.1" minimumVersion="3.0" debug="verbose">
   <option>allowCustomObjectAttributes</option>
   <window name="main"
     title="Dictionary"

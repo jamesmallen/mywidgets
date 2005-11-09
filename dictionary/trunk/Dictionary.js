@@ -20,7 +20,7 @@ var nextNextWm = 0;
 
 // Widget elements
 var defContent;
-var extenderCowl;
+// var extenderCowl;
 // var holder;
 
 // Animatable objects
@@ -38,10 +38,8 @@ var searchBar;
 var query;
 var dropdownButton;
 var cancelButton;
-var hTopLeftHilite;
-var hTopMiddleHilite;
-var hTopRightHilite;
 var forwardButton;
+var backButton;
 
 // Dropdown items
 var dropdownMenu = new Array();
@@ -96,6 +94,7 @@ function initialize()
   main.onContextMenu = "main_onContextMenu()";
   
   extenderBottom = new Image();
+  extenderBottom.window = main;
   extenderBottom.src = "Resources/ExtenderBottom.png";
   extenderBottom.opacity = 0;
   extenderBottom.hOffset = 0;
@@ -108,8 +107,8 @@ function initialize()
   extenderBottom.opacity2 = 255;
   extenderBottom.vOffset2 = 307;
   
-  
   extenderMiddle = new Image();
+  extenderMiddle.window = main;
   extenderMiddle.src = "Resources/ExtenderMiddle.png";
   extenderMiddle.opacity = 0;
   extenderMiddle.vOffset = 42;
@@ -121,8 +120,8 @@ function initialize()
   extenderMiddle.opacity2 = 255;
   extenderMiddle.height2 = 265;
   
-  
   extenderTop = new Image();
+  extenderTop.window = main;
   extenderTop.src = "Resources/ExtenderTop.png";
   extenderTop.opacity = 0;
   extenderTop.hOffset = 0;
@@ -135,25 +134,30 @@ function initialize()
   
   
   defContent = new PoorText();
+  defContent.window = main;
   defContent.name = "defContent";
   defContent.hOffset = 22;
-  defContent.vOffset = 60;
+  defContent.vOffset = 42;
   defContent.width = 401;
-  defContent.height = 252;
+  defContent.height = 274;
   defContent.scrollbar = true;
-  defContent.font = "Lucida Sans Unicode";
-  defContent.size = 12;
+  defContent.tagRoot.font = "Lucida Sans Unicode";
+  defContent.tagRoot.size = 12;
+  defContent.showImagesAsLinks = false;
   
+  /*
   extenderCowl = new Image();
+  extenderCowl.window = main;
   extenderCowl.src = "Resources/ExtenderCowl.png";
   extenderCowl.hOffset = 17;
   extenderCowl.vOffset = 42;
   extenderCowl.width = 412;
   extenderCowl.height = 274;
   extenderCowl.opacity = 0;
-  
+  */
   
   hTopLeft = new Image();
+  hTopLeft.window = main;
   hTopLeft.src = "Resources/TopLeft.png";
   
   hTopLeft.hOffset0 = 0;
@@ -168,6 +172,7 @@ function initialize()
   
   
   hTopMiddle = new Image();
+  hTopMiddle.window = main;
   hTopMiddle.src = "Resources/TopMiddle.png";
   
   hTopMiddle.hOffset0 = 28;
@@ -182,6 +187,7 @@ function initialize()
   
   
   hTopRight = new Image();
+  hTopRight.window = main;
   hTopRight.src = "Resources/TopRight.png";
   
   hTopRight.hOffset0 = 301;
@@ -196,6 +202,7 @@ function initialize()
   
   
   dictionaryTitle = new Image();
+  dictionaryTitle.window = main;
   dictionaryTitle.src = "Resources/DictionaryTitle.png";
   dictionaryTitle.hOffset = 18;
   dictionaryTitle.vOffset = 12;
@@ -203,6 +210,7 @@ function initialize()
   dictionaryTitle.height = 24;
   
   throbberStill = new Image();
+  throbberStill.window = main;
   throbberStill.src = "Resources/ThrobberStill.png";
   throbberStill.hOffset = 128;
   throbberStill.vOffset = 7;
@@ -216,6 +224,7 @@ function initialize()
   throbberStill.opacity2 = 255;
   
   throbberAnimated = new Image();
+  throbberAnimated.window = main;
   throbberAnimated.hOffset = 129;
   throbberAnimated.vOffset = 7;
   throbberAnimated.width = 32;
@@ -227,6 +236,7 @@ function initialize()
   throbberAnimated.opacity2 = 0;
   
   backButton = new Image();
+  backButton.window = main;
   backButton.src = "Resources/ArrowLeft.png";
   backButton.opacity = 0;
   backButton.hOffset = 198;
@@ -239,6 +249,7 @@ function initialize()
   backButton.opacity2 = 90;
   
   forwardButton = new Image();
+  forwardButton.window = main;
   forwardButton.src = "Resources/ArrowRight.png";
   forwardButton.opacity = 0;
   forwardButton.hOffset = 222;
@@ -252,6 +263,7 @@ function initialize()
 
 
   searchBar = new Image();
+  searchBar.window = main;
   searchBar.src = "Resources/SearchBar.png";
   
   searchBar.hOffset0 = 129;
@@ -266,6 +278,7 @@ function initialize()
   
   
   query = new TextArea();
+  query.window = main;
   query.vOffset = 14;
   query.width = 143;
   query.height = 20;
@@ -274,13 +287,14 @@ function initialize()
   query.size = 12;
   query.scrollbar = false;
   query.onKeyPress = "query_onKeyPress()";
-  query.onMultiClick = "query_onMultiClick()";
+  query.onGainFocus = "query_onGainFocus()";
   
   query.hOffset0 = 153;
   query.hOffset1 = 270;
 
   
   dropdownButton = new Image();
+  dropdownButton.window = main;
   dropdownButton.src = "Resources/DropdownIcon.png";
   dropdownButton.tracking = "rectangle";
   dropdownButton.onMouseDown = "dropdownButton_onMouseDown();";
@@ -297,6 +311,7 @@ function initialize()
   dropdownButton.height1 = 16;
   
   cancelButton = new Image();
+  cancelButton.window = main;
   cancelButton.src = "Resources/CancelIcon.png";
   cancelButton.opacity = 127;
   cancelButton.onMouseEnter = "state = state | stateOverCancel; cancelButton.opacity = 191;";
@@ -313,48 +328,6 @@ function initialize()
   cancelButton.vOffset1 = 14;
   cancelButton.width1 = 16;
   cancelButton.height1 = 16;
-  
-  hTopLeftHilite = new Image();
-  hTopLeftHilite.src = "Resources/TopLeftHilite.png";
-  
-  hTopLeftHilite.hOffset0 = 7;
-  hTopLeftHilite.vOffset0 = 3;
-  hTopLeftHilite.width0 = 21;
-  hTopLeftHilite.height0 = 20;
-  
-  hTopLeftHilite.hOffset1 = 7;
-  hTopLeftHilite.vOffset1 = 3;
-  hTopLeftHilite.width1 = 21;
-  hTopLeftHilite.height1 = 20;
-  
-  
-  hTopMiddleHilite = new Image();
-  hTopMiddleHilite.src = "Resources/TopMiddleHilite.png";
-  
-  hTopMiddleHilite.hOffset0 = 28;
-  hTopMiddleHilite.vOffset0 = 3;
-  hTopMiddleHilite.width0 = 273;
-  hTopMiddleHilite.height0 = 23;
-  
-  hTopMiddleHilite.hOffset1 = 28;
-  hTopMiddleHilite.vOffset1 = 3;
-  hTopMiddleHilite.width1 = 390;
-  hTopMiddleHilite.height1 = 23;
-  
-  
-  hTopRightHilite = new Image();
-  hTopRightHilite.src = "Resources/TopRightHilite.png";
-  
-  hTopRightHilite.hOffset0 = 301;
-  hTopRightHilite.vOffset0 = 3;
-  hTopRightHilite.width0 = 22;
-  hTopRightHilite.height1 = 20;
-  
-  hTopRightHilite.hOffset1 = 418;
-  hTopRightHilite.vOffset1 = 3;
-  hTopRightHilite.width1 = 22;
-  hTopRightHilite.height1 = 20;
-  
   
   urlTimer = new Timer();
   urlTimer.interval = 0.1;
@@ -390,9 +363,6 @@ function initialize()
   transObjects.query = query;
   transObjects.dropdownButton = dropdownButton;
   transObjects.cancelButton = cancelButton;
-  transObjects.hTopLeftHilite = hTopLeftHilite;
-  transObjects.hTopMiddleHilite = hTopMiddleHilite;
-  transObjects.hTopRightHilite = hTopRightHilite;
   transObjects.backButton = backButton;
   transObjects.forwardButton = forwardButton;
   
@@ -659,22 +629,30 @@ function updateHistoryButtons()
 
 function query_onKeyPress()
 {
-  var keycode = system.event.keyString;
+  var keyCode = system.event.keyString;
   
-  switch(keycode) {
+  switch(keyCode) {
     case "Enter":
     case "Return":
-      query.data = query.data.replace(/[\n\r]/g, "");
-      lookup_word(query.data);
+      query.rejectKeyPress();
+      query.select(-1, -1);
+      query.loseFocus();
+      if (query.data.length > 0) {
+        lookup_word(query.data);
+      }
+      break;
+    case "Tab":
+      query.rejectKeyPress();
       break;
     default:
       break;
   }
 }
 
-function query_onMultiClick()
+function query_onGainFocus()
 {
-  query.select(0, -1);
+  query.data = "";
+  query.select(-1, -1);
 }
 
 
@@ -742,8 +720,9 @@ function pronReplace(str, dict)
   switch (dict) {
     case 'dictionary.com':
     default:
-      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<i>(([^<]*))<\/i>/gi];
-      const pronStrings = ['\u0103', '\u0101', '\u0115', '\u0113', '\u012d', '\u012b', '\u014f\u014f', '\u014d\u014d', '\u014f', '\u014d', '\u016d', '\u016b', '\u0259', '\u0153', 'KH', 'N', '\u0384', '\u2032', '$1'];
+//      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<i>(([^<]*))<\/i>/gi];
+      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi];
+      const pronStrings = ['\u0103', '\u0101', '\u0115', '\u0113', '\u012d', '\u012b', '\u014f\u014f', '\u014d\u014d', '\u014f', '\u014d', '\u016d', '\u016b', '\u0259', '\u0153', 'KH', 'N', '\u0384', '\u2032'];
       
       for (var i in pronTags) {
         str = str.replace(pronTags[i], pronStrings[i]);
@@ -791,7 +770,9 @@ function mediawiki_definition(str)
   // pre-process
   str = str.replace(/[\r\n]/gm, ' ');
   
-  result = str.match(/<!-- start content -->(.*)<!-- end content -->/);
+  // result = str.match(/<!-- start content -->(.*)<!-- end content -->/);
+  result = str.match(/(<div id="column-content">.*)<div id="column-one">/);
+  
   
   if (result) {
     str = result[1];
@@ -799,8 +780,13 @@ function mediawiki_definition(str)
     return false;
   }
   
+  /*
   // pull out table of contents
   str = str.replace(/<table id='toc'[^>]*>([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/gi, "");
+  */
+  
+  // pull out jump-to-nave
+  str = str.replace(/<div id="jump-to-nav">([^<]|<[^\/]|<\/[^d]|<\/d[^i]|<\/di[^v]|<\/div[^>])*<\/div>/i, "");
   
   return str;
   
@@ -826,6 +812,9 @@ function m_w_com_definition(str)
       return false;
     }
   }
+  
+  // Replace pronunciation popup link
+  str = str.replace(/javascript\:popWin\('\/cgi-bin\/audio.pl\?([^']*)'\)/, "http://m-w.com/cgi-bin/audio.pl?$1");
   
   return str;
 }
@@ -862,16 +851,31 @@ function dictionary_com_definition(str)
     return str;
   }
   
-  // TODO: select a "preferred" dictionary
-  // Current simple algorithm: the first one returned!
-  i = 0;
-  
-  // Reformat slightly
-  if (sections[i].title == 'ahd4') {
-    sections[i].content = sections[i].content.replace(/<b>([^<]*)<\/b>/i, "<font size='16'><b>$1</b></font><br/>");
+  // Select a preferred dictionary
+  var prefDict = 0;
+  var foundAHD = false;
+  for (var i in sections) {
+    if (sections[i].title == "ahd4") {
+      if (/<\/b><SUP><FONT SIZE="-1">1/.test(sections[i].content)) {
+        prefDict = i;
+        break;
+      }
+      if (!foundAHD) {
+        prefDict = i;
+      }
+    }
   }
   
-  return pronReplace(sections[i].content, "dictionary.com")
+  // Reformat
+  if (sections[prefDict].title == 'ahd4') {
+    // Heading
+    sections[prefDict].content = sections[prefDict].content.replace(/<b>([^<]*)<\/b>/i, "<font size='14'><b>$1</b></font>");
+    // Replace pronunciation key
+    sections[prefDict].content = sections[prefDict].content.replace(/\/help\/ahd4\/pronkey.html/, "http://dictionary.reference.com/help/ahd4/pronkey.html");
+  }
+  
+  
+  return pronReplace(sections[prefDict].content, "dictionary.com")
 }
 
 
@@ -925,7 +929,7 @@ function show_definition(str)
   }
   
   var curHref = currentURL();
-  defContent.hrefBase = curHref.substring(0, curHref.lastIndexOf('/') + 1);
+  defContent.hrefBase = hrefBase(curHref);
   
   var html = closeTags(str);
   
@@ -934,6 +938,12 @@ function show_definition(str)
   historyIndex++;
   history.splice(historyIndex, history.length - historyIndex, html);
   updateHistoryButtons();
+}
+
+
+function hrefBase(url)
+{
+  return url.substr(0, url.lastIndexOf("/") + 1);
 }
 
 
@@ -1026,7 +1036,7 @@ function startTransition()
 
   switch (wm) {
     case wmOpen:
-      extenderCowl.opacity = 0;
+      // extenderCowl.opacity = 0;
       defContent.opacity = 0;
       defContent.setHtml("");
       history = new Array();
@@ -1096,7 +1106,7 @@ function endTransition()
       query.select(-1, -1);
       break;
     case wmOpen:
-      extenderCowl.opacity = 255;
+      // extenderCowl.opacity = 255;
       defContent.opacity = 255;
       if (state & stateLoading) {
         defContent.setHtml("<html><font size='20'>Loading...</font></html>");
