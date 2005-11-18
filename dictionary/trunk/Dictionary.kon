@@ -1,16 +1,24 @@
 ﻿<?xml version="1.0"?>
+<!--
+  Dictionary v1.5
+  by James M. Allen
+  
+  Please see the CREDITS.txt file for copyright information.
+-->
+
 
 <?konfabulator xml-strict="true"?>
-<widget version="1.1.1" minimumVersion="3.0" debug="verbose">
+<widget version="v1.5" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005 James M. Allen" image="Resources/WidgetIcon.png">
+  <debug>verbose</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="main"
     title="Dictionary"
-    width="450" height="600"
+    width="329" height="51" 
     alignment="left"
     opacity="255"
     shadow="0"
     visible="1"/>
-
+  
   <action trigger="onLoad" file="Dictionary.js"/>
   
   <action trigger="onWillChangePreferences">
@@ -20,6 +28,26 @@
   <action trigger="onPreferencesChanged">
     onPreferencesChanged();
   </action>
+  
+  <action trigger="onUnload">
+    onUnload();
+  </action>
+  
+  <preference name="anchor"
+    title="Anchor:"
+    type="popup"
+    defaultValue="auto">
+    <option>Automatic</option>
+    <optionValue>auto</optionValue>
+    <option>Top left</option>
+    <optionValue>topleft</optionValue>
+    <option>Top right</option>
+    <optionValue>topright</optionValue>
+    <option>Bottom left</option>
+    <optionValue>bottomleft</optionValue>
+    <option>Bottom right</option>
+    <optionValue>bottomright</optionValue>
+  </preference>
   
   <preference name="revertToDefaults"
     notSaved="true"
@@ -43,13 +71,9 @@
     <about-version
       font="Arial Bold"
       size="13"
-      hOffset="265" vOffset="112"
-      color="#FFFFFF">
-      <shadow>
-        <color>#000000</color>
-        <hOffset>1</hOffset>
-        <vOffset>1</vOffset>
-      </shadow>
+      hOffset="357" vOffset="160"
+      color="#555555">
     </about-version>
+    <image>Resources/AboutTheAuthor.png</image>
   </about-box>
 </widget>

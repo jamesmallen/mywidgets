@@ -1,61 +1,47 @@
+/**
+ * Dictionary
+ * by James M. Allen
+ *
+ * A dictionary Widget.
+ */
+
+
 include("PoorText.js");
 include("JamesMAllen.js");
+include("KImage.js");
 
 
-
+// State constants
 const wmCompact         = 0x0000;
 const wmWide            = 0x0001;
 const wmOpen            = 0x0002;
-
 
 const stateLoading      = 0x0004;
 const stateTrans        = 0x0008;
 const stateMouseClick   = 0x0010;
 const stateOverCancel   = 0x0020;
 
-var state = 0;
-var wm = 0;
-var nextWm = 0;
-var nextNextWm = 0;
+// State/transition variables
+state = 0;
+wm = 0;
+nextWm = 0;
+nextNextWm = 0;
 
 // Widget elements
-var defContent;
-// var extenderCowl;
-// var holder;
-
-// Animatable objects
-var transObjects = new Object();
-var extenderTop;
-var extenderMiddle;
-var extenderBottom;
-var hTopLeft;
-var hTopMiddle;
-var hTopRight;
-var dictionaryTitle;
-var throbberStill;
-var throbberAnimated;
-var searchBar;
-var query;
-var dropdownButton;
-var cancelButton;
-var forwardButton;
-var backButton;
+transObjects = new Object();
 
 // Dropdown items
-var dropdownMenu = new Array();
-
-var contextMenu = new Array();
-
-var booksArray = new Array();
-
-var booksPrefArray = new Array();
+dropdownMenu = new Array();
+contextMenu = new Array();
+booksArray = new Array();
+booksPrefArray = new Array();
 
 // Other objects
-var urlObj;
-var urlTimer;
-var history = new Array();
-var historyIndex = -1;
-var defaultColors;
+urlObj = null;
+urlTimer = null;
+history = new Array();
+historyIndex = -1;
+defaultColors = null;
 
 function main_onContextMenu()
 {
@@ -63,6 +49,12 @@ function main_onContextMenu()
     contextMenu[0].enabled = true;
   } else {
     contextMenu[0].enabled = false;
+  }
+  
+  if (system.clipboard && system.clipboard.length > 0) {
+    contextMenu[1].enabled = true;
+  } else {
+    contextMenu[1].enabled = false;
   }
   
   main.contextMenuItems = contextMenu;
@@ -74,15 +66,18 @@ function initialize()
     preferences.selectedBook.value = 0;
   }
   
-  var mi = new MenuItem();
-  mi.title = "Copy";
+  // Build contextMenu
+  var mi;
+  mi = new MenuItem();
+  mi.title = "Copy Definition";
   mi.enabled = false;
   mi.onSelect = "copy_onSelect()";
   contextMenu.push(mi);
   
   mi = new MenuItem();
-  mi.title = "About the Author";
-  mi.onSelect = "AboutTheAuthor();";
+  mi.title = "Paste Word";
+  mi.enabled = false;
+  mi.onSelect = "paste_onSelect()";
   contextMenu.push(mi);
   
   mi = new MenuItem();
@@ -93,44 +88,41 @@ function initialize()
   main.contextMenuItems = contextMenu;
   main.onContextMenu = "main_onContextMenu()";
   
-  extenderBottom = new Image();
-  extenderBottom.window = main;
-  extenderBottom.src = "Resources/ExtenderBottom.png";
-  extenderBottom.opacity = 0;
-  extenderBottom.hOffset = 0;
-  extenderBottom.width = 446;
-  extenderBottom.height = 27;
+  extenderBG = new KImage();
+  extenderBG.window = main;
+  extenderBG.src = "Resources/ExtenderBG*.png";
+  extenderBG.opacity = 0;
+  extenderBG.hOffset = 0;
+  extenderBG.vOffset = 0;
+  extenderBG.width = 446;
+  extenderBG.opacity1 = 0;
+  extenderBG.opacity2 = 0;
+  extenderBG.height1 = 69;
+  extenderBG.height2 = 334;
   
-  extenderBottom.opacity1 = 0;
-  extenderBottom.vOffset1 = 42;
+  hTopBG = new KImage();
+  hTopBG.window = main;
+  hTopBG.src = "Resources/TopBG<.png";
+  hTopBG.opacity = 0;
+  hTopBG.hOffset = 0;
+  hTopBG.vOffset = 0;
+  hTopBG.width = 329;
+  hTopBG.height = 51;
+  hTopBG.width0 = 329;
+  hTopBG.width1 = 446;
   
-  extenderBottom.opacity2 = 255;
-  extenderBottom.vOffset2 = 307;
+  extender = new KImage();
+  extender.window = main;
+  extender.src = "Resources/Extender*.png";
+  extender.opacity = 0;
+  extender.hOffset = 0;
+  extender.vOffset = 0;
+  extender.width = 446;
   
-  extenderMiddle = new Image();
-  extenderMiddle.window = main;
-  extenderMiddle.src = "Resources/ExtenderMiddle.png";
-  extenderMiddle.opacity = 0;
-  extenderMiddle.vOffset = 42;
-  extenderMiddle.width = 446;
-  
-  extenderMiddle.opacity1 = 0;
-  extenderMiddle.height1 = 0;
-  
-  extenderMiddle.opacity2 = 255;
-  extenderMiddle.height2 = 265;
-  
-  extenderTop = new Image();
-  extenderTop.window = main;
-  extenderTop.src = "Resources/ExtenderTop.png";
-  extenderTop.opacity = 0;
-  extenderTop.hOffset = 0;
-  extenderTop.vOffset = 0;
-  extenderTop.width = 446;
-  extenderTop.height = 42;
-  
-  extenderTop.opacity1 = 0;
-  extenderTop.opacity2 = 255;
+  extender.opacity1 = 0;
+  extender.opacity2 = 255;
+  extender.height1 = 69;
+  extender.height2 = 334;
   
   
   defContent = new PoorText();
@@ -145,60 +137,21 @@ function initialize()
   defContent.tagRoot.size = 12;
   defContent.showImagesAsLinks = false;
   
-  /*
-  extenderCowl = new Image();
-  extenderCowl.window = main;
-  extenderCowl.src = "Resources/ExtenderCowl.png";
-  extenderCowl.hOffset = 17;
-  extenderCowl.vOffset = 42;
-  extenderCowl.width = 412;
-  extenderCowl.height = 274;
-  extenderCowl.opacity = 0;
-  */
   
-  hTopLeft = new Image();
-  hTopLeft.window = main;
-  hTopLeft.src = "Resources/TopLeft.png";
+  hTop = new KImage();
+  hTop.window = main;
+  hTop.src = "Resources/Top<.png";
+  hTop.opacity = 255;
+  hTop.hOffset = 0;
+  hTop.vOffset = 0;
+  hTop.width = 329;
+  hTop.height = 51;
+  hTop.onDragDrop = "hTop_onDragDrop()";
+  hTop.onDragEnter = "hTop_onDragEnter()";
+  hTop.onDragExit = "hTop_onDragExit()";
   
-  hTopLeft.hOffset0 = 0;
-  hTopLeft.vOffset0 = 0;
-  hTopLeft.width0 = 28;
-  hTopLeft.height0 = 51;
-  
-  hTopLeft.hOffset1 = 0;
-  hTopLeft.vOffset1 = 0;
-  hTopLeft.width1 = 28;
-  hTopLeft.height1 = 51;
-  
-  
-  hTopMiddle = new Image();
-  hTopMiddle.window = main;
-  hTopMiddle.src = "Resources/TopMiddle.png";
-  
-  hTopMiddle.hOffset0 = 28;
-  hTopMiddle.vOffset0 = 0;
-  hTopMiddle.width0 = 273;
-  hTopMiddle.height0 = 51;
-  
-  hTopMiddle.hOffset1 = 28;
-  hTopMiddle.vOffset1 = 0;
-  hTopMiddle.width1 = 390;
-  hTopMiddle.height1 = 51;
-  
-  
-  hTopRight = new Image();
-  hTopRight.window = main;
-  hTopRight.src = "Resources/TopRight.png";
-  
-  hTopRight.hOffset0 = 301;
-  hTopRight.vOffset0 = 0;
-  hTopRight.width0 = 28;
-  hTopRight.height0 = 51;
-  
-  hTopRight.hOffset1 = 418;
-  hTopRight.vOffset1 = 0;
-  hTopRight.width1 = 28;
-  hTopRight.height1 = 51;
+  hTop.width0 = 329;
+  hTop.width1 = 446;
   
   
   dictionaryTitle = new Image();
@@ -225,11 +178,13 @@ function initialize()
   
   throbberAnimated = new Image();
   throbberAnimated.window = main;
+  throbberAnimated.src = "Resources/Blank.png";
   throbberAnimated.hOffset = 129;
   throbberAnimated.vOffset = 7;
   throbberAnimated.width = 32;
   throbberAnimated.height = 32;
   throbberAnimated.opacity = 0;
+  throbberAnimated.visible = false;
   throbberAnimated.tooltip = "Loading...";
   
   throbberAnimated.opacity1 = 0;
@@ -334,7 +289,7 @@ function initialize()
   urlTimer.ticking = false;
   
   for (var p in this) {
-    if (typeof(this[p]) == "object") {
+    if (this[p] && typeof(this[p]) == "object") {
       if (this[p].hOffset0) {
         this[p].hOffset = this[p].hOffset0;
       }
@@ -350,12 +305,8 @@ function initialize()
     }
   }
   
-  transObjects.extenderTop = extenderTop;
-  transObjects.extenderMiddle = extenderMiddle;
-  transObjects.extenderBottom = extenderBottom;
-  transObjects.hTopLeft = hTopLeft;
-  transObjects.hTopMiddle = hTopMiddle;
-  transObjects.hTopRight = hTopRight;
+  transObjects.extender = extender;
+  transObjects.hTop = hTop;
   transObjects.dictionaryTitle = dictionaryTitle;
   transObjects.throbberStill = throbberStill;
   transObjects.throbberAnimated = throbberAnimated;
@@ -365,6 +316,7 @@ function initialize()
   transObjects.cancelButton = cancelButton;
   transObjects.backButton = backButton;
   transObjects.forwardButton = forwardButton;
+  transObjects.main = main;
   
   defaultColors = new Array();
   defaultColors.push("#483BAE"); // blue
@@ -432,6 +384,9 @@ function buildDropdownMenu()
       dropdownButton.colorize = booksArray[i].color;
     }
     mi.onSelect = "preferences.selectedBook.value = " + i + "; buildDropdownMenu();";
+    if (wm == wmOpen) {
+      mi.onSelect += "if (query.data.length > 0) { lookup_word(query.data); }";
+    }
     dropdownMenu.push(mi);
   }
   
@@ -453,12 +408,56 @@ function filterOption()
 {
   var a = new Array();
   a.push("Dictionary.com");
-  a.push("Thesaurus.com");
   a.push("MediaWiki");
   a.push("m-w.com");
+  a.push("Thesaurus.com");
+  a.push("Custom (Simple)");
+  a.push("Custom (Advanced)");
   a.push("None");
   return a;
 }
+
+function editSimpleFilter(index)
+{
+  var prefArray = new Array();
+  var bp;
+  
+  var formResults;
+  
+  curBook = booksArray[index];
+  
+  bp = new FormField();
+  bp.title = "Starting HTML:";
+  bp.type = "text";
+  bp.defaultValue = curBook.filterStart;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.title = "Ending HTML:";
+  bp.type = "text";
+  bp.defaultValue = curBook.filterEnd;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.title = "Find (Regular Expression)";
+  bp.type = "text";
+  bp.defaultValue = curBook.filterFind;
+  prefArray.push(bp);
+  
+  bp = new FormField();
+  bp.title = "Replace (String)";
+  bp.type = "text";
+  bp.defaultValue = curBook.filterReplace;
+  prefARray.push(bp);
+  
+  bp = new FormField();
+  bp.title = "Include start/end";
+  bp.type = "checkbox";
+  bp.defaultValue = curBook.filterIncludeEnds;
+  bp.description = "A custom filter is defined";
+  
+}
+
 
 function editBook(index)
 {
@@ -474,6 +473,11 @@ function editBook(index)
     curBook.url = "http://";
     curBook.filter = "None";
     curBook.color = defaultColors[(booksArray.length) % defaultColors.length];
+    curBook.filterStart = "";
+    curBook.filterEnd = "";
+    curBook.filterIncludeEnds = 0;
+    curBook.filterFind = "";
+    curBook.filterReplace = "";
   } else {
     curBook = booksArray[index];
   }
@@ -533,6 +537,7 @@ function editBook(index)
     curBook.color = formResults[3];
     if (index < 0) {
       // new
+      index = booksArray.length;
       booksArray.push(curBook);
     } else {
       // modify
@@ -571,16 +576,13 @@ function editBooks()
   ff.description = "\r\nSelect an item and click \"Next\" to edit or delete that item.\r\nTo add an item, select the \"New...\" item.\r\n";
   formFields.push(ff);
   
-  do {
-    formResults = form(formFields, "Edit List", "Next", "Cancel");
-    
-    if (formResults == null) {
-      return;
-    }
-  } while (editBook(formResults[0]) == false);
+  formResults = form(formFields, "Edit List", "Next", "Cancel");
+  
+  if (formResults == null) {
+    return;
+  }
   
   exportBooksArray();
-  buildDropdownMenu();
 }
 
 
@@ -658,6 +660,7 @@ function query_onGainFocus()
 
 function dropdownButton_onMouseDown()
 {
+  buildDropdownMenu();
   popupMenu(dropdownMenu, dropdownButton.hOffset, dropdownButton.vOffset + dropdownButton.height);
 }
 
@@ -696,6 +699,7 @@ function lookup_url(url)
     state = state | stateLoading;
     urlObj.fetchAsync(url_done);
     throbberAnimated.src = "Resources/ThrobberAnimated.gif";
+    throbberAnimated.visible = true;
     throbberAnimated.opacity2 = 255;
     if (!(wm == wmOpen) && !(state & stateTrans)) {
       smoothTransition(wmOpen);
@@ -721,8 +725,8 @@ function pronReplace(str, dict)
     case 'dictionary.com':
     default:
 //      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<i>(([^<]*))<\/i>/gi];
-      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi];
-      const pronStrings = ['\u0103', '\u0101', '\u0115', '\u0113', '\u012d', '\u012b', '\u014f\u014f', '\u014d\u014d', '\u014f', '\u014d', '\u016d', '\u016b', '\u0259', '\u0153', 'KH', 'N', '\u0384', '\u2032'];
+      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<img[^>]*mdash.gif[^>]*>/gi];
+      const pronStrings = ['\u0103', '\u0101', '\u0115', '\u0113', '\u012d', '\u012b', '\u014f\u014f', '\u014d\u014d', '\u014f', '\u014d', '\u016d', '\u016b', '\u0259', '\u0153', 'KH', 'N', '\u0384', '\u2032', '\u2014'];
       
       for (var i in pronTags) {
         str = str.replace(pronTags[i], pronStrings[i]);
@@ -949,8 +953,8 @@ function hrefBase(url)
 
 function url_done(url)
 {
-  throbberAnimated.src = "";
-  throbberAnimated.opacity = 0;
+  throbberAnimated.src = "Resources/Blank.png";
+  throbberAnimated.visible = false;
   throbberAnimated.opacity2 = 0;
   urlTimer.ticking = false;
   if (url == null) {
@@ -982,8 +986,21 @@ function smoothTransition(mode)
     return;
   }
   
+  delete main.hOffset0;
+  delete main.hOffset1;
+  delete main.vOffset1;
+  delete main.vOffset2;
+  
   switch (wm) {
     case wmCompact:
+      if (shouldExpandLeft()) {
+        main.hOffset0 = main.hOffset;
+        main.hOffset1 = main.hOffset - 117;
+      }
+      if (shouldExpandUp()) {
+        main.vOffset1 = main.vOffset;
+        main.vOffset2 = main.vOffset - 283;
+      }
       switch (mode) {
         case wmCompact:
           return;
@@ -998,6 +1015,14 @@ function smoothTransition(mode)
       }
       break;
     case wmWide:
+      if (shouldExpandLeft()) {
+        main.hOffset1 = main.hOffset;
+        main.hOffset0 = main.hOffset + 117;
+      }
+      if (shouldExpandUp()) {
+        main.vOffset1 = main.vOffset;
+        main.vOffset2 = main.vOffset - 283;
+      }
       switch (mode) {
         case wmCompact:
           nextWm = nextNextWm = wmCompact;
@@ -1011,6 +1036,14 @@ function smoothTransition(mode)
       }
       break;
     case wmOpen:
+      if (shouldExpandLeft()) {
+        main.hOffset1 = main.hOffset;
+        main.hOffset0 = main.hOffset + 117;
+      }
+      if (shouldExpandUp()) {
+        main.vOffset2 = main.vOffset;
+        main.vOffset1 = main.vOffset + 283;
+      }
       switch (mode) {
         case wmCompact:
           nextWm = wmWide;
@@ -1036,11 +1069,19 @@ function startTransition()
 
   switch (wm) {
     case wmOpen:
-      // extenderCowl.opacity = 0;
       defContent.opacity = 0;
       defContent.setHtml("");
       history = new Array();
       historyIndex = -1;
+      break;
+  }
+  
+  switch (nextWm) {
+    case wmWide:
+      main.width = 446;
+      break;
+    case wmOpen:
+      main.height = 334;
       break;
   }
   
@@ -1069,23 +1110,28 @@ function startTransition()
     }
     
     for (var j in o.begin) {
-      if (o.end[j] == null) {
-        delete o.begin[j];
-      } else {
+      if (o.end[j] != null && o.begin[j] != o.end[j]) {
         keep = true;
+      } else {
+        delete o.begin[j];
       }
     }
     for (var j in o.end) {
-      if (o.begin[j] == null) {
-        delete o.end[j];
-      } else {
+      if (o.begin[j] != null) {
         keep = true;
+      } else {
+        delete o.end[j];
       }
     }
     
     if (keep == true) {
       o.obj = transObjects[i];
       animatorA.objects.push(o);
+      /*
+      print(i);
+      pdump(o.begin);
+      pdump(o.end);
+      */
     }
   }
   
@@ -1097,6 +1143,15 @@ function endTransition()
 {
   wm = nextWm;
   nextWm = nextNextWm;
+  
+  switch (wm) {
+    case wmCompact:
+      main.width = 329;
+      break;
+    case wmWide:
+      main.height = 51;
+      break;
+  }
   
   query.editable = true;
   
@@ -1184,6 +1239,104 @@ function onPreferencesChanged()
 function copy_onSelect()
 {
   system.clipboard = defContent.plainText;
+}
+
+function paste_onSelect()
+{
+  external_lookup(system.clipboard);
+}
+
+
+function external_lookup(str)
+{
+  query.data = str.substr(0, 32).replace(/^[\s\n]+|[\s\n]+$/, "");
+  lookup_word(query.data);
+}
+
+
+function shouldExpandLeft()
+{
+  switch (preferences.anchor.value) {
+    case "auto":
+      if ((main.hOffset + main.width) > (screen.availWidth * 0.85)) {
+        return true;
+      } else {
+        return false;
+      }
+      break;
+    case "topleft":
+    case "bottomleft":
+      return false;
+      break;
+    case "topright":
+    case "bottomright":
+      return true;
+      break;
+  }
+}
+
+function shouldExpandUp()
+{
+  switch (preferences.anchor.value) {
+    case "auto":
+      if ((main.vOffset + main.height) > (screen.availHeight * 0.85)) {
+        return true;
+      } else {
+        return false;
+      }
+      break;
+    case "topleft":
+    case "topright":
+      return false;
+      break;
+    case "bottomleft":
+    case "bottomright":
+      return true;
+      break;
+  }
+}
+
+function onUnload()
+{
+  suppressUpdates();
+  // move the window to a proper "closed" position
+  if (shouldExpandLeft() && main.width > 329) {
+    main.hOffset += 117;
+  }
+  if (shouldExpandUp() && main.height > 51) {
+    main.vOffset += 283;
+  }
+  
+  savePreferences();
+}
+
+function hTop_onDragDrop()
+{
+  hTop_onDragExit();
+  if (system.event.data[0] == "string") {
+    external_lookup(system.event.data[1]);
+  }
+}
+
+function hTop_onDragEnter()
+{
+  
+}
+
+function hTop_onDragExit()
+{
+  
+}
+
+
+function pdump(obj)
+{
+  print("PDUMP");
+  for (var i in obj) {
+    if (typeof(obj[i]) != "function") {
+      print("  [" + i + "]: " + obj[i]);
+    }
+  }
 }
 
 
