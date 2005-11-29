@@ -488,7 +488,7 @@ function KImage()
   }
   var setAlignment = function(prop, oldval, newval)
   {
-    log("setAlignment(" + newval + ")");
+    // log("setAlignment(" + newval + ")");
     return self.setToFrame("hAlign", oldval, newval)
   }
   
@@ -503,12 +503,12 @@ function KImage()
   }
   var setHeight = function(prop, oldval, newval)
   {
-    log("setHeight(" + newval + ")");
+    // log("setHeight(" + newval + ")");
     if (newval < 0) {
       newval = self.srcHeight;
     }
     if (newval == oldval) {
-      print("  Value hasn't changed - doing nothing!");
+      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Height needs to be set before calling resize()
@@ -532,12 +532,12 @@ function KImage()
   }
   var setWidth = function(prop, oldval, newval)
   {
-    log("setWidth(" + newval + ")");
+    // log("setWidth(" + newval + ")");
     if (newval < 0) {
       newval = self.srcWidth;
     }
     if (newval == oldval) {
-      print("  Value hasn't changed - doing nothing!");
+      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Width needs to be set before calling resize()
@@ -563,7 +563,7 @@ function KImage()
   var setToImages = function(prop, oldval, newval)
   {
     try {
-      log("setToImages(" + prop + ", " + newval + ")");
+      // log("setToImages(" + prop + ", " + newval + ")");
       for (var i in img) {
         img[i][prop] = newval;
       }
@@ -589,7 +589,7 @@ function KImage()
   }
   var setToFrame = function(prop, oldval, newval)
   {
-    log("setToFrame(" + prop + ", " + newval + ")");
+    // log("setToFrame(" + prop + ", " + newval + ")");
     frame[prop] = newval;
     // this[prop] is set implicitly
     return newval;

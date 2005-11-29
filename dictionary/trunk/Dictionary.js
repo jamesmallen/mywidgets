@@ -693,12 +693,17 @@ function currentURL()
 
 function lookup_url(url)
 {
+  log("lookup_url(" + url + ")");
   if (!(state & stateLoading)) {
     urlObj = new URL();
     urlObj.location = url;
     state = state | stateLoading;
     urlObj.fetchAsync(url_done);
+    log("pre src");
+    pdump(throbberAnimated);
     throbberAnimated.src = "Resources/ThrobberAnimated.gif";
+    // throbberAnimated.src = "Resources/Blank.png";
+    log("post src");
     throbberAnimated.visible = true;
     throbberAnimated.opacity2 = 255;
     if (!(wm == wmOpen) && !(state & stateTrans)) {
