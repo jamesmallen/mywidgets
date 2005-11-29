@@ -73,7 +73,7 @@ PoorText.deEnt = function(s) {
   // pull out html entities in hex
   while ((a = s.match(PoorText.deEnt.hex)) != null) {
     var code = parseInt(a[1], 16);
-    if (decodehtmlentities.cp[code]) {
+    if (PoorText.deEnt.cp[code]) {
       s = s.replace(new RegExp(a[0], "g"), PoorText.deEnt.cp[code]);
     } else {
       s = s.replace(new RegExp(a[0], "g"), String.fromCharCode(code));
