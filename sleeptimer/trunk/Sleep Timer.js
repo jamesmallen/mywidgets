@@ -79,7 +79,7 @@ function Initialize()
 {
   switch (system.platform) {
     case "macintosh":
-      myFont = "Lucida Grande Bold";
+      myFont = "Monaco Bold";
       break;
     case "windows":
     default:
@@ -182,11 +182,8 @@ function Initialize()
   contextMenuItems[2].title = "-";
   
   contextMenuItems[3] = new MenuItem();
-  contextMenuItems[3].title = "About the Author";
-  contextMenuItems[3].onSelect = "AboutTheAuthor();";
-  contextMenuItems[4] = new MenuItem();
-  contextMenuItems[4].title = "Make a Donation";
-  contextMenuItems[4].onSelect = "Donate();";
+  contextMenuItems[3].title = "Make a Donation";
+  contextMenuItems[3].onSelect = "donate();";
   
   main.contextMenuItems = contextMenuItems;
 }
@@ -383,12 +380,12 @@ function goToSleep()
           cmd = "rundll32.exe PowrProf.dll,SetSuspendState";
           break;
         case "Shut Down":
-          // cmd = "shutdown.exe -s -t 0 -c \"Shutdown forced by SleepTimer\"";
-          cmd = "cscript.exe Shutdown.vbs";
+          runCommandInBg("cscript.exe Shutdown.vbs", "shutdownData");
+          cmd = "shutdown.exe -s -t 0 -c \"Shutdown forced by SleepTimer\"";
           break;
         case "Restart":
-          // cmd = "shutdown.exe -r -t 0 -c \"Restart forced by SleepTimer\"";
-          cmd = "cscript.exe Restart.vbs";
+          runComandInBg("cscript.exe Restart.vbs", "restartData");
+          cmd = "shutdown.exe -r -t 0 -c \"Restart forced by SleepTimer\"";
           break;
         case "Log Off":
           cmd = "shutdown.exe -l -t 0 -c \"Log Off forced by SleepTimer\"";
@@ -464,6 +461,14 @@ function timeLeft(showColon)
   }
   
 }
+
+
+function donate()
+{
+  var myWidgetName = system.widgetDataFolder.substring(system.widgetDataFolder.lastIndexOf("/") + 1);
+  openURL('https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=james%2em%2eallen%40gmail%2ecom&item_name=' + escape(myWidgetName) + '%20Widget%20Donation&no_shipping=1&cn=Comments%3a&tax=0&currency_code=USD&bn=PP%2dDonationsBF&charset=UTF%2d8');
+}
+
 
 
 Initialize();

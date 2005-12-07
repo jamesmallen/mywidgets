@@ -1,7 +1,7 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 
 <?konfabulator xml-strict="true"?>
-<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.1" minimumVersion="2.1" debug="verbose">
+<widget author="James M. Allen" copyright="2005 James M. Allen" version="1.1.2" minimumVersion="2.1" debug="errors" image="Resources/widget_icon.png">
   <window name="main"
     title="Sleep Timer"
     width="136" height="78"
@@ -11,7 +11,7 @@
 
   </window>
 
-  <action trigger="onLoad" file="SleepTimer.js"/>
+  <action trigger="onLoad" file="Sleep Timer.js"/>
   
   <action trigger="onPreferencesChanged">
     onPreferencesChanged();
@@ -56,7 +56,7 @@
     <about-version
       font="Arial Bold"
       size="13"
-      hOffset="261" vOffset="112"
+      hOffset="361" vOffset="226"
       color="#FFFFFF">
       <shadow>
         <color>#000000</color>
@@ -64,5 +64,6 @@
         <vOffset>1</vOffset>
       </shadow>
     </about-version>
+    <image>Resources/about_the_author.png</image>
   </about-box>
 </widget>
