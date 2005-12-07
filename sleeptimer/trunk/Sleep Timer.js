@@ -1,5 +1,3 @@
-include("JamesMAllen.js");
-
 const stateCompact    = 0;
 const stateExpanded   = 1;
 const animDuration    = 300;
