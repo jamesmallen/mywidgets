@@ -1,0 +1,56 @@
+﻿<?xml version="1.0"?>
+<!--
+  Spelling Bee
+  by James M. Allen
+  
+  ispell is an open-source program that is distributed with this Widget in
+  binary form. Please refer to the ispell.LICENSE file for the full details
+  of the ispell license.
+  
+  Jessica Relitz helped out with dialogue. ;-)
+  
+  All other images and code are copyright 2005 James M. Allen, and may not
+  be used without permission.
+  
+-->
+
+
+<?konfabulator xml-strict="true"?>
+<widget version="v0.9" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005 James M. Allen" image="Resources/WidgetIcon.png">
+  <debug>verbose</debug>
+  <option>allowCustomObjectAttributes</option>
+  <window name="wndMain"
+    title="Spelling Bee"
+    width="231" height="169" 
+    alignment="left"
+    opacity="255"
+    shadow="0"
+    visible="1" />
+  
+  <action trigger="onLoad" file="Spelling Bee.js"/>
+  
+  <action trigger="onWillChangePreferences">onWillChangePreferences();</action>
+  <action trigger="onPreferencesChanged">onPreferencesChanged();</action>
+  <action trigger="onRunCommandInBgComplete">onRunCommandInBgComplete();</action>
+  
+  <preference name="widgetSize" title="Size:" type="slider" minLength="70" maxLength="100" defaultValue="75" ticks="6" />
+  
+  <preference name="language" title="Language:" type="popup" defaultValue="american">
+    <option>American English</option>
+    <optionValue>american</optionValue>
+    <option>British English</option>
+    <optionValue>british</optionValue>
+  </preference>
+  
+  <preference name="autoCopy" title="Auto copy" type="checkbox" defaultValue="1">
+    <description>Check this to automatically copy the selected "correct" word to the clipboard when you click on it.</description>
+  </preference>
+  
+  <about-box>
+    <image>Resources/AboutBox.png</image>
+    <about-version font="Arial Bold" size="11" hOffset="273" vOffset="122" color="#FFFFFF">
+      <shadow color="#000000" hOffset="1" vOffset="1" />
+    </about-version>
+    <image>Resources/AboutTheAuthor.png</image>
+  </about-box>
+</widget>
