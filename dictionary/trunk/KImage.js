@@ -666,6 +666,7 @@ function KImage()
   this.tooltip = "";
   this.tracking = "opacity";
   // this.useFileIcon = false;
+  this.visible = true;
   this.vOffset = 0;
   this.vAlign = "top";
   // this.vRegistrationPoint = null;
@@ -695,6 +696,7 @@ function KImage()
   this.watch("src", setSrcProxy);
   this.watch("tileOrigin", setToImagesProxy);
   this.watch("tooltip", setToImagesProxy);
+  this.watch("visible", setToFrameProxy);
   this.watch("vOffset", setToFrameProxy);
   this.watch("vAlign", setToFrameProxy);
   this.watch("width", setWidthProxy);

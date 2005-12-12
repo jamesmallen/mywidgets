@@ -3,13 +3,15 @@
   Dictionary v1.5
   by James M. Allen
   
+  A dictionary Widget.
+  
   Please see the CREDITS.txt file for copyright information.
 -->
 
 
 <?konfabulator xml-strict="true"?>
 <widget version="v1.5" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005 James M. Allen" image="Resources/WidgetIcon.png">
-  <debug>verbose</debug>
+  <debug>errors</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="main"
     title="Dictionary"
@@ -47,14 +49,43 @@
     <optionValue>bottomleft</optionValue>
     <option>Bottom right</option>
     <optionValue>bottomright</optionValue>
+    <description>Select which corner of the screen to anchor to. Automatic will attempt to figure this out automatically, but it will only work well if the Widget is placed close to a corner.</description>
   </preference>
+  
+  <preference name="bg"
+    title="Background Type:"
+    type="popup"
+    defaultValue="transparent">
+    <option>Dark Glass</option>
+    <optionValue>transparent</optionValue>
+    <option>Colorized</option>
+    <optionValue>colorized</optionValue>
+  </preference>
+  
+  <preference name="bgColor"
+    title="Background Color:"
+    type="color"
+    defaultValue="#7F7F7F">
+    <description>If your background type is Colorized, then select the color here.</description>
+  </preference>
+  
+  <preference name="dictionaryFont"
+    title="Font:"
+    type="font"
+    defaultValue="default" />
+  
+  <preference name="dictionarySize"
+    title="Size:"
+    type="text"
+    defaultValue="12" />
   
   <preference name="revertToDefaults"
     notSaved="true"
     title="Revert to Defaults"
     type="checkbox"
-    defaultValue="0"
-    description="Check this box and click Save to revert to the default collection of books available."/>
+    defaultValue="0">
+    <description>Check this box and click Save to revert to the default collection of books available.</description>
+  </preference>
   
   <preference name="selectedBook"
     hidden="true"
@@ -63,7 +94,7 @@
   
   <preference name="books"
     hidden="true"
-    defaultValue="Dictionary%2Ecom,http%3A%2F%2Fdictionary%2Ereference%2Ecom%2Fsearch%3Fq%3D,Dictionary%2Ecom,%23483BAE|Thesaurus%2Ecom,http%3A%2F%2Fthesaurus%2Ereference%2Ecom%2Fsearch%3Fq%3D,Thesaurus%2Ecom,%23CB3434|Wikipedia%20%28English%29,http%3A%2F%2Fen%2Ewikipedia%2Eorg%2Fwiki%2F,MediaWiki,%23356E25|Wiktionary%20%28English%29,http%3A%2F%2Fen%2Ewiktionary%2Eorg%2Fwiki%2F,MediaWiki,%23896623|Merriam%2DWebster%20Online%20Dictionary,http%3A%2F%2Fm%2Dw%2Ecom%2Fcgi%2Dbin%2Fdictionary%3Fbook%3DDictionary%26va%3D,m%2Dw%2Ecom,%238D306D|Merriam%2DWebster%20Online%20Thesaurus,http%3A%2F%2Fwww%2Em%2Dw%2Ecom%2Fcgi%2Dbin%2Fthesaurus%3Fbook%3DThesaurus%26va%3D,m%2Dw%2Ecom,%23111111"
+    defaultValue="Merriam%2DWebster%20Online%20Dictionary,http%3A%2F%2Fm%2Dw%2Ecom%2Fcgi%2Dbin%2Fdictionary%3Fbook%3DDictionary%26va%3D,m%2Dw%2Ecom,%238D306D|Merriam%2DWebster%20Online%20Thesaurus,http%3A%2F%2Fwww%2Em%2Dw%2Ecom%2Fcgi%2Dbin%2Fthesaurus%3Fbook%3DThesaurus%26va%3D,m%2Dw%2Ecom,%23111111|Wikipedia%20%28English%29,http%3A%2F%2Fen%2Ewikipedia%2Eorg%2Fwiki%2F,MediaWiki,%23356E25|Wiktionary%20%28English%29,http%3A%2F%2Fen%2Ewiktionary%2Eorg%2Fwiki%2F,MediaWiki,%23896623|Dictionary%2Ecom,http%3A%2F%2Fdictionary%2Ereference%2Ecom%2Fsearch%3Fq%3D,Dictionary%2Ecom,%23483BAE|Thesaurus%2Ecom,http%3A%2F%2Fthesaurus%2Ereference%2Ecom%2Fsearch%3Fq%3D,Thesaurus%2Ecom,%23CB3434"
     type="text"/>
   
   <about-box>

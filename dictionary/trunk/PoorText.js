@@ -16,7 +16,7 @@
  * ---------------
  * Release History
  * ---------------
- * 0.8 - XX XXX 2005
+ * 0.8 - 12 Dec 2005
  * - Modified for Konfabulator 3 - takes advantage of frames
  * - Hopefully loads of bugfixes. ;)
  *
@@ -331,6 +331,7 @@ function PoorText()
   this.hrefAbsCallback = null;
   this.hrefRelCallback = null;
   this.fwFont = "Courier New";
+  this.html = "";
 
   // read-only
   this.plainText = null;
@@ -701,8 +702,11 @@ PoorText.tagContents = function(data) {
     // nothing to be added
   // } else {
     // log("tagContents(" + data + ")");
-    
+  
   var curTag = PoorText.cur.tagStack[PoorText.cur.tagStack.length - 1];
+  if (!curTag) {
+    curTag = new Object();
+  }
   
   var words = PoorText.splitWords(data);
   if (words.length == 0) {
@@ -871,7 +875,8 @@ PoorText.prototype.doSpecial = function(spec)
     case "linebreak":
       this.scanHOffset = this.indentation;
       this.scanVOffset += PoorText.cur.scanHeight;
-      this.scanHeight = this.tagRoot.size;
+      // this.scanHeight = this.tagRoot.size;
+      this.scanHeight = 1;
       PoorText.cur.plainText += "\n";
       break;
     case "indent":
@@ -901,6 +906,8 @@ PoorText.prototype.setHtml = function(html)
   */
   
   this.html = closeTags(html);
+  
+  print(this.html);
   
   this.parser.parse(this.html);
   

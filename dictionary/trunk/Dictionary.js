@@ -1,5 +1,5 @@
 /**
- * Dictionary
+ * Dictionary v1.5
  * by James M. Allen
  *
  * A dictionary Widget.
@@ -60,10 +60,22 @@ function main_onContextMenu()
   main.contextMenuItems = contextMenu;
 }
 
+
 function initialize()
 {
   if (isNaN(parseInt(preferences.selectedBook.value))) {
     preferences.selectedBook.value = 0;
+  }
+  
+  if (preferences.dictionaryFont.value == "default") {
+    switch (system.platform) {
+      case "windows":
+        preferences.dictionaryFont.value = "Lucida Sans Unicode";
+        break;
+      case "macintosh":
+        preferences.dictionaryFont.value = "Lucida Grande";
+        break;
+    }
   }
   
   // Build contextMenu
@@ -90,20 +102,22 @@ function initialize()
   
   extenderBG = new KImage();
   extenderBG.window = main;
+  extenderBG.visible = false;
   extenderBG.src = "Resources/ExtenderBG*.png";
   extenderBG.opacity = 0;
   extenderBG.hOffset = 0;
   extenderBG.vOffset = 0;
   extenderBG.width = 446;
   extenderBG.opacity1 = 0;
-  extenderBG.opacity2 = 0;
+  extenderBG.opacity2 = 255;
   extenderBG.height1 = 69;
   extenderBG.height2 = 334;
   
   hTopBG = new KImage();
   hTopBG.window = main;
+  hTopBG.visible = false;
   hTopBG.src = "Resources/TopBG<.png";
-  hTopBG.opacity = 0;
+  hTopBG.opacity = 255;
   hTopBG.hOffset = 0;
   hTopBG.vOffset = 0;
   hTopBG.width = 329;
@@ -133,8 +147,8 @@ function initialize()
   defContent.width = 401;
   defContent.height = 274;
   defContent.scrollbar = true;
-  defContent.tagRoot.font = "Lucida Sans Unicode";
-  defContent.tagRoot.size = 12;
+  defContent.tagRoot.font = preferences.dictionaryFont.value;
+  defContent.tagRoot.size = parseFloat(preferences.dictionarySize.value);
   defContent.showImagesAsLinks = false;
   
   
@@ -161,34 +175,21 @@ function initialize()
   dictionaryTitle.vOffset = 12;
   dictionaryTitle.width = 103;
   dictionaryTitle.height = 24;
+  dictionaryTitle.tracking = "rectangle";
+  // dictionaryTitle.onMouseUp = "dictionaryTitle_onMouseUp()";
   
-  throbberStill = new Image();
-  throbberStill.window = main;
-  throbberStill.src = "Resources/ThrobberStill.png";
-  throbberStill.hOffset = 128;
-  throbberStill.vOffset = 7;
-  throbberStill.width = 32;
-  throbberStill.height = 32;
-  throbberStill.opacity = 0;
-  throbberStill.onMouseUp = "openURL(urlObj.location);";
-  throbberStill.tooltip = "Click to open a new browser window.";
+  loadingDots = new Image();
+  loadingDots.window = main;
+  loadingDots.src = "Resources/LoadingDots.png";
+  loadingDots.hOffset = 125;
+  loadingDots.vOffset = 25;
+  loadingDots.width = 28;
+  loadingDots.height = 6;
+  loadingDots.opacity = 0;
+  loadingDots.tooltip = "Loading . . .";
   
-  throbberStill.opacity1 = 0;
-  throbberStill.opacity2 = 255;
-  
-  throbberAnimated = new Image();
-  throbberAnimated.window = main;
-  throbberAnimated.src = "Resources/Blank.png";
-  throbberAnimated.hOffset = 129;
-  throbberAnimated.vOffset = 7;
-  throbberAnimated.width = 32;
-  throbberAnimated.height = 32;
-  throbberAnimated.opacity = 0;
-  throbberAnimated.visible = false;
-  throbberAnimated.tooltip = "Loading...";
-  
-  throbberAnimated.opacity1 = 0;
-  throbberAnimated.opacity2 = 0;
+  loadingDots.opacity1 = 0;
+  loadingDots.opacity2 = 255;
   
   backButton = new Image();
   backButton.window = main;
@@ -238,7 +239,7 @@ function initialize()
   query.width = 143;
   query.height = 20;
   query.editable = true;
-  query.font = "Lucida Sans Unicode";
+  query.font = preferences.dictionaryFont.value;
   query.size = 12;
   query.scrollbar = false;
   query.onKeyPress = "query_onKeyPress()";
@@ -305,11 +306,12 @@ function initialize()
     }
   }
   
+  transObjects.extenderBG = extenderBG;
+  transObjects.hTopBG = hTopBG;
   transObjects.extender = extender;
   transObjects.hTop = hTop;
   transObjects.dictionaryTitle = dictionaryTitle;
-  transObjects.throbberStill = throbberStill;
-  transObjects.throbberAnimated = throbberAnimated;
+  transObjects.loadingDots = loadingDots;
   transObjects.searchBar = searchBar;
   transObjects.query = query;
   transObjects.dropdownButton = dropdownButton;
@@ -330,6 +332,7 @@ function initialize()
   
   buildBooksArray();
   buildDropdownMenu();
+  applyBackground();
 }
 
 function exportBooksArray()
@@ -403,6 +406,20 @@ function buildDropdownMenu()
   defContent.hrefRelCallback = lookup_url;
 }
 
+function applyBackground()
+{
+  switch (preferences.bg.value) {
+    case "transparent":
+      hTopBG.visible = false;
+      extenderBG.visible = false;
+      break;
+    case "colorized":
+      hTopBG.visible = true;
+      extenderBG.visible = true;
+      hTopBG.colorize = extenderBG.colorize = preferences.bgColor.value;
+      break;
+  }
+}
 
 function filterOption()
 {
@@ -581,8 +598,9 @@ function editBooks()
   if (formResults == null) {
     return;
   }
-  
-  exportBooksArray();
+  if (editBook(formResults[0])) {
+    exportBooksArray();
+  }
 }
 
 
@@ -699,17 +717,9 @@ function lookup_url(url)
     urlObj.location = url;
     state = state | stateLoading;
     urlObj.fetchAsync(url_done);
-    log("pre src");
-    pdump(throbberAnimated);
-    throbberAnimated.src = "Resources/ThrobberAnimated.gif";
-    // throbberAnimated.src = "Resources/Blank.png";
-    log("post src");
-    throbberAnimated.visible = true;
-    throbberAnimated.opacity2 = 255;
+    startLoadingAnimation();
     if (!(wm == wmOpen) && !(state & stateTrans)) {
       smoothTransition(wmOpen);
-    } else {
-      throbberAnimated.opacity = throbberAnimated.opacity2;
     }
   }
 }
@@ -794,8 +804,12 @@ function mediawiki_definition(str)
   str = str.replace(/<table id='toc'[^>]*>([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/gi, "");
   */
   
-  // pull out jump-to-nave
+  // pull out jump-to-nav
   str = str.replace(/<div id="jump-to-nav">([^<]|<[^\/]|<\/[^d]|<\/d[^i]|<\/di[^v]|<\/div[^>])*<\/div>/i, "");
+  
+  // get rid of some extra spaces
+  str = str.replace(/<h1 class="firstHeading">(([^<]|<[^\/]|<\/[^h]|<\/h[^1]|<\/h1[^>])*)<\/h1>/, "<font size=\"+2\">$1</font>");
+  str = str.replace(/<h3 id="siteSub">(([^<]|<[^\/]|<\/[^h]|<\/h[^3]|<\/h3[^>])*)<\/h3>/, "$1");
   
   return str;
   
@@ -809,7 +823,11 @@ function m_w_com_definition(str)
   // pre-process
   str = str.replace(/[\r\n]/gm, ' ');
   
-  result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*)<\/table>/i);
+  result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^d]|<\/td[^>])*)<\/td>/i);
+  
+  // result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^d]|<\/td[^>])*)<\/td>/i);
+  
+  
   
   if (result) {
     str = result[1];
@@ -958,9 +976,8 @@ function hrefBase(url)
 
 function url_done(url)
 {
-  throbberAnimated.src = "Resources/Blank.png";
-  throbberAnimated.visible = false;
-  throbberAnimated.opacity2 = 0;
+  loadingDots.clipRect = null;
+  updateNow();
   urlTimer.ticking = false;
   if (url == null) {
     url = urlObj;
@@ -981,6 +998,7 @@ function url_done(url)
   } else {
     showError('HTTP Error - server may be down, or connection may be lost.', url);
   }
+  stopLoadingAnimation();
 }
 
 
@@ -1011,7 +1029,7 @@ function smoothTransition(mode)
           return;
           break;
         case wmWide:
-          nextWm = nextNextWm = wmWide;
+          nextWm = nextNextWm = w3ide;
           break;
         case wmOpen:
           nextWm = wmWide;
@@ -1236,8 +1254,15 @@ function onPreferencesChanged()
     preferences.revertToDefaults.value = false;
   }
   
+  defContent.tagRoot.font = preferences.dictionaryFont.value;
+  defContent.tagRoot.size = parseFloat(preferences.dictionarySize.value);
+  query.font = preferences.dictionaryFont.value;
+  
+  defContent.setHtml(defContent.html);
+  
   buildBooksArray();
   buildDropdownMenu();
+  applyBackground();
 }
 
 
@@ -1333,6 +1358,53 @@ function hTop_onDragExit()
   
 }
 
+function dictionaryTitle_onMouseUp()
+{
+
+}
+
+function startLoadingAnimation()
+{
+  stopLoadingAnimation();
+  loadingAnimationUpdateFunc.a = new CustomAnimation(500, loadingAnimationUpdateFunc);
+  loadingAnimationUpdateFunc.a.numDots = 3;
+  animator.start(loadingAnimationUpdateFunc.a);
+}
+
+function stopLoadingAnimation()
+{
+  if (loadingAnimationUpdateFunc.a) {
+    loadingAnimationUpdateFunc.a.kill();
+  }
+  loadingDots.visible = false;
+}
+
+function loadingAnimationUpdateFunc()
+{
+  if (!loadingDots.visible) {
+    loadingDots.visible = true;
+  }
+  switch (this.numDots) {
+    case 0:
+      loadingDots.clipRect = "0, 0, 0, 0";
+      break;
+    case 1:
+      loadingDots.clipRect = "0, 0, 5, 6";
+      break;
+    case 2:
+      loadingDots.clipRect = "0, 0, 16, 6";
+      break;
+    case 3:
+      loadingDots.clipRect = "0, 0, 28, 6";
+      break;
+    default:
+      this.numDots = 0;
+  }
+  this.numDots++;
+  this.numDots %= 4;
+  return true;
+}
+loadingAnimationUpdateFunc.a = null;
 
 function pdump(obj)
 {
