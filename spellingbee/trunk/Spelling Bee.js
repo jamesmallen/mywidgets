@@ -2,12 +2,13 @@
  * Spelling Bee
  * by James M. Allen
  * 
- * ispell is an open-source program that is distributed with this Widget in
- * binary form. Please refer to the ispell.LICENSE file for the full details
- * of the ispell license.
+ * aspell is an open-source program that is distributed with this Widget in
+ * binary form. You can get the source code from http://aspell.net.
  * 
- * All other images and code are copyright 2005 James M. Allen, and may not
- * be used without permission.
+ * Jessica Relitz helped out with dialogue. ;-)
+ * 
+ * All other images and code are copyright 2005-2006 James M. Allen, and may
+ * not be used without permission.
  */
 
 include("lib.js");
@@ -41,20 +42,8 @@ function onLoad()
   wndMain.contextMenuItems = contextMenu;
   wndMain.onContextMenu = "main_onContextMenu();";
   
-  // Platform-specific things
-  switch (system.platform) {
-    case "windows":
-      ispellExe = "win32bin/ispell.exe";
-      buildhashExe = "win32bin/buildhash.exe";
-      break;
-    case "macintosh":
-      ispellExe = "darwinbin/ispell";
-      buildhashExe = "darwinbin/buildhash";
-      break;
-  }
-  
   blockObj = new Object();
-  blockObj.ispell = false;
+  blockObj.aspell = false;
   
   
   kmgInputBar = new KImage();
@@ -161,6 +150,31 @@ function onLoad()
   tmrIdle.onTimerFired = "tmrIdle_onTimerFired();";
   
   onPreferencesChanged();
+  
+  // Platform-specific things
+  switch (system.platform) {
+    case "windows":
+      aspellExe = system.widgetDataFolder + "/aspell/bin/aspell.exe";
+      wordListCompressExe = system.widgetDataFolder + "/aspell/bin/word-list-compress.exe";
+      break;
+    case "macintosh":
+      aspellExe = system.widgetDataFolder + "/aspell/bin/aspell";
+      wordListCompressExe = system.widgetDataFolder + "/aspell/bin/word-list-compress";
+      break;
+    default:
+      aspellExe = "aspell";
+      wordListCompressExe = "word-list-compress";
+  }
+  
+  // Initialize
+  if (!filesystem.itemExists(aspellExe)) {
+    unpackAspell();
+  }
+  if (!filesystem.itemExists(aspellExe)) {
+    aspellExe = "aspell";
+    wordListCompressExe = "word-list-compress";
+  }
+  
 }
 
 
@@ -189,33 +203,128 @@ function txtInput_onKeyPress()
       tmrIdle.ticking = true;
       break;
   }
+  
+  txtInput_resize();
 }
+
+
+function txtInput_resize()
+{
+  txtInput.width = -1;
+  updateNow();
+  txtInput.width = Math.max(txtInput.xWidth * widgetResize.curScale, txtInput.width);
+  kmgInputBar.width = Math.max((kmgInputBar.xWidth - txtInput.xWidth) * widgetResize.curScale + txtInput.width);
+  
+  wndMain.width = Math.max(kmgInputBar.hOffset + kmgInputBar.width, frmBubble.hOffset + imgBubbleAbove.width);
+  
+}
+
 
 function checkSpelling(inputStr)
 {
-  if (blockObj.ispell) {
+  if (blockObj.aspell) {
     return;
   } else {
-    blockObj.ispell = true;
+    blockObj.aspell = true;
   }
   
   spinBee();
   log("CHECK SPELLING");
   
-  var dictionaryFile = system.widgetDataFolder + "/" + preferences.language.value + ".hash";
-  var cmdLine = "export DICTIONARY=" + quoteFilename(dictionaryFile) + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(ispellExe) + " -a";
-  runCommandInBg(cmdLine, "ispell");
+  // var cmdLine = "export DICTIONARY=" + quoteFilename(dictionaryFile) + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(ispellExe) + " -a";
+  var cmdLine = "export ASPELL_CONF=" + quoteFilename("prefix " + system.widgetDataFolder + "/aspell") + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(aspellExe) + " -d " + unescape(preferences.currentLanguage.value) + ".multi -a";
+  runCommandInBg(cmdLine, "aspell");
 }
 
 
-function initISpell()
+function unpackAspell()
 {
-  buildDictionary();
+  spinBee();
+  beeSays("Initializing aspell...");
+  updateNow();
+  var cmdOutput;
+  switch (system.platform) {
+    case "windows":
+      cmdOutput = log(runCommand("unzip -o aspell-w32-0.50.3-jma.zip -d " + quoteFilename(system.widgetDataFolder)));
+      log(cmdOutput);
+      break;
+    case "macintosh":
+      // TODO: get a MacOS aspell binary!
+      break;
+  }
+  
+  var pwd = runCommand("pwd");
+  buildDictionary(pwd + "/aspell-en-0.50-2.tar.bz2");
+  
+  beeSays("Ready!");
+  stopBee();
+  
 }
 
 
-function buildDictionary(language)
+function buildDictionary(languageFile)
 {
+  var cmdOutput;
+  
+  var myTemporaryFolder = system.temporaryFolder + "/spellingbee";
+  
+  cmdOutput = runCommand("rm -Rf " + quoteFilename(myTemporaryFolder) + "; mkdir -p " + quoteFilename(myTemporaryFolder) + "; cd " + quoteFilename(myTemporaryFolder) + "; bunzip2 -c " + quoteFilename(languageFile) + " | tar -x");
+  log(cmdOutput);
+  
+  var dirContents = filesystem.getDirectoryContents(myTemporaryFolder, true);
+  
+  var multiFiles = new Array();
+  var cwlFiles = new Array();
+  var dataFiles = new Array();
+  
+  for (var i in dirContents) {
+    var curFile = dirContents[i];
+    switch (getExtension(curFile)) {
+      case "multi":
+        multiFiles.push(curFile);
+        break;
+      case "cwl":
+        cwlFiles.push(curFile);
+        break;
+      case "dat":
+        dataFiles.push(curFile);
+        break;
+    }
+  }
+  
+  if (multiFiles.length < 1 || cwlFiles.length < 1 || dataFiles.length < 1) {
+    return false;
+  }
+  
+  var lang = dataFiles[0];
+  for (var i = 0; i < dataFiles.length; i++) {
+    if (dataFiles[i].length < lang.length) {
+      lang = getFilename(dataFiles[i]);
+    }
+    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + dataFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/data"));
+    log(cmdOutput);
+  }
+  
+  lang = getFilenameWithoutExtension(lang);
+  
+  
+  var cwlFilename;
+  
+  for (var i = 0; i < cwlFiles.length; i++) {
+    cwlFilename = getFilenameWithoutExtension(cwlFiles[i]);
+    cmdOutput = runCommand("export ASPELL_CONF=" + quoteFilename("prefix " + system.widgetDataFolder + "/aspell") + "; " + quoteFilename(wordListCompressExe) + " d < " + quoteFilename(myTemporaryFolder + "/" + cwlFiles[i]) + " | " + quoteFilename(aspellExe) + " --lang=" + lang + " create master " + cwlFilename + ".rws");
+    log(cmdOutput);
+  }
+  
+  for (var i = 0; i < multiFiles.length; i++) {
+    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + multiFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/dict"));
+    log(cmdOutput);
+  }
+  
+  
+  
+  /*
+  
   if (!language || language == "all") {
     for (var i in buildDictionary.languages) {
       buildDictionary(buildDictionary.languages[i]);
@@ -255,8 +364,11 @@ function buildDictionary(language)
     str = runCommand(cmdLine);
     log(str);
   }
+  
+  */
 }
-buildDictionary.languages = ["american", "british"];
+
+//buildDictionary.languages = ["american", "british"];
 
 function showBubble()
 {
@@ -289,7 +401,7 @@ function hideBubble()
 }
 
 
-function beeSays(str, autoLink)
+function beeSays(str, autoLink, onMouseUp)
 {
   var startVOffset = 15;
   var wordsArray;
@@ -306,6 +418,9 @@ function beeSays(str, autoLink)
   } else {
     wordsArray = str.match(/[\w\'\"]*[^\w\'\"]{0,2}/g);
     beeSays.words = new Array();
+    for (var i = 0; i < wordsArray.length; i++) {
+      beeSays.words.push(wordsArray[i]);
+    }
   }
   
   if (wordsArray && wordsArray.length > 0) {
@@ -333,12 +448,16 @@ function beeSays(str, autoLink)
           beeSays.textObjs[i].data = wordsArray[i];
           break;
       }
-      if (autoLink) {
+      if (onMouseUp) {
+        beeSays.textObjs[i].bgOpacity = 1;
+        beeSays.textObjs[i].onMouseUp = onMouseUp;
+      } else if (autoLink) {
         beeSays.textObjs[i].bgOpacity = 1;
         beeSays.textObjs[i].onMouseUp = "textObjs_onMouseUp(" + i + ");";
       } else {
         beeSays.textObjs[i].bgOpacity = 0;
         beeSays.textObjs[i].onMouseUp = null;
+        beeSays.textObjs[i].tooltip = "";
       }
       objectResize(beeSays.textObjs[i]);
     }
@@ -372,6 +491,8 @@ function beeSays(str, autoLink)
           beeSays.textObjs[i - 1].data = ". . . ";
           if (autoLink) {
             beeSays.textObjs[i - 1].onMouseUp = "textObjs_onMouseUp(-1);";
+          } else {
+            beeSays.textObjs[i - 1].tooltip = str;
           }
           for (var j = i; j < wordsArray.length; j++) {
             beeSays.textObjs[j].visible = false;
@@ -405,7 +526,7 @@ function textObjs_onMouseUp(idx)
   if (idx < 0) {
     var arrMenu = new Array();
     var mi;
-    for (var i = 0; i < beeSays.textObjs.length; i++) {
+    for (var i = 0; i < beeSays.words.length; i++) {
       if (beeSays.words[i]) {
         var word = beeSays.words[i];
       } else {
@@ -592,6 +713,8 @@ function onPreferencesChanged()
 {
   widgetResize(preferences.widgetSize.value / 100.0);
   
+  txtInput_resize();
+  
   tmrIdle.interval = 0.5;
 }
 
@@ -600,63 +723,83 @@ function onRunCommandInBgComplete()
 {
   var tag = system.event.data;
   switch (tag) {
-    case "ispell":
+    case "aspell":
       var resultsStr = eval(tag);
-      log(resultsStr);
-      
-      blockObj.ispell = false;
-      
-      var results = resultsStr.split(/\r\n?|\n/); // Thanks Harry Whitfield!
-      
+      var errorMessage = "";
       var pass = true;
       
-      var suggestions = new Array();
-      var reResult;
+      log(resultsStr);
       
-      // Skip the first line (ispell version identification)
-      for (var i = 1; i < results.length; i++) {
-        var symbol = results[i].charAt(0);
-        var line = results[i];
-        if (line.length == 0) {
-          continue;
-        }
-        switch (symbol) {
-          // exact match found
-          case "*":
-          case "+":
-          case "-":
-            break;
-          case "&":
-          case "?":
-            reResult = line.match(/([\&\?])\s+(\w+)\s+(\d+)\s+(\d+)\:\s+([^\s].*)/);
-            if (reResult) {
-              var curSuggestions = reResult[5].split(", ");
-              for (var j in curSuggestions) {
-                suggestions.push(curSuggestions[j]);
+      blockObj.aspell = false;
+      
+      if (/command not found|no such file or directory/im.test(resultsStr)) {
+        errorMessage = "Aspell not found. Click to re-initialize.";
+        beeSays(errorMessage, false, "unpackAspell();");
+        stopBee();
+        break;
+      } else if (/can not be opened/im.test(resultsStr)) {
+        errorMessage = "Dictionary not found.";
+        beeSays(errorMessage, false, "configureDictionaries();");
+        pass = false;
+      } else if (/^error/im.test(resultsStr)) {
+        errorMessage = resultsStr;
+        pass = false;
+      } else {
+      
+        var results = resultsStr.split(/\r\n?|\n/); // Thanks Harry Whitfield!
+        
+        var suggestions = new Array();
+        var reResult;
+        
+        // Skip the first line (aspell version identification)
+        for (var i = 1; i < results.length; i++) {
+          var symbol = results[i].charAt(0);
+          var line = results[i];
+          if (line.length == 0) {
+            continue;
+          }
+          switch (symbol) {
+            // exact match found
+            case "*":
+            case "+":
+            case "-":
+              break;
+            case "&":
+            case "?":
+              reResult = line.match(/([\&\?])\s+(\w+)\s+(\d+)\s+(\d+)\:\s+([^\s].*)/);
+              if (reResult) {
+                var curSuggestions = reResult[5].split(", ");
+                for (var j in curSuggestions) {
+                  suggestions.push(curSuggestions[j]);
+                }
               }
-            }
-            pass = false;
-            break;
-          // no hits at all
-          case "#":
-          default:
-            pass = false;
-            break;
+              pass = false;
+              break;
+            // no hits at all
+            case "#":
+            default:
+              pass = false;
+              break;
+          }
         }
       }
       
       if (pass) {
         log("CORRECT SPELLING");
-        
       } else {
-        log("INCORRECT SPELLING");
-        if (suggestions.length > 0) {
-          beeSays(suggestions, true);
+        if (errorMessage) {
+          log("ERROR");
+          beeSays(errorMessage);
         } else {
-          beeSays(unknownPhrase());
+          log("INCORRECT SPELLING");
+          if (suggestions.length > 0) {
+            beeSays(suggestions, true);
+          } else {
+            beeSays(unknownPhrase());
+          }
         }
       }
-      pdump(suggestions);
+      // pdump(suggestions);
       
       stopBee();
       break;
@@ -677,7 +820,7 @@ function copy_onSelect()
 function paste_onSelect()
 {
   txtInput.data = system.clipboard;
-  txtInput_onKeyPress();
+  hideBubble();
 }
 
 

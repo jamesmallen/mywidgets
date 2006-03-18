@@ -15,7 +15,6 @@ function quoteFilename(str)
   return "\"" + str.replace(/[\\"]/g, "\\$&") + "\"";
 }
 
-
 function pdump(obj)
 {
   print("PDUMP");
@@ -38,6 +37,24 @@ function limit(x, min, max)
 }
 
 
+function getExtension(path) {
+  var pos = path.lastIndexOf('.');
+  return (pos < 0) ? "" : path.substr(pos + 1);
+}
+
+
+function getFilenameWithoutExtension(path) {
+  var pos1 = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  var pos2 = path.lastIndexOf('.');
+  return (pos2 < pos1) ?
+    path.substr(pos1 + 1) : path.substr(pos1 + 1, pos2 - (pos1 + 1));
+}
+
+
+function getFilename(path) {
+  var pos = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return path.substr(pos + 1);
+}
 
 function donate()
 {

@@ -3,20 +3,19 @@
   Spelling Bee
   by James M. Allen
   
-  ispell is an open-source program that is distributed with this Widget in
-  binary form. Please refer to the ispell.LICENSE file for the full details
-  of the ispell license.
+  aspell is an open-source program that is distributed with this Widget in
+  binary form. You can get the source code from http://aspell.net.
   
   Jessica Relitz helped out with dialogue. ;-)
   
-  All other images and code are copyright 2005 James M. Allen, and may not
-  be used without permission.
+  All other images and code are copyright 2005-2006 James M. Allen, and may
+  not be used without permission.
   
 -->
 
 
 <?konfabulator xml-strict="true"?>
-<widget version="v0.9" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005 James M. Allen" image="Resources/WidgetIcon.png">
+<widget version="v0.9" minimumVersion="3.0" requiredPlatform="windows" author="James M. Allen" copyright="Copyright 2006 James M. Allen" image="Resources/WidgetIcon.png">
   <debug>verbose</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="wndMain"
@@ -35,15 +34,25 @@
   
   <preference name="widgetSize" title="Size:" type="slider" minLength="70" maxLength="100" defaultValue="75" ticks="6" />
   
+  <!--
   <preference name="language" title="Language:" type="popup" defaultValue="american">
     <option>American English</option>
     <optionValue>american</optionValue>
     <option>British English</option>
     <optionValue>british</optionValue>
   </preference>
+  -->
   
   <preference name="autoCopy" title="Auto copy" type="checkbox" defaultValue="1">
     <description>Check this to automatically copy the selected "correct" word to the clipboard when you click on it.</description>
+  </preference>
+  
+  <preference name="availableLanguages" type="text" hidden="true">
+    <defaultValue>American%20English,en%5FUS|British%20English,en%5FGB|Canadian%20English,en%5FCA</defaultValue>
+  </preference>
+  
+  <preference name="currentLanguage" type="text" hidden="true">
+    <defaultValue>en%5FUS</defaultValue>
   </preference>
   
   <about-box>

@@ -5,9 +5,16 @@
  *  pattern, and will only scale certain images in the pattern.
  *
  * Copyright 2005, James M. Allen
+ * You are free to reuse this code, provided you keep this and the above
+ * copyright notice intact.
+ *
+ * Requirements
+ *  - Yahoo! Widget Engine v3.0 or higher
+ *  - A transparent 1x1 "blank" image found at Resources/Blank.png
  *
  * Usage example:
-
+      
+      include("KImage.js");
       foo = new KImage();
       foo.src = "Resources/Window*.png";
       foo.hOffset = 30;
@@ -68,7 +75,7 @@
  *  They are used in much the same way as their built-in counterparts, with
  *  one important difference: they are not called with the "new" keyword.
  *
- *  Refer to example above or the funciton definitions below for more
+ *  Refer to example above or the function definitions below for more
  *  information.
  *
  *
@@ -554,7 +561,6 @@ function KImage()
       newval = self.srcHeight;
     }
     if (newval == oldval) {
-      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Height needs to be set before calling resize()
@@ -583,7 +589,6 @@ function KImage()
       newval = self.srcWidth;
     }
     if (newval == oldval) {
-      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Width needs to be set before calling resize()
