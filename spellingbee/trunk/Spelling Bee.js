@@ -127,14 +127,6 @@ function onLoad()
   txtInput.xSize = 16;
   widgetResize.items.push(txtInput);
   
-  imgSquiggle = new Image();
-  imgSquiggle.window = wndMain;
-  imgSquiggle.src = "Resources/SquiggleUnderline.png";
-  imgSquiggle.hAlign = "left";
-  imgSquiggle.vAlign = "top";
-  imgSquiggle.fillMode = "tile";
-  imgSquiggle.visible = false;
-  
   frmBubble = new Frame();
   frmBubble.window = wndMain;
   frmBubble.xHOffset = 50;
