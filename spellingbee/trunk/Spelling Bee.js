@@ -45,6 +45,15 @@ function onLoad()
   blockObj = new Object();
   blockObj.aspell = false;
   
+  kmgInputBarBG = new KImage();
+  kmgInputBarBG.window = wndMain;
+  kmgInputBarBG.src = "Resources/InputBarBG<.png";
+  kmgInputBarBG.xHOffset = 51;
+  kmgInputBarBG.xVOffset = 63;
+  kmgInputBarBG.xWidth = 182;
+  kmgInputBarBG.xHeight = 42;
+  kmgInputBarBG.xScale = 1.0;
+  widgetResize.items.push(kmgInputBarBG);
   
   kmgInputBar = new KImage();
   kmgInputBar.window = wndMain;
@@ -56,6 +65,21 @@ function onLoad()
   kmgInputBar.xScale = 1.0;
   widgetResize.items.push(kmgInputBar);
   
+  imgDot = new Image();
+  imgDot.window = wndMain;
+  imgDot.src = "Resources/Dot.png";
+  imgDot.hAlign = "center";
+  imgDot.vAlign = "center";
+  imgDot.xHOffset = 75;
+  imgDot.xVOffset = 82;
+  imgDot.xWidth = 12;
+  imgDot.xHeight = 12;
+  imgDot.visible = false;
+  imgDot.colorGreen = "#00FF00";
+  imgDot.colorYellow = "#EEEE00";
+  imgDot.colorRed = "#FF0000";
+  widgetResize.items.push(imgDot);
+  
   imgBeeShadow = new Image();
   imgBeeShadow.window = wndMain;
   imgBeeShadow.src = "Resources/BeeShadow.png";
@@ -65,19 +89,8 @@ function onLoad()
   imgBeeShadow.xVOffset = 106;
   imgBeeShadow.xWidth = 100;
   imgBeeShadow.xHeight = 102;
+  imgBeeShadow.visible = false;
   widgetResize.items.push(imgBeeShadow);
-  
-  imgBeeBlur = new Image();
-  imgBeeBlur.window = wndMain;
-  imgBeeBlur.src = "Resources/BeeBlur.png";
-  imgBeeBlur.hAlign = "center";
-  imgBeeBlur.vAlign = "center";
-  imgBeeBlur.xHOffset = 50;
-  imgBeeBlur.xVOffset = 105;
-  imgBeeBlur.xWidth = 100;
-  imgBeeBlur.xHeight = 100;
-  imgBeeBlur.visible = false;
-  widgetResize.items.push(imgBeeBlur);
   
   imgBee = new Image();
   imgBee.window = wndMain;
@@ -88,6 +101,7 @@ function onLoad()
   imgBee.xVOffset = 105;
   imgBee.xWidth = 100;
   imgBee.xHeight = 100;
+  imgBee.visible = false;
   widgetResize.items.push(imgBee);
   
   txtInput = new TextArea();
@@ -103,13 +117,23 @@ function onLoad()
       txtInput.font = "Lucida Sans Bold";
       break;
   }
+  // txtInput.onKeyDown = "txtInput_onKeyDown();";
   txtInput.onKeyPress = "txtInput_onKeyPress();";
+  txtInput.onKeyUp = "txtInput_onKeyUp();";
   txtInput.xHOffset = 82;
-  txtInput.xVOffset = 71;
+  txtInput.xVOffset = 73;
   txtInput.xWidth = 128;
   txtInput.xHeight = 22;
   txtInput.xSize = 16;
   widgetResize.items.push(txtInput);
+  
+  imgSquiggle = new Image();
+  imgSquiggle.window = wndMain;
+  imgSquiggle.src = "Resources/SquiggleUnderline.png";
+  imgSquiggle.hAlign = "left";
+  imgSquiggle.vAlign = "top";
+  imgSquiggle.fillMode = "tile";
+  imgSquiggle.visible = false;
   
   frmBubble = new Frame();
   frmBubble.window = wndMain;
@@ -149,6 +173,12 @@ function onLoad()
   tmrIdle.ticking = false;
   tmrIdle.onTimerFired = "tmrIdle_onTimerFired();";
   
+  tmrResize = new Timer();
+  tmrResize.interval = 0.001;
+  tmrResize.ticking = false;
+  tmrResize.onTimerFired = "tmrResize_onTimerFired();";
+  
+  
   onPreferencesChanged();
   
   // Platform-specific things
@@ -181,13 +211,16 @@ function onLoad()
 function tmrIdle_onTimerFired()
 {
   tmrIdle.ticking = false;
-  checkSpelling(txtInput.data);
+  if (preferences.autoCheck.value == "1") {
+    checkSpelling(txtInput.data);
+  }
 }
 
 function txtInput_onKeyPress()
 {
   var keyCode = system.event.keyString;
-  
+  tmrResize.reset();
+  tmrResize.ticking = true;
   switch (keyCode) {
     case "Enter":
     case "Return":
@@ -203,8 +236,33 @@ function txtInput_onKeyPress()
       tmrIdle.ticking = true;
       break;
   }
+  beeSays.words = new Array();
+  imgDot.colorize = imgDot.colorYellow;
   
-  txtInput_resize();
+}
+
+function txtInput_onKeyUp()
+{
+  var keyCode = system.event.keyString;
+  switch (keyCode) {
+    case "UpArrow":
+    case "DownArrow":
+      txtInput.rejectKeyPress();
+      textObjs_onMouseUp(-1, txtInput.hOffset, txtInput.vOffset + txtInput.height);
+      return;
+      break;
+    case "ForwardDelete":
+      hideBubble();
+      tmrIdle.reset();
+      tmrIdle.ticking = true;
+      break;
+    default:
+      tmrResize.reset();
+      tmrResize.ticking = true;
+      break;
+  }
+  beeSays.words = new Array();
+  imgDot.colorize = imgDot.colorYellow;
 }
 
 
@@ -212,11 +270,17 @@ function txtInput_resize()
 {
   txtInput.width = -1;
   updateNow();
-  txtInput.width = Math.max(txtInput.xWidth * widgetResize.curScale, txtInput.width);
-  kmgInputBar.width = Math.max((kmgInputBar.xWidth - txtInput.xWidth) * widgetResize.curScale + txtInput.width);
+  txtInput.width = Math.max(txtInput.xWidth * widgetResize.curScale, txtInput.width + txtInput.size * 2);
+  kmgInputBarBG.width = kmgInputBar.width = Math.max((kmgInputBar.xWidth - txtInput.xWidth) * widgetResize.curScale + txtInput.width);
   
   wndMain.width = Math.max(kmgInputBar.hOffset + kmgInputBar.width, frmBubble.hOffset + imgBubbleAbove.width);
   
+}
+
+function tmrResize_onTimerFired()
+{
+  tmrResize.ticking = false;
+  txtInput_resize();
 }
 
 
@@ -231,7 +295,6 @@ function checkSpelling(inputStr)
   spinBee();
   log("CHECK SPELLING");
   
-  // var cmdLine = "export DICTIONARY=" + quoteFilename(dictionaryFile) + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(ispellExe) + " -a";
   var cmdLine = "export ASPELL_CONF=" + quoteFilename("prefix " + system.widgetDataFolder + "/aspell") + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(aspellExe) + " -d " + unescape(preferences.currentLanguage.value) + ".multi -a";
   runCommandInBg(cmdLine, "aspell");
 }
@@ -323,52 +386,7 @@ function buildDictionary(languageFile)
   
   
   
-  /*
-  
-  if (!language || language == "all") {
-    for (var i in buildDictionary.languages) {
-      buildDictionary(buildDictionary.languages[i]);
-    }
-  } else {
-    var srcFiles;
-    var affFile;
-    var wordsFilename;
-    var cmdLine;
-    
-    var hashFilename;
-    
-    var str;
-    
-    switch (language) {
-      case "british":
-        srcFiles = ["dic/english.0", "dic/english.1", "dic/english.2", "dic/british.0", "dic/british.1", "dic/british.2"];
-        affFile = "dic/english.aff";
-        break;
-      case "american":
-      default:
-        srcFiles = ["dic/english.0", "dic/english.1", "dic/english.2", "dic/american.0", "dic/american.1", "dic/american.2"];
-        affFile = "dic/english.aff";
-        break;
-    }
-    
-    wordsFilename = system.widgetDataFolder + "/" + language + ".words";
-    cmdLine = "sort -u -t/ +0f -1 +0 -o " + quoteFilename(wordsFilename);
-    for (var i in srcFiles) {
-      cmdLine += (" " + quoteFilename(srcFiles[i]));
-    }
-    str = runCommand(cmdLine);
-    log(str);
-    
-    hashFilename = system.widgetDataFolder + "/" + language + ".hash";
-    cmdLine = quoteFilename(buildhashExe) + " " + quoteFilename(wordsFilename) + " " + quoteFilename(affFile) + " " + quoteFilename(hashFilename);
-    str = runCommand(cmdLine);
-    log(str);
-  }
-  
-  */
 }
-
-//buildDictionary.languages = ["american", "british"];
 
 function showBubble()
 {
@@ -521,12 +539,13 @@ beeSays.textObjs = new Array();
 beeSays.words = new Array();
 
 
-function textObjs_onMouseUp(idx)
+function textObjs_onMouseUp(idx, popupx, popupy)
 {
   if (idx < 0) {
     var arrMenu = new Array();
     var mi;
-    for (var i = 0; i < beeSays.words.length; i++) {
+    var numWords = Math.min(beeSays.words.length, 15);
+    for (var i = 0; i < numWords; i++) {
       if (beeSays.words[i]) {
         var word = beeSays.words[i];
       } else {
@@ -539,7 +558,12 @@ function textObjs_onMouseUp(idx)
       arrMenu.push(mi);
     }
     
-    popupMenu(arrMenu, system.event.hOffset, system.event.vOffset);
+    if (typeof(popupx) == "undefined") {
+      popupx = system.event.hOffset;
+      popupy = system.event.vOffset;
+    }
+    
+    popupMenu(arrMenu, popupx, popupy);
     
   } else {
     if (beeSays.words[idx]) {
@@ -552,6 +576,9 @@ function textObjs_onMouseUp(idx)
     hideBubble();
     
     txtInput.data = word;
+    imgDot.colorize = imgDot.colorGreen;
+    
+    beeSays.words = new Array();
     
     if (preferences.autoCopy.value == "1") {
       copy_onSelect();
@@ -598,26 +625,31 @@ spinBee.updateFunc = function()
   }
   var now = animator.milliseconds;
   var t = Math.max(0, now - this.newStartTime);
-  var endTime = 60000 / spinBee.rpm;
-  if (t >= endTime && this.lastOne) {
-    imgBeeShadow.rotation = 0;
-    imgBeeBlur.rotation = 0;
-    imgBeeBlur.visible = false;
-    imgBee.rotation = 0;
-    this.finished = true;
-    return false;
-  } else {
-    this.newStartTime += (endTime * Math.floor(t / endTime));
-    t = Math.max(0, now - this.newStartTime);
-    var pct = t / endTime;
-    var rot = animator.ease(0, -360, pct, animator.kEaseNone);
-    imgBeeShadow.rotation = rot;
-    imgBeeBlur.rotation = rot;
-    imgBee.rotation = rot;
-    if (!imgBeeBlur.visible && rot <= -15) {
-      imgBeeBlur.visible = true;
-    }
-    return true;
+  switch (preferences.uiStyle.value) {
+    case "bee":
+      var endTime = 60000 / spinBee.rpm;
+      if (t >= endTime && this.lastOne) {
+        imgBeeShadow.rotation = 0;
+        imgBee.rotation = 0;
+        this.finished = true;
+        return false;
+      } else {
+        this.newStartTime += (endTime * Math.floor(t / endTime));
+        t = Math.max(0, now - this.newStartTime);
+        var pct = t / endTime;
+        var rot = animator.ease(0, -360, pct, animator.kEaseNone);
+        imgBeeShadow.rotation = rot;
+        imgBee.rotation = rot;
+        return true;
+      }
+      break;
+    
+    case "corporate":
+      if (this.lastOne) {
+        this.finished = true;
+        return false;
+      }
+      break;
   }
 }
 spinBee.doneFunc = function()
@@ -644,6 +676,9 @@ function stopBee(doneEval)
     spinBee.doneFunc();
   }
 }
+
+
+
 
 function widgetResize(scale)
 {
@@ -711,7 +746,35 @@ function onWillChangePreferences()
 
 function onPreferencesChanged()
 {
+  if (preferences.reset.value == "1") {
+    var pArr = ["uiStyle", "widgetSize", "bgColor", "reset"];
+    pdump(pArr);
+    for (var p in pArr) {
+      preferences[pArr[p]].value = preferences[pArr[p]].defaultValue;
+    }
+  }
+  
+  kmgInputBarBG.colorize = preferences.bgColor.value;
+  
   widgetResize(preferences.widgetSize.value / 100.0);
+  
+  imgBee.visible = false;
+  imgBeeShadow.visible = false;
+  imgDot.visible = false;
+  imgDot.colorize = imgDot.colorGreen;
+  switch (preferences.uiStyle.value) {
+    case "bee":
+      imgBee.visible = true;
+      imgBeeShadow.visible = true;
+      break;
+    case "corporate":
+      imgDot.visible = true;
+      break;
+  }
+  if (spinBee.anm) {
+    spinBee.anm.kill();
+    spinBee.anm = null;
+  }
   
   txtInput_resize();
   
@@ -736,11 +799,14 @@ function onRunCommandInBgComplete()
         errorMessage = "Aspell not found. Click to re-initialize.";
         beeSays(errorMessage, false, "unpackAspell();");
         stopBee();
+        imgDot.colorize = imgDot.colorRed;
         break;
       } else if (/can not be opened/im.test(resultsStr)) {
         errorMessage = "Dictionary not found.";
         beeSays(errorMessage, false, "configureDictionaries();");
-        pass = false;
+        stopBee();
+        imgDot.colorize = imgDot.colorRed;
+        break;
       } else if (/^error/im.test(resultsStr)) {
         errorMessage = resultsStr;
         pass = false;
@@ -786,6 +852,7 @@ function onRunCommandInBgComplete()
       
       if (pass) {
         log("CORRECT SPELLING");
+        imgDot.colorize = imgDot.colorGreen;
       } else {
         if (errorMessage) {
           log("ERROR");
@@ -798,8 +865,8 @@ function onRunCommandInBgComplete()
             beeSays(unknownPhrase());
           }
         }
+        imgDot.colorize = imgDot.colorRed;
       }
-      // pdump(suggestions);
       
       stopBee();
       break;
@@ -821,6 +888,7 @@ function paste_onSelect()
 {
   txtInput.data = system.clipboard;
   hideBubble();
+  checkSpelling(txtInput.data);
 }
 
 
