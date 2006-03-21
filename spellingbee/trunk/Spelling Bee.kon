@@ -1,77 +1,153 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
+
 <!--
+
   Spelling Bee
+
   by James M. Allen
+
   
+
   aspell is an open-source program that is distributed with this Widget in
+
   binary form. You can get the source code from http://aspell.net.
+
   
+
   Jessica Relitz helped out with dialogue. ;-)
+
   
+
   All other images and code are copyright 2005-2006 James M. Allen, and may
+
   not be used without permission.
+
   
+
 -->
 
 
+
+
+
 <?konfabulator xml-strict="true"?>
-<widget version="v1.0" minimumVersion="3.0" requiredPlatform="windows" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
+
+<widget version="v1.0" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
+
   <debug>errors</debug>
+
   <option>allowCustomObjectAttributes</option>
+
   <window name="wndMain" title="Spelling Bee" width="231" height="169" alignment="left"opacity="255" shadow="0" visible="1" />
+
   
+
   <action trigger="onLoad" file="Spelling Bee.js" />
+
   
+
   <action trigger="onWillChangePreferences">onWillChangePreferences();</action>
+
   <action trigger="onPreferencesChanged">onPreferencesChanged();</action>
+
   <action trigger="onRunCommandInBgComplete">onRunCommandInBgComplete();</action>
+
   
+
   <prefGroup name="appearance" title="Appearance" icon="Resources/AppearanceIcon.png" order="2" />
+
   
+
   
+
   <!--
+
   <preference name="language" title="Language:" type="popup" defaultValue="american">
+
     <option>American English</option>
+
     <optionValue>american</optionValue>
+
     <option>British English</option>
+
     <optionValue>british</optionValue>
+
   </preference>
+
   -->
+
   
+
   <preference name="autoCopy" title="Auto copy" type="checkbox" defaultValue="1">
+
     <description>Automatically copy the selected word to the clipboard when you click on it.</description>
+
   </preference>
+
   
+
   <preference name="autoCheck" title="Auto check" type="checkbox" defaultValue="1">
+
     <description>Automatically check as you are typing. If this is not enabled, press Return or Space to check your word.</description>
+
   </preference>
+
   
+
   <preference name="availableLanguages" type="text" hidden="true">
+
     <defaultValue>American%20English,en%5FUS|British%20English,en%5FGB|Canadian%20English,en%5FCA</defaultValue>
+
   </preference>
+
   
+
   <preference name="uiStyle" group="appearance" title="Style:" type="popup" defaultValue="bee">
+
     <option>Personal</option>
+
     <optionValue>bee</optionValue>
+
     <option>Corporate</option>
+
     <optionValue>corporate</optionValue>
+
   </preference>
+
   
+
   <preference name="widgetSize" group="appearance" title="Size:" type="slider" minLength="70" maxLength="100" defaultValue="75" ticks="6" />
+
   
+
   <preference name="bgColor" group="appearance" title="Color:" type="color" defaultValue="#1B96FF" />
+
   
+
   <preference name="reset" group="appearance" title="Reset to defaults" type="checkbox" notSaved="true" defaultValue="0" />
+
   
+
   <preference name="currentLanguage" type="text" hidden="true">
+
     <defaultValue>en%5FUS</defaultValue>
+
   </preference>
+
   
+
   <about-box>
+
     <image>Resources/AboutBox.png</image>
+
     <about-version font="Arial Bold" size="11" hOffset="273" vOffset="122" color="#FFFFFF">
+
       <shadow color="#000000" hOffset="1" vOffset="1" />
+
     </about-version>
+
     <image>Resources/AboutTheAuthor.png</image>
+
   </about-box>
+
 </widget>
