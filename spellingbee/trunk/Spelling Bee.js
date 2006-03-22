@@ -6,6 +6,7 @@
  * binary form. You can get the source code from http://aspell.net.
  * 
  * Jessica Relitz helped out with dialogue. ;-)
+ * nniico helped out with getting aspell compiled and compressed on the Mac.
  * 
  * All other images and code are copyright 2005-2006 James M. Allen, and may
  * not be used without permission.
@@ -20,6 +21,12 @@ function onLoad()
   // Build contextMenu
   contextMenu = new Array();
   var mi;
+  
+  mi = new MenuItem();
+  mi.title = "Dictionaries...";
+  mi.onSelect = "dictionaries_onSelect()";
+  contextMenu.push(mi);
+  
   mi = new MenuItem();
   mi.title = "Copy";
   mi.onSelect = "copy_onSelect()";
@@ -48,12 +55,26 @@ function onLoad()
   kmgInputBarBG = new KImage();
   kmgInputBarBG.window = wndMain;
   kmgInputBarBG.src = "Resources/InputBarBG<.png";
+  kmgInputBarBG.onDragDrop = "kmgInputBarBG_onDragDrop()";
+  kmgInputBarBG.onDragEnter = "kmgInputBarBG_onDragEnter()";
+  kmgInputBarBG.onDragExit = "kmgInputBarBG_onDragExit()";
   kmgInputBarBG.xHOffset = 51;
   kmgInputBarBG.xVOffset = 63;
   kmgInputBarBG.xWidth = 182;
   kmgInputBarBG.xHeight = 42;
   kmgInputBarBG.xScale = 1.0;
   widgetResize.items.push(kmgInputBarBG);
+  
+  kmgInputBarGlow = new KImage();
+  kmgInputBarGlow.window = wndMain;
+  kmgInputBarGlow.src = "Resources/InputBarGlow<.png";
+  kmgInputBarGlow.visible = false;
+  kmgInputBarGlow.xHOffset = 51;
+  kmgInputBarGlow.xVOffset = 59;
+  kmgInputBarGlow.xWidth = 182;
+  kmgInputBarGlow.xHeight = 44;
+  kmgInputBarGlow.xScale = 1.0;
+  widgetResize.items.push(kmgInputBarGlow);
   
   kmgInputBar = new KImage();
   kmgInputBar.window = wndMain;
@@ -120,6 +141,7 @@ function onLoad()
   // txtInput.onKeyDown = "txtInput_onKeyDown();";
   txtInput.onKeyPress = "txtInput_onKeyPress();";
   txtInput.onKeyUp = "txtInput_onKeyUp();";
+  txtInput.onMouseDown = "txtInput_onMouseDown();";
   txtInput.xHOffset = 82;
   txtInput.xVOffset = 73;
   txtInput.xWidth = 128;
@@ -144,7 +166,7 @@ function onLoad()
   imgBubbleAbove.xWidth = 182;
   imgBubbleAbove.xHeight = 87;
   imgBubbleAbove.visible = false;
-  imgBubbleAbove.onMouseUp = "hideBubble();";
+  imgBubbleAbove.onMouseDown = "hideBubble();";
   widgetResize.items.push(imgBubbleAbove);
   
   imgBubbleBelow = new Image();
@@ -155,7 +177,7 @@ function onLoad()
   imgBubbleBelow.xWidth = 182;
   imgBubbleBelow.xHeight = 87;
   imgBubbleBelow.visible = false;
-  imgBubbleBelow.onMouseUp = "hideBubble();";
+  imgBubbleBelow.onMouseDown = "hideBubble();";
   widgetResize.items.push(imgBubbleBelow);
   
   anmBubble = null;
@@ -246,7 +268,7 @@ function txtInput_onKeyUp()
     case "UpArrow":
     case "DownArrow":
       txtInput.rejectKeyPress();
-      textObjs_onMouseUp(-1, txtInput.hOffset, txtInput.vOffset + txtInput.height);
+      textObjs_onMouseDown(-1, txtInput.hOffset, txtInput.vOffset + txtInput.height);
       return;
       break;
     case "ForwardDelete":
@@ -263,13 +285,18 @@ function txtInput_onKeyUp()
   imgDot.colorize = imgDot.colorYellow;
 }
 
+function txtInput_onMouseDown()
+{
+  txtInput.focus();
+}
+
 
 function txtInput_resize()
 {
   txtInput.width = -1;
   updateNow();
   txtInput.width = Math.max(txtInput.xWidth * widgetResize.curScale, txtInput.width + txtInput.size * 2);
-  kmgInputBarBG.width = kmgInputBar.width = Math.max((kmgInputBar.xWidth - txtInput.xWidth) * widgetResize.curScale + txtInput.width);
+  kmgInputBarBG.width = kmgInputBarGlow.width = kmgInputBar.width = Math.max((kmgInputBar.xWidth - txtInput.xWidth) * widgetResize.curScale + txtInput.width);
   
   wndMain.width = Math.max(kmgInputBar.hOffset + kmgInputBar.width, frmBubble.hOffset + imgBubbleAbove.width);
   
@@ -281,6 +308,65 @@ function tmrResize_onTimerFired()
   txtInput_resize();
 }
 
+
+function kmgInputBarBG_onDragDrop()
+{
+  var successes = new Array();
+  var failures = new Array();
+  if (arrDroppedFiles.length > 0) {
+    for (var i in arrDroppedFiles) {
+      if (!buildDictionary(arrDroppedFiles[i])) {
+        failures.push(arrDroppedFiles[i]);
+      } else {
+        successes.push(arrDroppedFiles[i]);
+      }
+    }
+  }
+  
+  chooseLanguage();
+  
+}
+
+function chooseLanguage()
+{
+  // TODO: iterate over dictionaries (.multi files),
+  // present list of them
+  
+  var dictOptions = new Array();
+  var arrDicDir = filesystem.getDirectoryContents(system.widgetDataFolder + "/aspell/dict/");
+  
+  for (var i in arrDicDir) {
+    if (getExtension(arrDicDir[i]).toLowerCase() == "multi") {
+      dictOptions.push(getFilenameWithoutExtension(arrDicDir[i]));
+    }
+  }
+  
+  
+}
+
+
+function kmgInputBarBG_onDragEnter()
+{
+  arrDroppedFiles = new Array();
+  if (system.event.data[0] == "filenames") {
+    for (var i = 1; i < system.event.data.length; i++) {
+      var curFile = system.event.data[i];
+      if (/\/?aspell[^\/\\]*\.tar\.bz2$/i.test(curFile)) {
+        arrDroppedFiles.push(curFile)
+      }
+    }
+  }
+  
+  if (arrDroppedFiles.length > 0) {
+    kmgInputBarGlow.visible = true;
+  }
+  
+}
+
+function kmgInputBarBG_onDragExit()
+{
+  kmgInputBarGlow.visible = false;
+}
 
 function checkSpelling(inputStr)
 {
@@ -383,9 +469,11 @@ function buildDictionary(languageFile)
     log(cmdOutput);
   }
   
-  
+  return true;
   
 }
+
+
 
 function showBubble()
 {
@@ -418,7 +506,7 @@ function hideBubble()
 }
 
 
-function beeSays(str, autoLink, onMouseUp)
+function beeSays(str, autoLink, onMouseDown)
 {
   var startVOffset = 15;
   var wordsArray;
@@ -465,15 +553,15 @@ function beeSays(str, autoLink, onMouseUp)
           beeSays.textObjs[i].data = wordsArray[i];
           break;
       }
-      if (onMouseUp) {
+      if (onMouseDown) {
         beeSays.textObjs[i].bgOpacity = 1;
-        beeSays.textObjs[i].onMouseUp = onMouseUp;
+        beeSays.textObjs[i].onMouseDown = onMouseDown;
       } else if (autoLink) {
         beeSays.textObjs[i].bgOpacity = 1;
-        beeSays.textObjs[i].onMouseUp = "textObjs_onMouseUp(" + i + ");";
+        beeSays.textObjs[i].onMouseDown = "textObjs_onMouseDown(" + i + ");";
       } else {
         beeSays.textObjs[i].bgOpacity = 0;
-        beeSays.textObjs[i].onMouseUp = null;
+        beeSays.textObjs[i].onMouseDown = null;
         beeSays.textObjs[i].tooltip = "";
       }
       objectResize(beeSays.textObjs[i]);
@@ -507,7 +595,7 @@ function beeSays(str, autoLink, onMouseUp)
         if (curLineNumber >= lineVOffsets.length) {
           beeSays.textObjs[i - 1].data = ". . . ";
           if (autoLink) {
-            beeSays.textObjs[i - 1].onMouseUp = "textObjs_onMouseUp(-1);";
+            beeSays.textObjs[i - 1].onMouseDown = "textObjs_onMouseDown(-1);";
           } else {
             beeSays.textObjs[i - 1].tooltip = str;
           }
@@ -538,7 +626,7 @@ beeSays.textObjs = new Array();
 beeSays.words = new Array();
 
 
-function textObjs_onMouseUp(idx, popupx, popupy)
+function textObjs_onMouseDown(idx, popupx, popupy)
 {
   if (idx < 0) {
     var arrMenu = new Array();
@@ -553,7 +641,7 @@ function textObjs_onMouseUp(idx, popupx, popupy)
       }
       mi = new MenuItem();
       mi.title = word;
-      mi.onSelect = "textObjs_onMouseUp(" + i + ");";
+      mi.onSelect = "textObjs_onMouseDown(" + i + ");";
       arrMenu.push(mi);
     }
     
@@ -877,6 +965,12 @@ function onRunCommandInBgComplete()
   
 }
 
+function dictionaries_onSelect()
+{
+  
+}
+
+
 function copy_onSelect()
 {
   system.clipboard = txtInput.data;
@@ -888,6 +982,7 @@ function paste_onSelect()
   txtInput.data = system.clipboard;
   hideBubble();
   checkSpelling(txtInput.data);
+  txtInput.focus();
 }
 
 

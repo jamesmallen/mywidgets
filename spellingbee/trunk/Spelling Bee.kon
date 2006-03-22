@@ -7,6 +7,7 @@
   binary form. You can get the source code from http://aspell.net.
   
   Jessica Relitz helped out with dialogue. ;-)
+  nniico helped out with getting aspell compiled and compressed on the Mac.
   
   All other images and code are copyright 2005-2006 James M. Allen, and may
   not be used without permission.
@@ -16,7 +17,7 @@
 
 <?konfabulator xml-strict="true"?>
 <widget version="v1.0" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
-  <debug>errors</debug>
+  <debug>verbose</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="wndMain" title="Spelling Bee" width="231" height="169" alignment="left"opacity="255" shadow="0" visible="1" />
   
