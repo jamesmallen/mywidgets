@@ -18,35 +18,6 @@ include("KImage.js");
 
 function onLoad()
 {
-  // Build contextMenu
-  contextMenu = new Array();
-  var mi;
-  
-  mi = new MenuItem();
-  mi.title = "Dictionaries...";
-  mi.onSelect = "dictionaries_onSelect()";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Copy";
-  mi.onSelect = "copy_onSelect()";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Paste";
-  mi.onSelect = "paste_onSelect()";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "-";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Make a Donation";
-  mi.onSelect = "donate();";
-  contextMenu.push(mi);
-  
-  wndMain.contextMenuItems = contextMenu;
   wndMain.onContextMenu = "main_onContextMenu();";
   
   blockObj = new Object();
@@ -204,7 +175,7 @@ function onLoad()
       break;
     case "macintosh":
       aspellExe = system.widgetDataFolder + "/aspell/bin/aspell";
-      aspellArgs = " --data-dir=" + quoteFilename(system.widgetDataFolder + "/aspell/data/");
+      aspellArgs = " --data-dir=" + quoteFilename(system.widgetDataFolder + "/aspell/data");
       wordListCompressExe = system.widgetDataFolder + "/aspell/bin/word-list-compress";
       break;
     default:
@@ -323,24 +294,144 @@ function kmgInputBarBG_onDragDrop()
     }
   }
   
-  chooseLanguage();
-  
+  if (successes.length > 0) {
+    beeSays("Dictionaries added. Click here to activate!", false, "refreshDicts(true);");
+  } else {
+    beeSays("Uh-oh - looks like that didn't work.");
+  }
 }
 
-function chooseLanguage()
+function chooseLanguage(dictOptions)
 {
-  // TODO: iterate over dictionaries (.multi files),
-  // present list of them
+  /*
+  // OLD METHOD: two screens
+  
+  var fields = new Array();
+  
+  fields[0] = new FormField();
+  fields[0].type = "popup";
+  fields[0].title = "Dictionaries:";
+  fields[0].option = dictOptions;
+  fields[0].description = "Select a dictionary that you would like to activate or deactivate.";
+  
+  var formResults = form(fields, "Manage Dictionaries", "Next");
+  
+  if (!formResults) {
+    return;
+  }
+  
+  pdump(formResults);
+  
+  var curDict = formResults[0];
+  
+  var fields = new Array();
+  fields[0] = new FormField();
+  fields[0].type = "checkbox";
+  fields[0].title = "Activate dictionary " + curDict + ".";
+  if (typeof(activeDicts[curDict]) != "undefined" && activeDicts[curDict]) {
+    fields[0].defaultValue = "1";
+  } else {
+    fields[0].defaultValue = "0";
+  }
+  
+  var formResults = form(fields, "Dictionary " + curDict, "Save");
+  
+  if (!formResults) {
+    return;
+  }
+  
+  if (formResults[0] == "1") {
+    activeDicts[curDict] = true;
+    if (preferences.tutorial.value == "1") {
+      preferences.tutorial.value = "0";
+      alert("Now that you've activated a dictionary, select it from the context (right-click) menu to use it.");
+    }
+  } else {
+    if (curDict == unescape(preferences.currentDictionary.value)) {
+      beeSays("You can't deactivate the current dictionary!");
+    } else {
+      activeDicts[curDict] = false;
+    }
+  }
+  
+  */
+  
+  // NEW METHOD: one screen
+  var fields = new Array();
+  for (var i in dictOptions) {
+    fields[i] = new FormField();
+    fields[i].type = "checkbox";
+    fields[i].title = dictOptions[i];
+    if (typeof(activeDicts[dictOptions[i]]) != "undefined" && activeDicts[dictOptions[i]]) {
+      fields[i].defaultValue = "1";
+    } else {
+      fields[i].defaultValue = "0";
+    }
+  }
+  fields[fields.length - 1].description = "Place checks next to the dictionaries that you would like to activate.";
+  
+  var formResults = form(fields, "Dictionary Management", "Save");
+  
+  for (var i in formResults) {
+    if (formResults[i] == "1") {
+      activeDicts[dictOptions[i]] = true;
+    } else {
+      if (dictOptions[i] == unescape(preferences.currentDictionary.value)) {
+        beeSays("You can't deactivate the current dictionary!");
+      } else {
+        activeDicts[dictOptions[i]] = false;
+      }
+    }
+  }
+}
+
+function selectDict(dict)
+{
+  preferences.currentDictionary.value = dict;
+  savePreferences();
+}
+
+
+function refreshDicts(chooser)
+{
+  activeDicts = new Object();
   
   var dictOptions = new Array();
-  var arrDicDir = filesystem.getDirectoryContents(system.widgetDataFolder + "/aspell/dict/");
+  var arrDicDir = filesystem.getDirectoryContents(system.widgetDataFolder + "/aspell/dict");
+  
+  var arrSplitPref = preferences.activeDictionaries.value.split(",");
+  for (var i in arrSplitPref) {
+    arrSplitPref[i] = unescape(arrSplitPref[i]);
+  }
   
   for (var i in arrDicDir) {
     if (getExtension(arrDicDir[i]).toLowerCase() == "multi") {
       dictOptions.push(getFilenameWithoutExtension(arrDicDir[i]));
+      
+      // Verify files in activeDictionaries preference
+      for (var j in arrSplitPref) {
+        if (arrSplitPref[j] == dictOptions[dictOptions.length - 1]) {
+          activeDicts[arrSplitPref[j]] = true;
+        }
+      }
     }
   }
   
+  if (chooser) {
+    chooseLanguage(dictOptions);
+  }
+  
+  arrSplitPref = new Array();
+  for (var i in activeDicts) {
+    if (!activeDicts[i]) {
+      delete activeDicts[i];
+    } else {
+      arrSplitPref.push(escape(i));
+    }
+  }
+  
+  preferences.activeDictionaries.value = arrSplitPref.join(",")
+  savePreferences();
   
 }
 
@@ -379,7 +470,7 @@ function checkSpelling(inputStr)
   spinBee();
   log("CHECK SPELLING");
   
-  var cmdLine = "export ASPELL_CONF=" + quoteFilename("prefix " + system.widgetDataFolder + "/aspell") + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(aspellExe) + aspellArgs + " -d " + unescape(preferences.currentLanguage.value) + ".multi -a";
+  var cmdLine = "export ASPELL_CONF=" + quoteFilename("prefix " + system.widgetDataFolder + "/aspell") + "; echo " + quoteFilename(inputStr) + " | " + quoteFilename(aspellExe) + aspellArgs + " -d " + unescape(preferences.currentDictionary.value) + ".multi -a";
   runCommandInBg(cmdLine, "aspell");
 }
 
@@ -449,7 +540,7 @@ function buildDictionary(languageFile)
     if (dataFiles[i].length < lang.length) {
       lang = getFilename(dataFiles[i]);
     }
-    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + dataFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/data/"));
+    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + dataFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/data"));
     log(cmdOutput);
   }
   
@@ -465,7 +556,7 @@ function buildDictionary(languageFile)
   }
   
   for (var i = 0; i < multiFiles.length; i++) {
-    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + multiFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/dict/"));
+    cmdOutput = runCommand("cp -f " + quoteFilename(myTemporaryFolder + "/" + multiFiles[i]) + " " + quoteFilename(system.widgetDataFolder + "/aspell/dict"));
     log(cmdOutput);
   }
   
@@ -555,7 +646,7 @@ function beeSays(str, autoLink, onMouseDown)
       }
       if (onMouseDown) {
         beeSays.textObjs[i].bgOpacity = 1;
-        beeSays.textObjs[i].onMouseDown = onMouseDown;
+        beeSays.textObjs[i].onMouseDown = onMouseDown +";hideBubble();";
       } else if (autoLink) {
         beeSays.textObjs[i].bgOpacity = 1;
         beeSays.textObjs[i].onMouseDown = "textObjs_onMouseDown(" + i + ");";
@@ -817,6 +908,51 @@ function objectResize(obj, scale)
 
 function main_onContextMenu()
 {
+  hideBubble();
+  // Build contextMenu
+  var contextMenu = new Array();
+  var mi;
+  
+  mi = new MenuItem();
+  mi.title = "Copy";
+  if (txtInput.data.length > 0) {
+    mi.onSelect = "copy_onSelect()";
+  }
+  contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "Paste";
+  mi.onSelect = "paste_onSelect()";
+  contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "-";
+  contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "Manage Dictionaries...";
+  mi.onSelect = "dictionaries_onSelect();";
+  contextMenu.push(mi);
+  
+  for (var i in activeDicts) {
+    mi = new MenuItem();
+    mi.title = i;
+    mi.onSelect = "selectDict(\"" + escape(i) + "\");";
+    if (i == unescape(preferences.currentDictionary.value)) {
+      mi.checked = true;
+    }
+    contextMenu.push(mi);
+  }
+  
+  mi = new MenuItem();
+  mi.title = "-";
+  contextMenu.push(mi);
+  
+  mi = new MenuItem();
+  mi.title = "Make a Donation";
+  mi.onSelect = "donate();";
+  contextMenu.push(mi);
+  
   wndMain.contextMenuItems = contextMenu;
 }
 
@@ -833,6 +969,8 @@ function onWillChangePreferences()
 
 function onPreferencesChanged()
 {
+  refreshDicts(false);
+  
   if (preferences.reset.value == "1") {
     var pArr = ["uiStyle", "widgetSize", "bgColor", "reset"];
     pdump(pArr);
@@ -967,7 +1105,7 @@ function onRunCommandInBgComplete()
 
 function dictionaries_onSelect()
 {
-  
+  refreshDicts(true);
 }
 
 

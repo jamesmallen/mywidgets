@@ -16,7 +16,7 @@
 
 
 <?konfabulator xml-strict="true"?>
-<widget version="v1.0" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
+<widget version="v1.1" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
   <debug>verbose</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="wndMain" title="Spelling Bee" width="231" height="169" alignment="left"opacity="255" shadow="0" visible="1" />
@@ -47,9 +47,15 @@
     <description>Automatically check as you are typing. If this is not enabled, press Return or Space to check your word.</description>
   </preference>
   
-  <preference name="availableLanguages" type="text" hidden="true">
-    <defaultValue>American%20English,en%5FUS|British%20English,en%5FGB|Canadian%20English,en%5FCA</defaultValue>
+  <preference name="activeDictionaries" type="text" hidden="true">
+    <defaultValue>en%5FUS,en%5FGB,en%5FCA</defaultValue>
   </preference>
+  
+  <preference name="currentDictionary" type="text" hidden="true">
+    <defaultValue>en%5FUS</defaultValue>
+  </preference>
+  
+  <preference name="tutorial" type="text" hidden="true" defaultValue="1" />
   
   <preference name="uiStyle" group="appearance" title="Style:" type="popup" defaultValue="bee">
     <option>Personal</option>
@@ -63,10 +69,6 @@
   <preference name="bgColor" group="appearance" title="Color:" type="color" defaultValue="#1B96FF" />
   
   <preference name="reset" group="appearance" title="Reset to defaults" type="checkbox" notSaved="true" defaultValue="0" />
-  
-  <preference name="currentLanguage" type="text" hidden="true">
-    <defaultValue>en%5FUS</defaultValue>
-  </preference>
   
   <about-box>
     <image>Resources/AboutBox.png</image>
