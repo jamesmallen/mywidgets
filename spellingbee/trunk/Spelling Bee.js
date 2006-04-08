@@ -26,9 +26,9 @@ function onLoad()
   kmgInputBarBG = new KImage();
   kmgInputBarBG.window = wndMain;
   kmgInputBarBG.src = "Resources/InputBarBG<.png";
-  kmgInputBarBG.onDragDrop = "kmgInputBarBG_onDragDrop()";
-  kmgInputBarBG.onDragEnter = "kmgInputBarBG_onDragEnter()";
-  kmgInputBarBG.onDragExit = "kmgInputBarBG_onDragExit()";
+  // kmgInputBarBG.onDragDrop = "kmgInputBarBG_onDragDrop()";
+  // kmgInputBarBG.onDragEnter = "kmgInputBarBG_onDragEnter()";
+  // kmgInputBarBG.onDragExit = "kmgInputBarBG_onDragExit()";
   kmgInputBarBG.xHOffset = 51;
   kmgInputBarBG.xVOffset = 63;
   kmgInputBarBG.xWidth = 182;
@@ -113,6 +113,9 @@ function onLoad()
   txtInput.onKeyPress = "txtInput_onKeyPress();";
   txtInput.onKeyUp = "txtInput_onKeyUp();";
   txtInput.onMouseDown = "txtInput_onMouseDown();";
+  txtInput.onDragDrop = "kmgInputBarBG_onDragDrop()";
+  txtInput.onDragEnter = "kmgInputBarBG_onDragEnter()";
+  txtInput.onDragExit = "kmgInputBarBG_onDragExit()";
   txtInput.xHOffset = 82;
   txtInput.xVOffset = 73;
   txtInput.xWidth = 128;
@@ -150,6 +153,23 @@ function onLoad()
   imgBubbleBelow.visible = false;
   imgBubbleBelow.onMouseDown = "hideBubble();";
   widgetResize.items.push(imgBubbleBelow);
+  
+  /*
+  imgOveralls = new Image();
+  imgOveralls.window = wndMain;
+  imgOveralls.src = "Resources/Blank.png";
+  imgOveralls.tracking = "rectangle";
+  imgOveralls.onDragDrop = "kmgInputBarBG_onDragDrop()";
+  imgOveralls.onDragEnter = "kmgInputBarBG_onDragEnter()";
+  imgOveralls.onDragExit = "kmgInputBarBG_onDragExit()";
+  imgOveralls.xHOffset = 51;
+  imgOveralls.xVOffset = 63;
+  imgOveralls.xWidth = 182;
+  imgOveralls.xHeight = 42;
+  imgOveralls.xScale = 1.0;
+  widgetResize.items.push(imgOveralls);
+  */
+  
   
   anmBubble = null;
   
@@ -196,6 +216,8 @@ function onLoad()
     wordListCompressExe = "word-list-compress";
   }
   
+  refreshDicts(false);
+  
 }
 
 
@@ -239,7 +261,9 @@ function txtInput_onKeyUp()
     case "UpArrow":
     case "DownArrow":
       txtInput.rejectKeyPress();
-      textObjs_onMouseDown(-1, txtInput.hOffset, txtInput.vOffset + txtInput.height);
+      if (system.platform != "macintosh") {
+        textObjs_onMouseDown(-1, txtInput.hOffset, txtInput.vOffset + txtInput.height);
+      }
       return;
       break;
     case "ForwardDelete":
@@ -969,8 +993,6 @@ function onWillChangePreferences()
 
 function onPreferencesChanged()
 {
-  refreshDicts(false);
-  
   if (preferences.reset.value == "1") {
     var pArr = ["uiStyle", "widgetSize", "bgColor", "reset"];
     pdump(pArr);

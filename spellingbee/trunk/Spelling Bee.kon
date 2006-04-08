@@ -17,7 +17,7 @@
 
 <?konfabulator xml-strict="true"?>
 <widget version="v1.1" minimumVersion="3.0" author="James M. Allen" copyright="Copyright 2005-2006 James M. Allen" image="Resources/WidgetIcon.png">
-  <debug>verbose</debug>
+  <debug>errors</debug>
   <option>allowCustomObjectAttributes</option>
   <window name="wndMain" title="Spelling Bee" width="231" height="169" alignment="left"opacity="255" shadow="0" visible="1" />
   
