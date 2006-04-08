@@ -12,7 +12,7 @@ function Word()
   Word.ids.push(this);
   
   this.zOrder = Word.zArr.length + Word.baseZOrder;
-  Word.zArr.push(this);
+  Word.zArr.push(this.id);
   
   this.hOffset = 0;
   this.vOffset = 0;
@@ -22,28 +22,37 @@ function Word()
   this.width = this.hPadding + this.hPadding;
   this.height = this.vPadding + this.vPadding;
   
-  this.kimBg = new KonformImage();
-  this.kimBg.set("images", "Resources/Word*.png");
-  this.kimBg.set("onMouseDown", "Word.ids[" + this.id + "].kimBg_onMouseDown()");
-  this.kimBg.set("onMouseMove", "Word.ids[" + this.id + "].kimBg_onMouseMove()");
-  this.kimBg.set("onMouseUp", "Word.ids[" + this.id + "].kimBg_onMouseUp()");
+  this.kmgBg = new KImage();
+  this.kmgBg.src = "Resources/Word*.png";
+  this.kmgBg.onMouseDown = "Word.ids[" + this.id + "].kmgBg_onMouseDown()";
+  this.kmgBg.onMouseMove = "Word.ids[" + this.id + "].kmgBg_onMouseMove()";
+  this.kmgBg.onMouseUp = "Word.ids[" + this.id + "].kmgBg_onMouseUp()";
   
-  this.kimBg.set("zOrder", this.zOrder);
+  this.kmgBg.zOrder = this.zOrder;
   
   this.txt = new Text();
   this.txt.hAlign = "center";
   this.txt.zOrder = this.zOrder;
+  
+  this.frame = new Frame();
+  this.frame.addSubview(this.kmgBg.frame);
+  this.frame.addSubview(this.txt);
 }
+
+// Static Properties
 
 Word.ids = new Array();
 Word.zArr = new Array();
 Word.baseZOrder = 0;
 
+// Static Methods
+
 Word.reZOrder = function()
 {
   for (var i = 0; i < Word.zArr.length; i++) {
-    Word.zArr[i].set("zOrder", parseInt(i) + Word.baseZOrder);
+    Word.ids[Word.zArr[i]].set("zOrder", i + Word.baseZOrder);
   }
+  // rzr.img.zOrder = Word.zArr.length + Word.baseZorder;
 }
 
 Word.serialize = function()
@@ -51,9 +60,9 @@ Word.serialize = function()
   var arrInternal = new Array();
   for (var i in Word.zArr) {
     var arrI = new Array();
-    arrI[0] = escape(Word.zArr[i].txt.data);
-    arrI[1] = Word.zArr[i].hOffset;
-    arrI[2] = Word.zArr[i].vOffset;
+    arrI[0] = escape(Word.ids[Word.zArr[i]].txt.data);
+    arrI[1] = Word.ids[Word.zArr[i]].hOffset;
+    arrI[2] = Word.ids[Word.zArr[i]].vOffset;
     arrInternal.push(arrI.join(","));
   }
   preferences.wordPositions.value = arrInternal.join("|");
@@ -74,10 +83,10 @@ Word.unserialize = function()
     var arrI = arrInternal[i].split(",");
     wrd.set("window", main);
     wrd.set("data", unescape(arrI[0]));
-    wrd.align();
+    // wrd.align();
     wrd.set("hOffset", parseInt(arrI[1]));
     wrd.set("vOffset", parseInt(arrI[2]));
-    wrd.align();
+    // wrd.align();
   }
   
   Word.fitOnPage();
@@ -97,8 +106,9 @@ Word.prototype.clear = function(cheap)
     cheap = false;
   }
   
-  this.kimBg.clear();
-  this.kimBg = null;
+  this.kmgBg.removeFromSuperview();
+  this.kmgBg = null;
+  this.txt.removeFromSuperview();
   this.txt = null;
   
   // Word.ids.splice(this.id, 1);
@@ -110,20 +120,20 @@ Word.prototype.clear = function(cheap)
   }
 }
 
-Word.prototype.kimBg_onMouseDown = function()
+Word.prototype.kmgBg_onMouseDown = function()
 {
   this.dragStart = new Object();
-  this.dragStart.x = this.kimBg.hOffset - system.event.hOffset;
-  this.dragStart.y = this.kimBg.vOffset - system.event.vOffset;
+  this.dragStart.x = this.hOffset - system.event.hOffset;
+  this.dragStart.y = this.vOffset - system.event.vOffset;
   
   // resplice zArr
   Word.zArr.splice(this.zOrder - Word.baseZOrder, 1);
-  Word.zArr.push(this);
+  Word.zArr.push(this.id);
   
   Word.reZOrder();
 }
 
-Word.prototype.kimBg_onMouseUp = function()
+Word.prototype.kmgBg_onMouseUp = function()
 {
   this.dragStart = null;
   
@@ -145,10 +155,10 @@ Word.prototype.kimBg_onMouseUp = function()
   savePreferences();
 }
 
-Word.prototype.kimBg_onMouseMove = function()
+Word.prototype.kmgBg_onMouseMove = function()
 {
   if (!this.dragStart) {
-    this.kimBg_onMouseDown();
+    this.kmgBg_onMouseDown();
   }
   
   var intNewHOffset = this.dragStart.x + system.event.hOffset;
@@ -193,25 +203,29 @@ Word.prototype.set = function(property, value)
 {
   switch (property) {
     case "data":
-      this.txt[property] = value;
+      this.txt.data = value;
       // Call align manually after all changes are done per update cycle
       // this.align();
       break;
     case "hOffset":
     case "vOffset":
+    case "window":
+    case "zOrder":
       this[property] = value;
+      this.frame[property] = value;
+      // this[property] = value;
       // Call align manually after all changes are done per update cycle
       // this.align();
       break;
-    case "window":
-      this.kimBg.set(property, value);
-      this.txt[property] = value;
-      break;
-    case "zOrder":
-      this.zOrder = value;
-      this.kimBg.set("zOrder", this.zOrder);
-      this.txt.zOrder = this.zOrder;
-      break;
+    // case "window":
+      // this.kmgBg.window = value;
+      //this.txt.window = value;
+      // break;
+    // case "zOrder":
+      // this.zOrder = value;
+      // this.kmgBg.zOrder = this.zOrder;
+      // this.txt.zOrder = this.zOrder;
+      // break;
   }
 }
 
@@ -222,8 +236,10 @@ Word.prototype.align = function(boolCheap)
     boolCheap = false;
   }
   
-  this.kimBg.set("hOffset", this.hOffset);
-  this.kimBg.set("vOffset", this.vOffset);
+  
+  this.kmgBg.hOffset = 0;
+  this.kmgBg.vOffset = 0;
+  
   
   if (!boolCheap) {
     this.txt.style = "";
@@ -234,24 +250,26 @@ Word.prototype.align = function(boolCheap)
     this.txt.height = -1;
     this.width = this.txt.width + this.hPadding + this.hPadding;
     this.height = this.txt.height + this.vPadding + this.vPadding;
-    this.kimBg.set("opacity", parseInt(preferences.wordBgOpacity.value));
-    this.kimBg.set("colorize", preferences.wordBgColor.value);
-    this.kimBg.set("width", this.width);
-    this.kimBg.set("height", this.height);
+    this.kmgBg.opacity = parseInt(preferences.wordBgOpacity.value);
+    this.kmgBg.colorize = preferences.wordBgColor.value;
+    this.kmgBg.width = this.width;
+    this.kmgBg.height = this.height;
   }
   
-  this.txt.hOffset = this.hOffset + this.width / 2;
+  // this.txt.hOffset = this.hOffset + this.width / 2;
+  this.txt.hOffset = this.width / 2;
   if (this.txt.hOffset == -1) {
     this.txt.hOffset = 0;
   }
-  this.txt.vOffset = this.vOffset + (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
+  // this.txt.vOffset = this.vOffset + (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
+  this.txt.vOffset = (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
   
 }
 
 function zArrDump()
 {
   for (var i in Word.zArr) {
-    print("zArr[" + i + "]: " + ((!Word.zArr[i].txt) ? "undef" : Word.zArr[i].txt.data));
+    print("zArr[" + i + "]: " + ((!Word.ids[Word.zArr[i]].txt) ? "undef" : Word.ids[Word.zArr[i]].txt.data));
   }
 }
 

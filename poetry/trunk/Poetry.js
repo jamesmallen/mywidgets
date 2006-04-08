@@ -9,8 +9,7 @@
 
 
 include("Lib.js");
-include("KonformImage.js");
-include("JamesMAllen.js");
+include("KImage.js");
 include("Word.js");
 include("Resizer.js");
 
@@ -18,21 +17,13 @@ generic_mouseOver = null;
 
 function main_onLoad()
 {
+  main.onContextMenu = "main_onContextMenu()";
   
-  var arrContextMenu = new Array();
-  arrContextMenu[0] = new MenuItem();
-  arrContextMenu[0].title = "About the Author";
-  arrContextMenu[0].onSelect = "AboutTheAuthor();";
-  arrContextMenu[1] = new MenuItem();
-  arrContextMenu[1].title = "Make a Donation";
-  arrContextMenu[1].onSelect = "Donate();";
-  main.contextMenuItems = arrContextMenu;
-  
-  kimBackground = new KonformImage();
-  kimBackground.set("window", main);
-  kimBackground.set("images", "Resources/Background*.png");
-  kimBackground.set("hOffset", 0);
-  kimBackground.set("vOffset", 0);
+  kmgBackground = new KImage();
+  kmgBackground.window = main;
+  kmgBackground.hOffset = 0;
+  kmgBackground.vOffset = 0;
+  kmgBackground.src = "Resources/Background*.png";
   
   anmBackground = null;
   anmButtons = null;
@@ -65,6 +56,7 @@ function main_onLoad()
   rzr.onResize = resize;
   rzr.saveWidth = "preferences.width.value";
   rzr.saveHeight = "preferences.height.value";
+  rzr.img.zOrder = 1000000;
   
   if (preferences.width.value == "-1" || preferences.height.value == "-1") {
     autoPosition();
@@ -447,8 +439,9 @@ function addWord(data)
 {
   var w = new Word();
   arrWords.push(w);
+  w.set("window", main);
   w.set("data", data);
-  w.align();
+  // w.align();
   w.set("hOffset", random(0 + w.width, main.width - w.width));
   w.set("vOffset", random(0 + w.height, main.height - w.height));
   w.align();
@@ -498,12 +491,12 @@ function resize(intWidth, intHeight, optimize)
   intHeight = Math.max(150, intHeight);
   
   if (intWidth != main.width) {
-    kimBackground.set("width", intWidth);
+    kmgBackground.width = intWidth;
     rzr.img.hOffset = intWidth;
     imgAddButton.hOffset = intWidth;
   }
   if (intHeight != main.height) {
-    kimBackground.set("height", intHeight);
+    kmgBackground.height = intHeight;
     rzr.img.vOffset = intHeight;
     
     imgTrashButton.vOffset = intHeight;
@@ -536,8 +529,8 @@ function onPreferencesChanged()
   }
   
   
-  kimBackground.set("opacity", parseInt(preferences.bgOpacity.value));
-  kimBackground.set("colorize", preferences.bgColor.value);
+  kmgBackground.opacity = parseInt(preferences.bgOpacity.value);
+  kmgBackground.colorize = preferences.bgColor.value;
   
   for (var i in arrWords) {
     arrWords[i].align();
@@ -561,7 +554,7 @@ function main_onGainFocus()
     anmBackground.kill();
     anmBackground = null;
   }
-  anmBackground = new KonformFadeAnimation(kimBackground, Math.min(255, parseInt(preferences.bgOpacity.value) + 63), intFadeInTime, intFadeStyle);
+  anmBackground = new KFadeAnimation(kmgBackground, Math.min(255, parseInt(preferences.bgOpacity.value) + 63), intFadeInTime, intFadeStyle);
     
   if (anmButtons instanceof Array) {
     for (var i in anmButtons) {
@@ -588,7 +581,7 @@ function main_onLoseFocus()
     anmBackground.kill();
     anmBackground = null;
   }
-  anmBackground = new KonformFadeAnimation(kimBackground, parseInt(preferences.bgOpacity.value), intFadeOutTime, intFadeStyle);
+  anmBackground = new KFadeAnimation(kmgBackground, parseInt(preferences.bgOpacity.value), intFadeOutTime, intFadeStyle);
   
   if (anmButtons instanceof Array) {
     for (var i in anmButtons) {
@@ -604,6 +597,20 @@ function main_onLoseFocus()
   animator.start(anmButtons);
 }
 
+
+function main_onContextMenu()
+{
+  // Build contextMenu
+  var contextMenu = new Array();
+  var mi;
+  
+  mi = new MenuItem();
+  mi.title = "Make a Donation";
+  mi.onSelect = "donate();";
+  contextMenu.push(mi);
+  
+  main.contextMenuItems = contextMenu;
+}
 
 
 
