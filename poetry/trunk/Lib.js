@@ -20,9 +20,23 @@ function pdump(obj)
   }
 }
 
-function getFilename(path) {
+function getFilename(path)
+{
   var pos = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
   return path.substr(pos + 1);
+}
+
+function getFilenameWithoutExtension(path)
+{
+  var pos1 = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  var pos2 = path.lastIndexOf('.');
+  return (pos2 < pos1) ?
+    path.substr(pos1 + 1) : path.substr(pos1 + 1, pos2 - (pos1 + 1));
+}
+
+function quoteFilename(str)
+{
+  return "\"" + str.replace(/[\\"]/g, "\\$&") + "\"";
 }
 
 function donate()
@@ -31,3 +45,8 @@ function donate()
   openURL('https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=james%2em%2eallen%40gmail%2ecom&item_name=' + escape(myWidgetName) + '%20Widget%20Donation&no_shipping=1&cn=Comments%3a&tax=0&currency_code=USD&bn=PP%2dDonationsBF&charset=UTF%2d8');
 }
 
+function escapeFilename(filename)
+{
+  return filename.replace(escapeFilename.invalidChars, "-");
+}
+escapeFilename.invalidChars = /[\/\\\:\*\?\"\<\>\|]/g;

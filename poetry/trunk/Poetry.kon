@@ -22,12 +22,19 @@
   <preferenceGroup name="appearance" title="Appearance" icon="Resources/AppearanceIcon.png"/>
   <preferenceGroup name="font" title="Font" icon="Resources/FontIcon.png"/>
   
-  <preference name="wordsPerClick" title="Words/click:" type="popup" defaultValue="10">
+  <preference name="wordsPerClick" title="Words/click:" type="popup" defaultValue="-1">
+		<option>All</option>
+		<optionValue>-1</optionValue>
     <option>1</option>
+    <optionValue>1</optionValue>
     <option>5</option>
+    <optionValue>5</optionValue>
     <option>10</option>
+    <optionValue>10</optionValue>
     <option>20</option>
+    <optionValue>20</optionValue>
     <option>50</option>
+    <optionValue>50</optionValue>
     <description>The number of words that will be added when you click the Add button.</description>
   </preference>
   
@@ -62,13 +69,6 @@
   <preference name="dividerHeight" hidden="true" defaultValue="50"/>
   <preference name="wordPositions" hidden="true">
     <defaultValue>poetry,17,20|by,64,42|james,94,43|click%20or%20right%2Dclick%20on%20the%20plus%20icon%20to%20add%20some%20words,69,124|click%20on%20the%20trash%20icon%20to%20clear%20them%20all,62,149|click%20on%20the%20window%20to%20activate%20it,16,101|drag%20words%20off%20the%20window%20to%20get%20rid%20of%20them,63.5,172|allen,154,43|m,135,42</defaultValue>
-  </preference>
-  <preference name="customFiles" hidden="true">
-    <defaultValue>Words%2FAdjectives,Words%2FAdverbs,Words%2FInterjections,Words%2FNouns,Words%2FPrepositions,Words%2FPronouns,Words%2FProper%20Names,Words%2FTransitions,Words%2FVerbs</defaultValue>
-  </preference>
-  
-  <preference name="customURLs" hidden="true">
-    <defaultValue>http%3A%2F%2Fslashdot%2Eorg,Slashdot|http%3A%2F%2Fen%2Ewikipedia%2Eorg%2Fwiki%2FSpecial%3ARandompage,Random%20Wikipedia%20Article</defaultValue>
   </preference>
   
   <about-box>

@@ -17,6 +17,9 @@ generic_mouseOver = null;
 
 function main_onLoad()
 {
+  strPackageFolder = system.widgetDataFolder + "/Packages";
+  
+  
   main.onContextMenu = "main_onContextMenu()";
   
   kmgBackground = new KImage();
@@ -37,18 +40,29 @@ function main_onLoad()
   imgTrashButton.onMouseUp = "generic_onMouseUp('imgTrashButton')";
   imgTrashButton.vAlign = "bottom";
   
+  imgSaveButton = new Image();
+  imgSaveButton.window = main;
+  imgSaveButton.src = "Resources/SaveButton.png";
+  imgSaveButton.opacity = 0;
+  imgSaveButton.onMouseEnter = "generic_onMouseEnter('imgSaveButton'); imgSaveButton.opacity = 255;";
+  imgSaveButton.onMouseExit = "generic_onMouseExit('imgSaveButton'); imgSaveButton.opacity = 127;";
+  imgSaveButton.onMouseUp = "generic_onMouseUp('imgSaveButton')";
+  imgSaveButton.hAlign = "center";
+  imgSaveButton.vAlign = "bottom";
+  
+  
   imgAddButton = new Image();
   imgAddButton.window = main;
   imgAddButton.src = "Resources/AddButton.png";
   imgAddButton.opacity = 0;
   imgAddButton.onMouseEnter = "generic_onMouseEnter('imgAddButton'); imgAddButton.opacity = 255;";
   imgAddButton.onMouseExit = "generic_onMouseExit('imgAddButton'); imgAddButton.opacity = 127;";
-  imgAddButton.onMouseUp = "generic_onMouseUp('imgAddButton')";
-  imgAddButton.onContextMenu = "imgAddButton_onContextMenu()";
+  // imgAddButton.onMouseUp = "generic_onMouseUp('imgAddButton')";
+  imgAddButton.onMouseDown = "imgAddButton_onMouseDown();";
   imgAddButton.hAlign = "right";
   imgAddButton.vAlign = "bottom";
   
-  arrWords = new Array();
+  // arrWords = new Array();
   objFileCache = new Object();;
   
   rzr = new Resizer();
@@ -68,7 +82,7 @@ function main_onLoad()
   Word.baseZOrder = imgDummy.zOrder;
   imgDummy = null;
   
-  Word.unserialize();
+  loadPackageFromPrefs();
   
   unserializeWordSources();
   
@@ -100,12 +114,12 @@ function imgTrashButton_onMouseUp()
   clearAll();
 }
 
-function imgAddButton_onMouseUp()
+function imgSaveButton_onMouseUp()
 {
-  addWordsFromAllFiles();
+  
 }
 
-function imgAddButton_onContextMenu()
+function imgAddButton_onMouseDown()
 {
   popupAddWords();
 }
@@ -115,24 +129,31 @@ function clearAll()
   var result = alert("Are you sure you want to clear all the words?", "Yes", "No");
   if (result == 1) {
     // Yes
+    /*
     for (var i in arrWords) {
       arrWords[i].clear();
       arrWords[i] = null;
     }
     
     arrWords = new Array();
+    */
+    Word.clearAll();
   }
-  Word.serialize();
+  savePackageToPrefs();
+}
+
+function loadPackageFromPrefs()
+{
+  Word.unserialize(preferences.wordPositions.value.split("|"));
+}
+
+function savePackageToPrefs()
+{
+  preferences.wordPositions.value = Word.serialize().join("|");
 }
 
 function serializeWordSources()
 {
-  var arrCustomFiles = new Array();
-  for (var i in arrWordSourceFiles) {
-    arrCustomFiles.push(escape(arrWordSourceFiles[i].path));
-  }
-  preferences.customFiles.value = arrCustomFiles.join(",");
-  
   var arrCustomURLs = new Array();
   for (var i in arrWordSourceURLs) {
     var arrCurURL = new Array();
@@ -145,14 +166,7 @@ function serializeWordSources()
 
 function unserializeWordSources()
 {
-  arrWordSourceFiles = new Array();
-  var customFilePaths = preferences.customFiles.value.split(",");
-  for (var i in customFilePaths) {
-    var o = new Object();
-    o.path = unescape(customFilePaths[i]);
-    o.title = getFilename(o.path);
-    arrWordSourceFiles.push(o);
-  }
+  refreshWordPackages();
   
   arrWordSourceURLs = new Array();
   var customURLPaths = preferences.customURLs.value.split("|");
@@ -171,10 +185,6 @@ function editWordSources()
   var arrOptions = new Array();
   var arrOptionValues = new Array();
   
-  for (var i in arrWordSourceFiles) {
-    arrOptions.push(arrWordSourceFiles[i].title);
-    arrOptionValues.push("f" + i);
-  }
   for (var i in arrWordSourceURLs) {
     arrOptions.push(arrWordSourceURLs[i].title);
     arrOptionValues.push("u" + i);
@@ -205,30 +215,19 @@ function editWordSources()
   
   switch (result[0].charAt(0)) {
     case "f":
-      var ff = new FormField();
+      var ff;
+      ff = new FormField();
       ff.title = "Word source:";
       ff.type = "selector";
       ff.style = "open";
       ff.kind = "files";
       arrFormFields.push(ff);
       
-      var ff = new FormField();
-      ff.type = "checkbox";
-      ff.title = "Delete this source";
-      ff.defaultValue = 0;
-      arrFormFields.push(ff);
-      
       var fileIndex;
       var formTitle;
       
-      if (result[0].substr(1) == "new") {
-        fileIndex = arrWordSourceFiles.length;
-        formTitle = "New file";
-      } else {
-        fileIndex = parseInt(result[0].substr(1));
-        arrFormFields[0].value = arrWordSourceFiles[fileIndex].path;
-        formTitle = "Editing file";
-      }
+      fileIndex = arrWordSourceFiles.length;
+      formTitle = "New file";
       
       var result = form(arrFormFields, formTitle, "Save", "Cancel");
       
@@ -236,14 +235,8 @@ function editWordSources()
         return;
       }
       
-      if (result[1] == 1) {
-        arrWordSourceFiles.splice(fileIndex, 1);
-      } else {
-        o = new Object();
-        o.path = result[0];
-        o.title = getFilename(o.path);
-        arrWordSourceFiles[fileIndex] = o;
-      }
+      runCommand("cp -f " + quoteFilename(result[0]) + " " + quoteFilename(strPackageFolder + "/"));
+      refreshWordPackages();
       
       break;
     case "u":
@@ -312,6 +305,11 @@ function addWordsFromAllFiles(numWords)
     lens[i] = objFileCache[arrWordSourceFiles[i].path].length;
     modValue += lens[i];
   }
+  
+  if (numWords < 0) {
+    numWords = 10;
+  }
+  
   for (var i = 0; i < numWords; i++) {
     var wordIndex = random(0, modValue);
     var lenSum = 0;
@@ -340,11 +338,17 @@ function addWordsFromFile(fileIndex, numWords)
     objFileCache[path] = filesystem.readFile(path, true);
   }
   
-  for (var i = 0; i < numWords; i++) {
-    addWord(objFileCache[path][random(0, objFileCache[path].length)]);
+  if (numWords < 0) {
+    for (var i = 0; i < objFileCache[path].length; i++) {
+      addWord(objFileCache[path][i]);
+    }
+  } else {
+    for (var i = 0; i < numWords; i++) {
+      addWord(objFileCache[path][random(0, objFileCache[path].length)]);
+    }
   }
   
-  Word.serialize();
+  savePackageToPrefs();
   
 }
 
@@ -369,16 +373,23 @@ function addWordsFromUrl_done(url)
   }
   
   var str = url.result;
-  str = str.replace(/<script>[^<]*<\/script>/g, "");
-  str = str.replace(/<[^>]*>/g, "");
-  str = str.replace(/\&.{1,5};/, "");
+  str = str.replace(/<script>[^<]*<\/script>/g, " ");
+  str = str.replace(/<[^>]*>/g, " ");
+  str = str.replace(/\&.{1,5};/g, " ");
   
   var wordArray = str.match(/\w+/g);
-  for (var i = 0; i < url.numWords; i++) {
-    addWord(wordArray[random(0, wordArray.length)]);
+  
+  if (url.numWords < 0) {
+    for (var i = 0; i < wordArray.length; i++) {
+      addWord(wordArray[i]);
+    }
+  } else {
+    for (var i = 0; i < url.numWords; i++) {
+      addWord(wordArray[random(0, wordArray.length)]);
+    }
   }
   
-  Word.serialize();
+  savePackageToPrefs();
   
 
 }
@@ -404,41 +415,47 @@ function popupAddWords()
   mi.title = "-";
   arrPopupMenu.push(mi);
   
-  if (arrWordSourceURLs.length > 0) {
-    var mi = new MenuItem();
-    mi.enabled = false;
-    mi.title = "URLs";
-    arrPopupMenu.push(mi);
-    for (var i in arrWordSourceURLs) {
-      var mi = new MenuItem();
-      mi.title = arrWordSourceURLs[i].title;
-      mi.onSelect = "addWordsFromUrl(" + i + ")";
-      arrPopupMenu.push(mi);
-    }
-  }
-  
   var mi = new MenuItem();
-  mi.title = "-";
+  mi.title = "Import from URL";
+  mi.onSelect = "importURL();";
   arrPopupMenu.push(mi);
   
   var mi = new MenuItem();
-  mi.title = "Edit sources...";
-  mi.onSelect = "editWordSources()";
+  mi.title = "Import from file";
+  mi.onSelect = "importFile();";
   arrPopupMenu.push(mi);
   
-  // popupMenu(arrPopupMenu, system.event.hOffset, system.event.vOffset);
-  imgAddButton.contextMenuItems = arrPopupMenu;
+  var mi = new MenuItem();
+  mi.title = "Single word";
+  mi.onSelect = "addCustomWord();";
+  arrPopupMenu.push(mi);
   
-  
+  popupMenu(arrPopupMenu, system.event.hOffset, system.event.vOffset);
 }
 
 
+function addCustomWord()
+{
+  var arrFormFields = new Array();
+  var ff = new FormField();
+  ff.title = "Word:";
+  ff.type = "text";
+  arrFormFields.push(ff);
+  
+  var result = form(arrFormFields, "Custom word", "Add", "Cancel");
+  
+  if (!result) {
+    return;
+  }
+  
+  addWord(result[0]);
+}
 
 
 function addWord(data)
 {
   var w = new Word();
-  arrWords.push(w);
+  // arrWords.push(w);
   w.set("window", main);
   w.set("data", data);
   // w.align();
@@ -493,6 +510,7 @@ function resize(intWidth, intHeight, optimize)
   if (intWidth != main.width) {
     kmgBackground.width = intWidth;
     rzr.img.hOffset = intWidth;
+    imgSaveButton.hOffset = intWidth / 2;
     imgAddButton.hOffset = intWidth;
   }
   if (intHeight != main.height) {
@@ -500,6 +518,7 @@ function resize(intWidth, intHeight, optimize)
     rzr.img.vOffset = intHeight;
     
     imgTrashButton.vOffset = intHeight;
+    imgSaveButton.vOffset = intHeight;
     imgAddButton.vOffset = intHeight;
   }
   
@@ -532,9 +551,12 @@ function onPreferencesChanged()
   kmgBackground.opacity = parseInt(preferences.bgOpacity.value);
   kmgBackground.colorize = preferences.bgColor.value;
   
+  Word.refresh();
+  /*
   for (var i in arrWords) {
     arrWords[i].align();
   }
+  */
 }
 
 function main_onFirstDisplay()
@@ -564,6 +586,7 @@ function main_onGainFocus()
   }
   anmButtons = new Array();
   anmButtons.push(new FadeAnimation(imgAddButton, 127, intFadeInTime, intFadeStyle));
+  anmButtons.push(new FadeAnimation(imgSaveButton, 127, intFadeInTime, intFadeStyle));
   anmButtons.push(new FadeAnimation(imgTrashButton, 127, intFadeInTime, intFadeStyle));
   
   animator.start(anmBackground);
@@ -591,6 +614,7 @@ function main_onLoseFocus()
   }
   anmButtons = new Array();
   anmButtons.push(new FadeAnimation(imgAddButton, 0, intFadeOutTime, intFadeStyle));
+  anmButtons.push(new FadeAnimation(imgSaveButton, 0, intFadeOutTime, intFadeStyle));
   anmButtons.push(new FadeAnimation(imgTrashButton, 0, intFadeOutTime, intFadeStyle));
   
   animator.start(anmBackground);
@@ -612,7 +636,41 @@ function main_onContextMenu()
   main.contextMenuItems = contextMenu;
 }
 
+function saveWordPackage()
+{
+  savePackage();
+  refreshWordPackages();
+}
 
+
+function initWordPackages()
+{
+  runCommand("mkdir -p " + quoteFilename(strPackageFolder));
+  runCommand("cp -f Packages/* " + quoteFilename(strPackageFolder + "/"));
+}
+
+
+function refreshWordPackages()
+{
+  if (!filesystem.isDirectory(strPackageFolder)) {
+    initWordPackages();
+  }
+  
+  arrWordSourceFiles = new Array();
+  var packageFiles = filesystem.getDirectoryContents(strPackageFolder);
+  var packageFilePaths = new Array();
+  for (var i in packageFiles) {
+    packageFilePaths[i] = strPackageFolder + "/" + packageFiles[i];
+    packageFiles[i] = getFilenameWithoutExtension(packageFiles[i]);
+  }
+  for (var i in packageFilePaths) {
+    var o = new Object();
+    o.path = packageFilePaths[i];
+    o.title = packageFiles[i];
+    arrWordSourceFiles.push(o);
+  }
+  
+}
 
 
 main_onLoad();

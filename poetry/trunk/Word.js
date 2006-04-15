@@ -1,10 +1,9 @@
 /**
  * Word.js
+ * Word object for use in Poetry Widget.
+ * All code copyright James M. Allen
  */
 
-
-
- 
 
 function Word()
 {
@@ -47,12 +46,25 @@ Word.baseZOrder = 0;
 
 // Static Methods
 
+Word.refresh = function()
+{
+  for (var i in Word.ids) {
+    Word.ids[i].align();
+  }
+}
+
+Word.clearAll = function()
+{
+  for (var i in Word.ids) {
+    Word.ids[i].clear();
+  }
+}
+
 Word.reZOrder = function()
 {
   for (var i = 0; i < Word.zArr.length; i++) {
     Word.ids[Word.zArr[i]].set("zOrder", i + Word.baseZOrder);
   }
-  // rzr.img.zOrder = Word.zArr.length + Word.baseZorder;
 }
 
 Word.serialize = function()
@@ -65,21 +77,67 @@ Word.serialize = function()
     arrI[2] = Word.ids[Word.zArr[i]].vOffset;
     arrInternal.push(arrI.join(","));
   }
-  preferences.wordPositions.value = arrInternal.join("|");
+  return arrInternal;
 }
 
-Word.unserialize = function()
+Word.savePackage = function()
 {
-  for (var i in arrWords) {
-    arrWords[i].clear();
+  var strFilename;
+  var keepTrying = true;
+  var tryName = "";
+  
+  while (keepTrying) {
+    var arrFormFields = new Array();
+    var ff = new FormField();
+    ff.title = "Package name:";
+    ff.type = "text";
+    ff.value = tryName;
+    arrFormFields.push(ff);
+    
+    var result = form(arrFormFields, "Save package", "Save", "Cancel");
+    
+    if (!result) {
+      return;
+    }
+    
+    tryName = result[0];
+    
+    var strFilename = system.widgetDataFolder + "/Packages/" + escapeFilename(tryName) + ".txt";
+    
+    if (filesystem.itemExists(strFilename)) {
+      var result = alert("A package with that name already exists. Overwrite?", "Yes", "No", "Cancel");
+      switch (result) {
+        case 1:
+          keepTrying = false;
+          break;
+        case 2:
+          keepTrying = true;
+          break;
+        case 3:
+          return;
+          break;
+      }
+    } else {
+      keepTrying = false;
+    }
   }
   
-  arrWords = new Array();
+  var arrInternal = new Array();
+  for (var i in Word.ids) {
+    arrInternal.push(Word.ids[i].txt.data);
+  }
   
-  var arrInternal = preferences.wordPositions.value.split("|");
+  filesytem.writeFile(strFilename, arrInternal);
+}
+
+
+
+
+Word.unserialize = function(arrInternal)
+{
   for (var i in arrInternal) {
     var wrd = new Word();
-    arrWords.push(wrd);
+    // arrWords.push(wrd);
     var arrI = arrInternal[i].split(",");
     wrd.set("window", main);
     wrd.set("data", unescape(arrI[0]));
@@ -94,8 +152,9 @@ Word.unserialize = function()
 
 Word.fitOnPage = function()
 {
-  for (var i in arrWords) {
-    arrWords[i].keepOn();
+  // for (var i in arrWords) {
+  for (var i in Word.ids) {
+    Word.ids[i].keepOn();
   }
 }
 
@@ -111,8 +170,8 @@ Word.prototype.clear = function(cheap)
   this.txt.removeFromSuperview();
   this.txt = null;
   
-  // Word.ids.splice(this.id, 1);
   Word.ids[this.id] = null;
+  delete Word.ids[this.id];
   Word.zArr.splice(this.zOrder - Word.baseZOrder, 1);
   
   if (!cheap) {
@@ -140,9 +199,12 @@ Word.prototype.kmgBg_onMouseUp = function()
   if (((this.hOffset + this.width) < 0) || ((this.vOffset + this.height) < 0) || (this.hOffset > main.width) || (this.vOffset > main.height)) {
     // off the edges - destroy this word!
     var i;
-    for (i = 0; i < arrWords.length; i++) {
-      if (arrWords[i] == this) {
-        arrWords.splice(i, 1);
+    // for (i = 0; i < arrWords.length; i++) {
+    for (i in Word.ids) {    
+      // if (arrWords[i] == this) {
+      if (Word.ids[i] == this) {
+        // arrWords.splice(i, 1);
+        Word.ids.splice(i, 1);
         break;
       }
     }
@@ -217,15 +279,6 @@ Word.prototype.set = function(property, value)
       // Call align manually after all changes are done per update cycle
       // this.align();
       break;
-    // case "window":
-      // this.kmgBg.window = value;
-      //this.txt.window = value;
-      // break;
-    // case "zOrder":
-      // this.zOrder = value;
-      // this.kmgBg.zOrder = this.zOrder;
-      // this.txt.zOrder = this.zOrder;
-      // break;
   }
 }
 
@@ -250,18 +303,17 @@ Word.prototype.align = function(boolCheap)
     this.txt.height = -1;
     this.width = this.txt.width + this.hPadding + this.hPadding;
     this.height = this.txt.height + this.vPadding + this.vPadding;
-    this.kmgBg.opacity = parseInt(preferences.wordBgOpacity.value);
     this.kmgBg.colorize = preferences.wordBgColor.value;
     this.kmgBg.width = this.width;
     this.kmgBg.height = this.height;
+		
+    this.frame.opacity = parseInt(preferences.wordBgOpacity.value);
   }
   
-  // this.txt.hOffset = this.hOffset + this.width / 2;
   this.txt.hOffset = this.width / 2;
   if (this.txt.hOffset == -1) {
     this.txt.hOffset = 0;
   }
-  // this.txt.vOffset = this.vOffset + (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
   this.txt.vOffset = (this.txt.height * 0.8) + parseFloat(preferences.wordVTweak.value);
   
 }
