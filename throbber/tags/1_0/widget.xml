@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<name>Throbber Test</name>
+	<version>1.0</version>
+	<identifier>com.kzoowidgets.widget.throbbertest</identifier>
+	<image usage="dock" src="Resources/dock_icon.png" />
+	<author name="James M. Allen" href="http://www.kzoowidgets.com" />
+	<copyright>(c) 2007 James M. Allen</copyright>
+	<description>A Widget that shows various examples of the reusable Throbber class.</description>
+	<platform minVersion="4.0" />
+</metadata>
