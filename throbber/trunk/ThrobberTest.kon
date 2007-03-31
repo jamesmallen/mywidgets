@@ -1,0 +1,10 @@
+<?konfabulator xml-strict="true"?>
+<widget debug="on">
+	<window id="main" name="main" width="188" height="112">
+		<image id="background" src="Resources/gray_square.png" width="188" height="112" colorize="#efeada" />
+		<text hOffset="16" vOffset="16" style="font-family: 'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif; font-size: 12px; color: #000;">Throbber Examples</text>
+	</window>
+	
+	<script src="throbber.js"></script>
+	<action trigger="onLoad" file="throbber_test.js" />
+</widget>
