@@ -5,9 +5,16 @@
  *  pattern, and will only scale certain images in the pattern.
  *
  * Copyright 2005, James M. Allen
+ * You are free to reuse this code, provided you keep this and the above
+ * copyright notice intact.
+ *
+ * Requirements
+ *  - Yahoo! Widget Engine v3.0 or higher
+ *  - A transparent 1x1 "blank" image found at Resources/Blank.png
  *
  * Usage example:
-
+      
+      include("KImage.js");
       foo = new KImage();
       foo.src = "Resources/Window*.png";
       foo.hOffset = 30;
@@ -68,7 +75,7 @@
  *  They are used in much the same way as their built-in counterparts, with
  *  one important difference: they are not called with the "new" keyword.
  *
- *  Refer to example above or the funciton definitions below for more
+ *  Refer to example above or the function definitions below for more
  *  information.
  *
  *
@@ -493,6 +500,52 @@ function KImage()
   }
   
   
+  var setScaleProxy = function(prop, oldval, newval)
+  {
+    return this.setScale(prop, oldval, newval);
+  }
+  this.setScale = function(prop, oldval, newval)
+  {
+    return setScale(prop, oldval, newval);
+  }
+  var setScale = function(prop, oldval, newval)
+  {
+    if (newval < 0) {
+      newval = 1;
+    }
+    
+    this.scale = newval;
+    
+    switch (pattern) {
+      case "3x3":
+        img[KImage.kTopLeft].width = this.scale * img[KImage.kTopLeft].srcWidth;
+        img[KImage.kTopRight].width = this.scale * img[KImage.kTopRight].srcWidth;
+        img[KImage.kMiddleLeft].width = this.scale * img[KImage.kMiddleLeft].srcWidth;
+        img[KImage.kMiddleRight].width = this.scale * img[KImage.kMiddleRight].srcWidth;
+        img[KImage.kBottomLeft].width = this.scale * img[KImage.kBottomLeft].srcWidth;
+        img[KImage.kBottomRight].width = this.scale * img[KImage.kBottomRight].srcWidth;
+        
+        img[KImage.kTopLeft].height = this.scale * img[KImage.kTopLeft].srcHeight;
+        img[KImage.kTopCenter].height = this.scale * img[KImage.kTopCenter].srcHeight;
+        img[KImage.kTopRight].height = this.scale * img[KImage.kTopRight].srcHeight;
+        img[KImage.kBottomLeft].height = this.scale * img[KImage.kBottomLeft].srcHeight;
+        img[KImage.kBottomCenter].height = this.scale * img[KImage.kBottomCenter].srcHeight;
+        img[KImage.kBottomRight].height = this.scale * img[KImage.kBottomRight].srcHeight;
+        break;
+      case "3x1":
+        img[KImage.kLeft].width = this.scale * img[KImage.kLeft].srcWidth;
+        img[KImage.kRight].width = this.scale * img[KImage.kRight].srcWidth;
+        break;
+      case "1x3":
+        img[KImage.kTop].height = this.scale * img[KImage.kTop].srcHeight;
+        img[KImage.kBottom].height = this.scale * img[KImage.kBottom].srcHeight;
+        break;
+    }
+    
+    resize();
+  }
+  
+  
   var setHeightProxy = function(prop, oldval, newval)
   {
     return this.setHeight(prop, oldval, newval);
@@ -508,7 +561,6 @@ function KImage()
       newval = self.srcHeight;
     }
     if (newval == oldval) {
-      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Height needs to be set before calling resize()
@@ -537,7 +589,6 @@ function KImage()
       newval = self.srcWidth;
     }
     if (newval == oldval) {
-      // print("  Value hasn't changed - doing nothing!");
       return newval;
     } else {
       // Width needs to be set before calling resize()
@@ -661,6 +712,7 @@ function KImage()
   this.onMultiClick = "";
   this.opacity = 255;
   // this.rotation = 0;
+  this.scale = 1.0;
   this.src = null;
   this.tileOrigin = "topLeft";
   this.tooltip = "";
@@ -693,6 +745,7 @@ function KImage()
   this.watch("onMouseWheel", setToFrameProxy);
   this.watch("onMultiClick", setToFrameProxy);
   this.watch("opacity", setToFrameProxy);
+  this.watch("scale", setScaleProxy);
   this.watch("src", setSrcProxy);
   this.watch("tileOrigin", setToImagesProxy);
   this.watch("tooltip", setToImagesProxy);
@@ -700,23 +753,6 @@ function KImage()
   this.watch("vOffset", setToFrameProxy);
   this.watch("vAlign", setToFrameProxy);
   this.watch("width", setWidthProxy);
-  /*
-  this.__defineSetter__("width", function(newval)
-  {
-    log("width setter(" + newval + ")");
-    if (newval < 0) {
-      newval = this.srcWidth;
-    }
-    if (newval == _width) {
-      print("  Value hasn't changed - doing nothing!");
-    } else {
-      // Width needs to be set before calling resize()
-      _width = Math.max(newval, this.minWidth);
-      resize();
-    }
-  });
-  */
-  // this.__defineGetter__("width", function() { return _width; });
   this.watch("window", setToFrameProxy);
   this.watch("zOrder", setToFrameProxy);
   
