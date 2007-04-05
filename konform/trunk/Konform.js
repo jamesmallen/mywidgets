@@ -212,7 +212,7 @@ Konform.prototype.resizerButton_onMouseMove = function()
 Konform.prototype.clear = function()
 {
   for (var i in this) {
-    if (this[i] instanceof KonformObject) {
+    if (typeof(this[i].clear) == "function") {
       this[i].clear();
     } else {
       delete this[i];

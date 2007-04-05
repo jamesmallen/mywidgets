@@ -2,9 +2,66 @@
  * class KonformImage
  * A smart-scaling Image wrapper
  * Allows for an image to be specified as a group of images arranged in a
- * pattern, and will only scale certain images in the pattern
+ * pattern, and will only scale certain images in the pattern.
+ *
+ * Copyright 2005, James M. Allen
  */
 
+
+// Compatibility outside of full Konform library
+if (typeof(Konform) == "undefined") {
+  Konform = new Object();
+  Konform.ids = new Array();
+}
+
+
+ /**
+  *
+  */
+function KonformFadeAnimation(object, toOpacity, duration, easeType, doneFunc)
+{
+  var anm = new CustomAnimation(1, KonformFadeAnimation.update,
+                                KonformFadeAnimation.done);
+  
+  anm.object = object;
+  anm.fromOpacity = object.opacity;
+  anm.toOpacity = toOpacity;
+  anm.duration = duration;
+  anm.easeType = easeType;
+  anm.doneFunc = doneFunc;
+  
+  return anm;
+}
+
+KonformFadeAnimation.update = function()
+{
+  var now = animator.milliseconds;
+  var t = Math.max(now - this.startTime, 0);
+  var percent = t / this.duration;
+  var newOpacity;
+  var ret;
+  
+  if (percent >= 1.0) {
+    newOpacity = this.toOpacity;
+    ret = false;
+  } else {
+    newOpacity = animator.ease(this.fromOpacity, this.toOpacity, percent,
+                               this.easeType);
+    ret = true;
+  }
+  
+  this.object.set("opacity", newOpacity);
+  return ret;
+}
+
+KonformFadeAnimation.done = function()
+{
+  if (typeof(this.doneFunc) == "function") {
+    this.doneFunc();
+  }
+}
+
+ 
 
 function KonformImage()
 {
@@ -23,6 +80,7 @@ function KonformImage()
   this.minHeight = 0;
   this.srcWidth = -1;
   this.srcHeight = -1;
+  this.opacity = 255;
   var placerImage = new Image();
   this.zOrder = placerImage.zOrder;
   this.pattern = null;
@@ -44,7 +102,8 @@ function KonformImage()
   this.mouseExitTimer = new Timer();
   this.mouseExitTimer.ticking = false;
   this.mouseExitTimer.interval = 0.001;
-  this.mouseExitTimer.onTimerFired = "Konform.ids[" + this.id + "].mouseExitChecker()";
+  this.mouseExitTimer.onTimerFired = "Konform.ids[" + this.id +
+                                     "].mouseExitChecker()";
   
   this.refresh();
 }
@@ -168,7 +227,7 @@ KonformImage.prototype.align = function(cheap)
 KonformImage.prototype.clear = function()
 {
   for (var i in this.img) {
-    delete this.img[i];
+    this.img[i] = null;
   }
   this.img = new Array();
 }
@@ -188,6 +247,7 @@ KonformImage.prototype.refresh = function()
   this.set("onMultiClick", this.onMultiClickEval);
   this.set("onMouseEnter", this.onMouseEnterEval);
   this.set("onMouseExit", this.onMouseExitEval);
+  this.set("opacity", this.opacity);
 }
 
 
@@ -212,6 +272,11 @@ KonformImage.prototype.refresh = function()
 KonformImage.prototype.set = function(property, value)
 {
   // print("(KonformImage).set(" + property + ", " + value + ")");
+  
+  if (property == "opacity") {
+    this.opacity = value;
+  }
+  
   switch (property) {
     case "alignment":
     case "hAlign":
@@ -398,8 +463,10 @@ KonformImage.prototype.set = function(property, value)
           } else {
             indexStr = '"' + escape(i) + '"';
           }
-          this.img[i].onMouseEnter = "Konform.ids[" + this.id + "].onMouseEnter(" + indexStr + ");";
-          this.img[i].onMouseExit = "Konform.ids[" + this.id + "].onMouseExit(" + indexStr + ");";
+          this.img[i].onMouseEnter = "Konform.ids[" + this.id +
+                                     "].onMouseEnter(" + indexStr + ");";
+          this.img[i].onMouseExit = "Konform.ids[" + this.id +
+                                     "].onMouseExit(" + indexStr + ");";
         }
       } else {
         for (var i in this.img) {
