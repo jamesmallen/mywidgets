@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<?konfabulator xml-strict="true"?>
+
+<widget debug="on">
+  
+  <window name="sourceWindow"
+    title="PoorText Test (Source)"
+    width="400" height="300"
+    visible="true"
+    shadow="false"/>
+  
+  <window name="main"
+    title="PoorText Test"
+    width="400" height="300"
+    visible="true"
+    shadow="false"/>
+  
+  <action trigger="onLoad" file="PoorTextTest.js"/>
+  
+  <preference name="html"
+    hidden="true"
+    defaultValue="<html></html>"/>
+  
+</widget>
+
