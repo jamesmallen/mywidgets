@@ -1,1421 +1,352 @@
-/**
- * Dictionary v1.5
- * by James M. Allen
- *
- * A dictionary Widget.
- */
+
+var currentWidth = 246;
 
 
-include("PoorText.js");
-include("JamesMAllen.js");
-include("KImage.js");
+var extenderBG = new KImage({src: 'Resources/ExtenderBG*.png', colorize:'#000', opacity:122, mask: 'Resources/SearchBarBG<.png', maskHeight:44}, main_window);
+var extender = new KImage({src: 'Resources/Extender*.png', mask: 'Resources/SearchBarBG<.png', maskHeight:44}, main_window);
+
+/*
+var resultsBox = new TextArea();
+resultsBox.editable = false;
+resultsBox.hOffset = 15;
+resultsBox.vOffset = 44;
+resultsBox.width = currentWidth - 30;
+resultsBox.height = 180;
+resultsBox.style.fontFamily = "'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif";
+resultsBox.style.fontSize = '11px';
+resultsBox.style.color = '#000';
+
+main_window.appendChild(resultsBox);
+*/
+
+resultsBox = new JHTML({hOffset: 16, vOffset: 44, width: currentWidth - 32 - 20, height: 180}, main_window);
+resultsBox.vScrollBar = new ScrollBar();
+resultsBox.vScrollBar.hOffset = currentWidth - 34;
+resultsBox.vScrollBar.vOffset = 44;
+resultsBox.vScrollBar.height = 180;
+resultsBox.vScrollBar.opacity = 127;
+main_window.appendChild(resultsBox.vScrollBar);
 
 
-// State constants
-const wmCompact         = 0x0000;
-const wmWide            = 0x0001;
-const wmOpen            = 0x0002;
 
-const stateLoading      = 0x0004;
-const stateTrans        = 0x0008;
-const stateMouseClick   = 0x0010;
-const stateOverCancel   = 0x0020;
 
-// State/transition variables
-state = 0;
-wm = 0;
-nextWm = 0;
-nextNextWm = 0;
+var searchBarBG = new KImage({src: 'Resources/SearchBarBG<.png', colorize:'#000', opacity:122}, main_window);
 
-// Widget elements
-transObjects = new Object();
+var searchBar = new KImage({src: 'Resources/SearchBar<.png'}, main_window);
 
-// Dropdown items
-dropdownMenu = new Array();
-contextMenu = new Array();
-booksArray = new Array();
-booksPrefArray = new Array();
 
-// Other objects
-urlObj = null;
-urlTimer = null;
-history = new Array();
-historyIndex = -1;
-defaultColors = null;
 
-function main_onContextMenu()
-{
-  if (wm == wmOpen && !(state & stateLoading) && !(state & stateTrans)) {
-    contextMenu[0].enabled = true;
-  } else {
-    contextMenu[0].enabled = false;
-  }
-  
-  if (system.clipboard && system.clipboard.length > 0) {
-    contextMenu[1].enabled = true;
-  } else {
-    contextMenu[1].enabled = false;
-  }
-  
-  main.contextMenuItems = contextMenu;
+var searchBarIcon = new Image();
+searchBarIcon.hOffset = 61;
+searchBarIcon.vOffset = 11;
+searchBarIcon.src = 'Resources/MagnifyIcon.png';
+main_window.appendChild(searchBarIcon);
+
+
+var searchBarGlow = new KImage({src: 'Resources/SearchBarGlow<.png', visible: false}, main_window);
+
+
+var searchBarInput = new TextArea();
+searchBarInput.style.fontFamily = "'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif";
+searchBarInput.style.fontSize = '12px';
+searchBarInput.style.color = '#999';
+searchBarInput.data = 'Dictionary';
+searchBarInput.hOffset = 74;
+searchBarInput.vOffset = 12;
+searchBarInput.width = 138;
+searchBarInput.lines = 1;
+searchBarInput.spellcheck = false;
+
+searchBarInput.onGainFocus = function() {
+	searchBarGlow.visible = true;
+	if (this.style.color == '#999') {
+		this.data = '';
+		this.style.color = '#000';
+	}
+}
+
+searchBarInput.onLoseFocus = function() {
+	searchBarGlow.visible = false;
+	if (!this.data) {
+		this.data = 'Dictionary';
+		this.style.color = '#999';
+	}
+}
+
+searchBarInput.onKeyPress = function() {
+	switch (system.event.keyString) {
+		case 'Return':
+		case 'Enter':
+			lookup(this.data);
+			break;
+		case 'Tab':
+			this.rejectKeyPress();
+			break;
+		default:
+			break;
+	}
+}
+
+widget.onKeyDown = function() {
+	log("keyDown - keyString: " + system.event.keyString + ", keyCode: " + system.event.keyCode + ", charCode: " + system.event.charCode);
+}
+
+widget.onKeyUp = function() {
+	log("keyUp - keyString: " + system.event.keyString + ", keyCode: " + system.event.keyCode + ", charCode: " + system.event.charCode);
+}
+
+widget.onKeyPress = function() {
+	log("keyPress - keyString: " + system.event.keyString + ", keyCode: " + system.event.keyCode + ", charCode: " + system.event.charCode);
 }
 
 
-function initialize()
-{
-  if (isNaN(parseInt(preferences.selectedBook.value))) {
-    preferences.selectedBook.value = 0;
-  }
-  
-  if (preferences.dictionaryFont.value == "default") {
-    switch (system.platform) {
-      case "windows":
-        preferences.dictionaryFont.value = "Lucida Sans Unicode";
-        break;
-      case "macintosh":
-        preferences.dictionaryFont.value = "Lucida Grande";
-        break;
-    }
-  }
-  
-  // Build contextMenu
-  var mi;
-  mi = new MenuItem();
-  mi.title = "Copy Definition";
-  mi.enabled = false;
-  mi.onSelect = "copy_onSelect()";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Paste Word";
-  mi.enabled = false;
-  mi.onSelect = "paste_onSelect()";
-  contextMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Make a Donation";
-  mi.onSelect = "Donate();";
-  contextMenu.push(mi);
-  
-  main.contextMenuItems = contextMenu;
-  main.onContextMenu = "main_onContextMenu()";
-  
-  extenderBG = new KImage();
-  extenderBG.window = main;
-  extenderBG.visible = false;
-  extenderBG.src = "Resources/ExtenderBG*.png";
-  extenderBG.opacity = 0;
-  extenderBG.hOffset = 0;
-  extenderBG.vOffset = 0;
-  extenderBG.width = 446;
-  extenderBG.opacity1 = 0;
-  extenderBG.opacity2 = 255;
-  extenderBG.height1 = 69;
-  extenderBG.height2 = 334;
-  
-  hTopBG = new KImage();
-  hTopBG.window = main;
-  hTopBG.visible = false;
-  hTopBG.src = "Resources/TopBG<.png";
-  hTopBG.opacity = 255;
-  hTopBG.hOffset = 0;
-  hTopBG.vOffset = 0;
-  hTopBG.width = 329;
-  hTopBG.height = 51;
-  hTopBG.width0 = 329;
-  hTopBG.width1 = 446;
-  
-  extender = new KImage();
-  extender.window = main;
-  extender.src = "Resources/Extender*.png";
-  extender.opacity = 0;
-  extender.hOffset = 0;
-  extender.vOffset = 0;
-  extender.width = 446;
-  
-  extender.opacity1 = 0;
-  extender.opacity2 = 255;
-  extender.height1 = 69;
-  extender.height2 = 334;
-  
-  
-  defContent = new PoorText();
-  defContent.window = main;
-  defContent.name = "defContent";
-  defContent.hOffset = 22;
-  defContent.vOffset = 42;
-  defContent.width = 401;
-  defContent.height = 274;
-  defContent.scrollbar = true;
-  defContent.tagRoot.font = preferences.dictionaryFont.value;
-  defContent.tagRoot.size = parseFloat(preferences.dictionarySize.value);
-  defContent.showImagesAsLinks = false;
-  
-  
-  hTop = new KImage();
-  hTop.window = main;
-  hTop.src = "Resources/Top<.png";
-  hTop.opacity = 255;
-  hTop.hOffset = 0;
-  hTop.vOffset = 0;
-  hTop.width = 329;
-  hTop.height = 51;
-  hTop.onDragDrop = "hTop_onDragDrop()";
-  hTop.onDragEnter = "hTop_onDragEnter()";
-  hTop.onDragExit = "hTop_onDragExit()";
-  
-  hTop.width0 = 329;
-  hTop.width1 = 446;
-  
-  
-  dictionaryTitle = new Image();
-  dictionaryTitle.window = main;
-  dictionaryTitle.src = "Resources/DictionaryTitle.png";
-  dictionaryTitle.hOffset = 18;
-  dictionaryTitle.vOffset = 12;
-  dictionaryTitle.width = 103;
-  dictionaryTitle.height = 24;
-  dictionaryTitle.tracking = "rectangle";
-  // dictionaryTitle.onMouseUp = "dictionaryTitle_onMouseUp()";
-  
-  loadingDots = new Image();
-  loadingDots.window = main;
-  loadingDots.src = "Resources/LoadingDots.png";
-  loadingDots.hOffset = 125;
-  loadingDots.vOffset = 25;
-  loadingDots.width = 28;
-  loadingDots.height = 6;
-  loadingDots.opacity = 0;
-  loadingDots.tooltip = "Loading . . .";
-  
-  loadingDots.opacity1 = 0;
-  loadingDots.opacity2 = 255;
-  
-  backButton = new Image();
-  backButton.window = main;
-  backButton.src = "Resources/ArrowLeft.png";
-  backButton.opacity = 0;
-  backButton.hOffset = 198;
-  backButton.vOffset = 12;
-  backButton.width = 20;
-  backButton.height = 20;
-  backButton.tracking = "rectangle";
-  
-  backButton.opacity1 = 0;
-  backButton.opacity2 = 90;
-  
-  forwardButton = new Image();
-  forwardButton.window = main;
-  forwardButton.src = "Resources/ArrowRight.png";
-  forwardButton.opacity = 0;
-  forwardButton.hOffset = 222;
-  forwardButton.vOffset = 12;
-  forwardButton.width = 20;
-  forwardButton.height = 20;
-  forwardButton.tracking = "rectangle";
-  
-  forwardButton.opacity1 = 0;
-  forwardButton.opacity2 = 90;
-
-
-  searchBar = new Image();
-  searchBar.window = main;
-  searchBar.src = "Resources/SearchBar.png";
-  
-  searchBar.hOffset0 = 129;
-  searchBar.vOffset0 = 10;
-  searchBar.width0 = 185;
-  searchBar.height0 = 22;
-  
-  searchBar.hOffset1 = 246;
-  searchBar.vOffset1 = 10;
-  searchBar.width1 = 185;
-  searchBar.height1 = 22;
-  
-  
-  query = new TextArea();
-  query.window = main;
-  query.vOffset = 14;
-  query.width = 143;
-  query.height = 20;
-  query.editable = true;
-  query.font = preferences.dictionaryFont.value;
-  query.size = 12;
-  query.scrollbar = false;
-  query.onKeyPress = "query_onKeyPress()";
-  query.onGainFocus = "query_onGainFocus()";
-  
-  query.hOffset0 = 153;
-  query.hOffset1 = 270;
-
-  
-  dropdownButton = new Image();
-  dropdownButton.window = main;
-  dropdownButton.src = "Resources/DropdownIcon.png";
-  dropdownButton.tracking = "rectangle";
-  dropdownButton.onMouseDown = "dropdownButton_onMouseDown();";
-  dropdownButton.tooltip = "Click to select a source.";
-  
-  dropdownButton.hOffset0 = 134;
-  dropdownButton.vOffset0 = 15;
-  dropdownButton.width0 = 16;
-  dropdownButton.height0 = 16;
-  
-  dropdownButton.hOffset1 = 251;
-  dropdownButton.vOffset1 = 15;
-  dropdownButton.width1 = 16;
-  dropdownButton.height1 = 16;
-  
-  cancelButton = new Image();
-  cancelButton.window = main;
-  cancelButton.src = "Resources/CancelIcon.png";
-  cancelButton.opacity = 127;
-  cancelButton.onMouseEnter = "state = state | stateOverCancel; cancelButton.opacity = 191;";
-  cancelButton.onMouseExit = "state = state & ~stateOverCancel; cancelButton.opacity = 127;";
-  cancelButton.onMouseDown = "if (state & stateOverCancel) { cancelButton.opacity = 255; }";
-  cancelButton.onMouseUp = "cancelButton_onMouseUp()";
-  
-  cancelButton.hOffset0 = 294;
-  cancelButton.vOffset0 = 14;
-  cancelButton.width0 = 16;
-  cancelButton.height0 = 16;
-  
-  cancelButton.hOffset1 = 411;
-  cancelButton.vOffset1 = 14;
-  cancelButton.width1 = 16;
-  cancelButton.height1 = 16;
-  
-  urlTimer = new Timer();
-  urlTimer.interval = 0.1;
-  urlTimer.ticking = false;
-  
-  for (var p in this) {
-    if (this[p] && typeof(this[p]) == "object") {
-      if (this[p].hOffset0) {
-        this[p].hOffset = this[p].hOffset0;
-      }
-      if (this[p].vOffset0) {
-        this[p].vOffset = this[p].vOffset0;
-      }
-      if (this[p].width0) {
-        this[p].width = this[p].width0;
-      }
-      if (this[p].height0) {
-        this[p].height = this[p].height0;
-      }
-    }
-  }
-  
-  transObjects.extenderBG = extenderBG;
-  transObjects.hTopBG = hTopBG;
-  transObjects.extender = extender;
-  transObjects.hTop = hTop;
-  transObjects.dictionaryTitle = dictionaryTitle;
-  transObjects.loadingDots = loadingDots;
-  transObjects.searchBar = searchBar;
-  transObjects.query = query;
-  transObjects.dropdownButton = dropdownButton;
-  transObjects.cancelButton = cancelButton;
-  transObjects.backButton = backButton;
-  transObjects.forwardButton = forwardButton;
-  transObjects.main = main;
-  
-  defaultColors = new Array();
-  defaultColors.push("#483BAE"); // blue
-  defaultColors.push("#CB3434"); // red
-  defaultColors.push("#356E25"); // green
-  defaultColors.push("#896623"); // orange
-  defaultColors.push("#8D306D"); // purple
-  defaultColors.push("#111111"); // black
-  defaultColors.push("#777777"); // silver
-  defaultColors.push("#949513"); // gold
-  
-  buildBooksArray();
-  buildDropdownMenu();
-  applyBackground();
-}
-
-function exportBooksArray()
-{
-  var str;
-  if (booksArray.length > 0) {
-    str = "";
-    for (var i in booksArray) {
-      if (i > 0) {
-        str += "|";
-      }
-      str += escape(booksArray[i].name) + "," + escape(booksArray[i].url) + "," + escape(booksArray[i].filter) + "," + escape(booksArray[i].color);
-    }
-  } else {
-    str = preferences.books.defaultValue;
-  }
-  
-  preferences.books.value = str;
-}
-
-function buildBooksArray()
-{
-  var tArr = preferences.books.value.split("|");
-  
-  booksArray = new Array();
-  
-  for (var i in tArr) {
-    var uArr = tArr[i].split(",");
-    var b = new Object();
-    b.name = unescape(uArr[0]);
-    b.url = unescape(uArr[1]);
-    b.filter = unescape(uArr[2]);
-    b.color = unescape(uArr[3]);
-    booksArray.push(b);
-  }
-}
-
-function buildDropdownMenu()
-{
-  var mi;
-  dropdownMenu = new Array();
-  
-  if (preferences.selectedBook.value < 0 || preferences.selectedBook.value > booksArray.length - 1) {
-    preferences.selectedBook.value = 0;
-  }
-  
-  for (var i in booksArray) {
-    mi = new MenuItem();
-    mi.title = booksArray[i].name;
-    if (preferences.selectedBook.value == i) {
-      mi.checked = true;
-      dropdownButton.colorize = booksArray[i].color;
-    }
-    mi.onSelect = "preferences.selectedBook.value = " + i + "; buildDropdownMenu();";
-    if (wm == wmOpen) {
-      mi.onSelect += "if (query.data.length > 0) { lookup_word(query.data); }";
-    }
-    dropdownMenu.push(mi);
-  }
-  
-  mi = new MenuItem();
-  mi.title = "\u2014\u2014\u2014";
-  mi.enabled = false;
-  dropdownMenu.push(mi);
-  
-  mi = new MenuItem();
-  mi.title = "Edit this list...";
-  mi.onSelect = "editBooks();";
-  dropdownMenu.push(mi);
-
-  defContent.hrefRelCallback = lookup_url;
-}
-
-function applyBackground()
-{
-  switch (preferences.bg.value) {
-    case "transparent":
-      hTopBG.visible = false;
-      extenderBG.visible = false;
-      break;
-    case "colorized":
-      hTopBG.visible = true;
-      extenderBG.visible = true;
-      hTopBG.colorize = extenderBG.colorize = preferences.bgColor.value;
-      break;
-  }
-}
-
-function filterOption()
-{
-  var a = new Array();
-  a.push("Dictionary.com");
-  a.push("MediaWiki");
-  a.push("m-w.com");
-  a.push("Thesaurus.com");
-  a.push("Custom (Simple)");
-  a.push("Custom (Advanced)");
-  a.push("None");
-  return a;
-}
-
-function editSimpleFilter(index)
-{
-  var prefArray = new Array();
-  var bp;
-  
-  var formResults;
-  
-  curBook = booksArray[index];
-  
-  bp = new FormField();
-  bp.title = "Starting HTML:";
-  bp.type = "text";
-  bp.defaultValue = curBook.filterStart;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.title = "Ending HTML:";
-  bp.type = "text";
-  bp.defaultValue = curBook.filterEnd;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.title = "Find (Regular Expression)";
-  bp.type = "text";
-  bp.defaultValue = curBook.filterFind;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.title = "Replace (String)";
-  bp.type = "text";
-  bp.defaultValue = curBook.filterReplace;
-  prefARray.push(bp);
-  
-  bp = new FormField();
-  bp.title = "Include start/end";
-  bp.type = "checkbox";
-  bp.defaultValue = curBook.filterIncludeEnds;
-  bp.description = "A custom filter is defined";
-  
+var keyCodes = {
+	enter:  13,
+	escape: 27,
+	tab:     9
 }
 
 
-function editBook(index)
-{
-  var prefArray = new Array();
-  var bp;
-  
-  var curBook;
-  var formResults;
-  
-  if (index < 0) {
-    curBook = new Object();
-    curBook.name = "New Item";
-    curBook.url = "http://";
-    curBook.filter = "None";
-    curBook.color = defaultColors[(booksArray.length) % defaultColors.length];
-    curBook.filterStart = "";
-    curBook.filterEnd = "";
-    curBook.filterIncludeEnds = 0;
-    curBook.filterFind = "";
-    curBook.filterReplace = "";
-  } else {
-    curBook = booksArray[index];
-  }
-  
-  bp = new FormField();
-  bp.name = "bookName";
-  bp.title = "Name:";
-  bp.type = "text";
-  bp.defaultValue = curBook.name;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.name = "bookUrl";
-  bp.title = "URL:";
-  bp.type = "text";
-  bp.defaultValue = curBook.url;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.name = "bookFilter";
-  bp.title = "Filter:";
-  bp.type = "popup";
-  bp.option = filterOption();
-  bp.defaultValue = curBook.filter;
-  prefArray.push(bp);
-  
-  bp = new FormField();
-  bp.name = "bookColor";
-  bp.title = "Color:";
-  bp.type = "color";
-  bp.defaultValue = curBook.color;
-  prefArray.push(bp);
-  
-  if (index >= 0) {
-    bp = new FormField();
-    bp.name = "bookDelete";
-    bp.title = "Delete this book";
-    bp.type = "checkbox";
-    bp.defaultValue = false;
-    prefArray.push(bp);
-    formResults = form(prefArray, "Edit Item", "Save", "Cancel");
-  } else {
-    formResults = form(prefArray, "New Item", "Save", "Cancel");
-  }
-  
-  if (formResults == null) {
-    return false;
-  }
-  
-  if (formResults[4] == true) {
-    // delete
-    booksArray.splice(index, 1);
-  } else {
-    curBook.name = formResults[0];
-    curBook.url = formResults[1];
-    curBook.filter = formResults[2];
-    curBook.color = formResults[3];
-    if (index < 0) {
-      // new
-      index = booksArray.length;
-      booksArray.push(curBook);
-    } else {
-      // modify
-      booksArray[index] = curBook;
-    }
-  }
-  return true;
+function lookup(word) {
+	var request = new XMLHttpRequest();
+	request.open('GET', 'http://word.sc/' + escape(word));
+	request.onreadystatechange = function() {
+		if (this.readyState == 4) {
+			switch (this.status) {
+				case 200:
+					try {
+						resultsBox.data = parsers.wordsc(this.responseText);
+					} catch (e) {
+						if (e instanceof DictionaryParseError) {
+							log('Parse error');
+							pdump(e);
+						} else if (e instanceof DictionaryWordNotFoundError) {
+							resultsBox.data = '<h1>' + word + '</h1><p>Sorry, but the word ' + word + ' was not found.</p>';
+						}
+					}
+					break;
+				default:
+					resultsBox.data = this.status + ' ' + this.statusText;
+					break;
+			}
+		}
+	}
+	request.send();
 }
 
 
-function editBooks()
-{
-  var formFields = new Array();
-  var ff;
-  var formResults;
-  
-  buildBooksArray();
-  
-  var bookNamesArray = new Array();
-  var bookIndicesArray = new Array();
-  
-  for (var i in booksArray) {
-    bookNamesArray.push(booksArray[i].name);
-    bookIndicesArray.push(i);
-  }
-  
-  bookNamesArray.push("New...");
-  bookIndicesArray.push(-1);
-  
-  ff = new FormField();
-  ff.name = "bookIndex";
-  ff.title = "Item:";
-  ff.type = "popup";
-  ff.option = bookNamesArray;
-  ff.optionValue = bookIndicesArray;
-  ff.description = "\r\nSelect an item and click \"Next\" to edit or delete that item.\r\nTo add an item, select the \"New...\" item.\r\n";
-  formFields.push(ff);
-  
-  formResults = form(formFields, "Edit List", "Next", "Cancel");
-  
-  if (formResults == null) {
-    return;
-  }
-  if (editBook(formResults[0])) {
-    exportBooksArray();
-  }
+parsers = {
+	wordsc: function(text) {
+		var ret = '';
+		
+		// Shorten up the HTML to speed things up and make debugging simpler
+		var res = text.match(/<div class="contentwrapper">\s*<div id="contentcolumn">\s*<div id="maincontent">([\s\S]*)<\/div>\s*<\/div>\s*<\/div>\s*<div id="rightcolumn"\s*>/);
+		
+		if (!res) {
+			throw new DictionaryParseError('Unable to find maincontent div.');
+		} else {
+			text = res[1];
+		}
+		
+		// remove extraneous markup
+		text = text.replace(/\s*(onmouseover|onmouseout)\=('([^']+|\\')*'|"([^"]+|\\")*")/g, '');
+		
+		// add helpful formatting markup
+		// text = text.replace(/<small>/g, '<div style="padding-top: 15px;"><small>').replace(/<\/small>/g, '</small></div>');
+		
+		// Find title
+		var res = text.match(/<font face="Arial" style="font-size: 17pt"><b>\s*([^<]*)<\/b>/);
+		if (!res) {
+			throw new DictionaryParseError('Unable to find word title.');
+		} else {
+			
+			ret += '<h1>' + deEnt(res[1]) + "</h1>\n";
+		}
+		
+		
+		// Look for error
+		var res = text.match(/was not found in our dictionary./);
+		if (res) {
+			throw new DictionaryWordNotFoundError();
+		}
+		
+		
+		// Find word type groupings
+		RegExp.lastIndex = 0;
+		
+		// var test = 
+		
+		while (res = /<a name="_([^"]+)"><\/a><div id="\1">([^<]|<[^b]|<b[^>])*<b>([^<]*)<\/b>([^<]|<[^o]|<o[^l]|<ol[^>])*<ol>(([^<]|<[^\/]|<\/[^o]|<\/o[^l]|<\/ol[^>])*)<\/ol>/g.exec(text)) {
+			ret += '<h2>' + deEnt(res[3]) + "</h2>\n";
+			
+			ret += '<ol>' + deEnt(res[5]) + "</ol>\n";
+		}
+		
+		return ret;
+	}
 }
 
 
-function goBack()
-{
-  if (historyIndex > 0) {
-    historyIndex--;
-    defContent.setHtml(history[historyIndex]);
-    updateHistoryButtons();
-  }
-}
+main_window.appendChild(searchBarInput);
 
-function goForward()
-{
-  if (historyIndex < history.length - 1) {
-    historyIndex++;
-    defContent.setHtml(history[historyIndex]);
-    updateHistoryButtons();
-  }
-}
 
-function updateHistoryButtons()
+updatePreferences();
+
+widget.onPreferencesChanged = updatePreferences;
+
+
+function updatePreferences()
 {
-  if (wm >= wmOpen) {
-    if (historyIndex > 0) {
-      backButton.opacity = 255;
-      backButton.opacity2 = 255;
-      backButton.onMouseUp = "goBack()";
-    } else {
-      backButton.opacity = 90;
-      backButton.opacity2 = 90;
-      backButton.onMouseUp = "";
-    }
-    if (historyIndex < history.length - 1) {
-      forwardButton.opacity = 255;
-      backButton.opacity2 = 255;
-      forwardButton.onMouseUp = "goForward()";
-    } else {
-      forwardButton.opacity = 90;
-      backButton.opacity2 = 90;
-      forwardButton.onMouseUp = "";
-    }
-  }
+	extenderBG.opacity = searchBarBG.opacity = preferences.bgOpacity.value;
+	extenderBG.colorize = searchBarBG.colorize = preferences.bgColor.value;
 }
 
 
-function query_onKeyPress()
+/*
+var k = new KImage({src: 'Resources/ExtenderBG*.png', width: 100, height: 200, hRegistrationPoint:50, vRegistrationPoint:100, rotation: 0, hOffset:200, vOffset:200}, main_window);
+
+var anm1 = new KRotateAnimation(k, 360, 4000, animator.kEaseInOut);
+
+var anm2 = new KResizeAnimation(k, 200, 100, 4000, animator.kEaseInOut, null, true);
+
+animator.start([anm1, anm2]);
+*/
+
+function deEnt( s, entities )
 {
-  var keyCode = system.event.keyString;
-  
-  switch(keyCode) {
-    case "Enter":
-    case "Return":
-      query.rejectKeyPress();
-      query.select(-1, -1);
-      query.loseFocus();
-      if (query.data.length > 0) {
-        lookup_word(query.data);
-      }
-      break;
-    case "Tab":
-      query.rejectKeyPress();
-      break;
-    default:
-      break;
-  }
+	if (entities) {
+		var oldEntities = currentEntities;
+		currentEntities = entities;
+	}
+	s = s.replace( /&([^;]{1,8});/g, doReplace );
+	if (entities) {
+		currentEntities = oldEntities;
+	}
+	return s;
 }
 
-function query_onGainFocus()
+function doReplace( str, p1 )
 {
-  query.data = "";
-  query.select(-1, -1);
+	if ( p1[ 0 ] == "#" )
+	{
+		p1 = p1.substr( 1 );
+
+		if ( p1[ 0 ] == "x" ) p1 = parseInt( p1.match( /[a-f0-9]+$/i ), 16 );
+		if ( commonASCII[ p1 ] ) return commonASCII[ p1 ];
+		else return String.fromCharCode( p1 );
+	}
+	else
+	{
+		return currentEntities[ p1 ];
+	}
 }
 
-
-function dropdownButton_onMouseDown()
+const commonASCII =
 {
-  buildDropdownMenu();
-  popupMenu(dropdownMenu, dropdownButton.hOffset, dropdownButton.vOffset + dropdownButton.height);
+	128:"\u20AC",130:"\u201A",131:"\u0192",132:"\u201E",133:"\u2026",134:"\u2020",
+	135:"\u2021",136:"\u02C6",137:"\u2030",138:"\u0160",139:"\u2039",140:"\u0152",
+	141:"",142:"\u017D",143:"",144:"",145:"\u2018",146:"\u2019",147:"\u201C",
+	148:"\u201D",149:"\u2022",150:"\u2013",151:"\u2014",152:"\u02DC",153:"\u2122",
+	154:"\u0161",155:"\u203A",156:"\u0153",157:"",158:"\u017E",159:"\u0178"
+};
+
+const xmlEntities = {
+	"quot":"\u0022","amp":"\u0026","lt":"\u003C","gt":"\u003E"
 }
 
-
-function cancelButton_onMouseUp()
-{
-  cancelButton.opacity = 191;
-  if (state & stateOverCancel) {
-    if (urlObj) {
-      urlObj.cancel();
-      state = state & ~stateLoading;
-    }
-    if (state & stateTrans) {
-      state = state | stateCamp;
-    } else {
-      if (wm == wmCompact) {
-        query.data = "";
-      } else {
-        smoothTransition(wmCompact);
-      }
-    }
-  }
+const xmlPrepEntities = {
+	"nbsp":"\u0020","iexcl":"\u00A1","cent":"\u00A2","pound":"\u00A3",
+	"curren":"\u00A4","yen":"\u00A5","brvbar":"\u00A6","sect":"\u00A7","uml":"\u00A8","copy":"\u00A9","ordf":"\u00AA","laquo":"\u00AB",
+	"not":"\u00AC","shy":"\u000A","reg":"\u00AE","macr":"\u00AF","deg":"\u00B0","plusmn":"\u00B1","sup2":"\u00B2","sup3":"\u00B3",
+	"acute":"\u00B4","micro":"\u00B5","para":"\u00B6","middot":"\u00B7","cedil":"\u00B8","sup1":"\u00B9","ordm":"\u00BA","raquo":"\u00BB",
+	"frac14":"\u00BC","frac12":"\u00BD","frac34":"\u00BE","iquest":"\u00BF","Agrave":"\u00C0","Aacute":"\u00C1","Acirc":"\u00C2",
+	"Atilde":"\u00C3","Auml":"\u00C4","Aring":"\u00C5","AElig":"\u00C6","Ccedil":"\u00C7","Egrave":"\u00C8","Eacute":"\u00C9",
+	"Ecirc":"\u00CA","Euml":"\u00CB","Igrave":"\u00CC","Iacute":"\u00CD","Icirc":"\u00CE","Iuml":"\u00CF","ETH":"\u00D0","Ntilde":"\u00D1",
+	"Ograve":"\u00D2","Oacute":"\u00D3","Ocirc":"\u00D4","Otilde":"\u00D5","Ouml":"\u00D6","times":"\u00D7","Oslash":"\u00D8",
+	"Ugrave":"\u00D9","Uacute":"\u00DA","Ucirc":"\u00DB","Uuml":"\u00DC","Yacute":"\u00DD","THORN":"\u00DE","szlig":"\u00DF",
+	"agrave":"\u00E0","aacute":"\u00E1","acirc":"\u00E2","atilde":"\u00E3","auml":"\u00E4","aring":"\u00E5","aelig":"\u00E6",
+	"ccedil":"\u00E7","egrave":"\u00E8","eacute":"\u00E9","ecirc":"\u00EA","euml":"\u00EB","igrave":"\u00EC","iacute":"\u00ED",
+	"icirc":"\u00EE","iuml":"\u00EF","eth":"\u00F0","ntilde":"\u00F1","ograve":"\u00F2","oacute":"\u00F3","ocirc":"\u00F4","otilde":"\u00F5",
+	"ouml":"\u00F6","divide":"\u00F7","oslash":"\u00F8","ugrave":"\u00F9","uacute":"\u00FA","ucirc":"\u00FB","uuml":"\u00FC",
+	"yacute":"\u00FD","thorn":"\u00FE","yuml":"\u00FF","OElig":"\u0152","oelig":"\u0153","Scaron":"\u0160","scaron":"\u0161","Yuml":"\u0178",
+	"fnof":"\u0192","circ":"\u02C6","tilde":"\u02DC","Alpha":"\u0391","Beta":"\u0392","Gamma":"\u0393","Delta":"\u0394","Epsilon":"\u0395",
+	"Zeta":"\u0396","Eta":"\u0397","Theta":"\u0398","Iota":"\u0399","Kappa":"\u039A","Lambda":"\u039B","Mu":"\u039C","Nu":"\u039D",
+	"Xi":"\u039E","Omicron":"\u039F","Pi":"\u03A0","Rho":"\u03A1","Sigma":"\u03A3","Tau":"\u03A4","Upsilon":"\u03A5","Phi":"\u03A6",
+	"Chi":"\u03A7","Psi":"\u03A8","Omega":"\u03A9","alpha":"\u03B1","beta":"\u03B2","gamma":"\u03B3","delta":"\u03B4","epsilon":"\u03B5",
+	"zeta":"\u03B6","eta":"\u03B7","theta":"\u03B8","iota":"\u03B9","kappa":"\u03BA","lambda":"\u03BB","mu":"\u03BC","nu":"\u03BD",
+	"xi":"\u03BE","omicron":"\u03BF","pi":"\u03C0","rho":"\u03C1","sigmaf":"\u03C2","sigma":"\u03C3","tau":"\u03C4","upsilon":"\u03C5",
+	"phi":"\u03C6","chi":"\u03C7","psi":"\u03C8","omega":"\u03C9","thetasym":"\u03D1","upsih":"\u03D2","piv":"\u03D6","ensp":"\u2002",
+	"emsp":"\u2003","thinsp":"\u2009","zwnj":"\u200C","zwj":"\u200D","lrm":"\u200E","rlm":"\u200F","ndash":"\u2013","mdash":"\u2014",
+	"lsquo":"\u2018","rsquo":"\u2019","sbquo":"\u201A","ldquo":"\u201C","rdquo":"\u201D","bdquo":"\u201E","dagger":"\u2020","Dagger":"\u2021",
+	"bull":"\u2022","hellip":"\u2026","permil":"\u2030","prime":"\u2032","Prime":"\u2033","lsaquo":"\u2039","rsaquo":"\u203A","oline":"\u203E",
+	"frasl":"\u2044","euro":"\u20AC","image":"\u2111","weierp":"\u2118","real":"\u211C","trade":"\u2122","alefsym":"\u2135","larr":"\u2190",
+	"uarr":"\u2191","rarr":"\u2192","darr":"\u2193","harr":"\u2194","crarr":"\u21B5","lArr":"\u21D0","uArr":"\u21D1","rArr":"\u21D2",
+	"dArr":"\u21D3","hArr":"\u21D4","forall":"\u2200","part":"\u2202","exist":"\u2203","empty":"\u2205","nabla":"\u2207","isin":"\u2208",
+	"notin":"\u2209","ni":"\u220B","prod":"\u220F","sum":"\u2211","minus":"\u2212","lowast":"\u2217","radic":"\u221A","prop":"\u221D",
+	"infin":"\u221E","ang":"\u2220","and":"\u2227","or":"\u2228","cap":"\u2229","cup":"\u222A","int":"\u222B","there4":"\u2234","sim":"\u223C",
+	"cong":"\u2245","asymp":"\u2248","ne":"\u2260","equiv":"\u2261","le":"\u2264","ge":"\u2265","sub":"\u2282","sup":"\u2283","nsub":"\u2284",
+	"sube":"\u2286","supe":"\u2287","oplus":"\u2295","otimes":"\u2297","perp":"\u22A5","sdot":"\u22C5","lceil":"\u2308","rceil":"\u2309",
+	"lfloor":"\u230A","rfloor":"\u230B","lang":"\u2329","rang":"\u232A","loz":"\u25CA","spades":"\u2660","clubs":"\u2663","hearts":"\u2665",
+	"diams":"\u2666"
 }
 
-
-function currentURL()
+const commonEntities =
 {
-  return booksArray[preferences.selectedBook.value].url;
+	"quot":"\u0022","amp":"\u0026","lt":"\u003C","gt":"\u003E","nbsp":"\u0020","iexcl":"\u00A1","cent":"\u00A2","pound":"\u00A3",
+	"curren":"\u00A4","yen":"\u00A5","brvbar":"\u00A6","sect":"\u00A7","uml":"\u00A8","copy":"\u00A9","ordf":"\u00AA","laquo":"\u00AB",
+	"not":"\u00AC","shy":"\u000A","reg":"\u00AE","macr":"\u00AF","deg":"\u00B0","plusmn":"\u00B1","sup2":"\u00B2","sup3":"\u00B3",
+	"acute":"\u00B4","micro":"\u00B5","para":"\u00B6","middot":"\u00B7","cedil":"\u00B8","sup1":"\u00B9","ordm":"\u00BA","raquo":"\u00BB",
+	"frac14":"\u00BC","frac12":"\u00BD","frac34":"\u00BE","iquest":"\u00BF","Agrave":"\u00C0","Aacute":"\u00C1","Acirc":"\u00C2",
+	"Atilde":"\u00C3","Auml":"\u00C4","Aring":"\u00C5","AElig":"\u00C6","Ccedil":"\u00C7","Egrave":"\u00C8","Eacute":"\u00C9",
+	"Ecirc":"\u00CA","Euml":"\u00CB","Igrave":"\u00CC","Iacute":"\u00CD","Icirc":"\u00CE","Iuml":"\u00CF","ETH":"\u00D0","Ntilde":"\u00D1",
+	"Ograve":"\u00D2","Oacute":"\u00D3","Ocirc":"\u00D4","Otilde":"\u00D5","Ouml":"\u00D6","times":"\u00D7","Oslash":"\u00D8",
+	"Ugrave":"\u00D9","Uacute":"\u00DA","Ucirc":"\u00DB","Uuml":"\u00DC","Yacute":"\u00DD","THORN":"\u00DE","szlig":"\u00DF",
+	"agrave":"\u00E0","aacute":"\u00E1","acirc":"\u00E2","atilde":"\u00E3","auml":"\u00E4","aring":"\u00E5","aelig":"\u00E6",
+	"ccedil":"\u00E7","egrave":"\u00E8","eacute":"\u00E9","ecirc":"\u00EA","euml":"\u00EB","igrave":"\u00EC","iacute":"\u00ED",
+	"icirc":"\u00EE","iuml":"\u00EF","eth":"\u00F0","ntilde":"\u00F1","ograve":"\u00F2","oacute":"\u00F3","ocirc":"\u00F4","otilde":"\u00F5",
+	"ouml":"\u00F6","divide":"\u00F7","oslash":"\u00F8","ugrave":"\u00F9","uacute":"\u00FA","ucirc":"\u00FB","uuml":"\u00FC",
+	"yacute":"\u00FD","thorn":"\u00FE","yuml":"\u00FF","OElig":"\u0152","oelig":"\u0153","Scaron":"\u0160","scaron":"\u0161","Yuml":"\u0178",
+	"fnof":"\u0192","circ":"\u02C6","tilde":"\u02DC","Alpha":"\u0391","Beta":"\u0392","Gamma":"\u0393","Delta":"\u0394","Epsilon":"\u0395",
+	"Zeta":"\u0396","Eta":"\u0397","Theta":"\u0398","Iota":"\u0399","Kappa":"\u039A","Lambda":"\u039B","Mu":"\u039C","Nu":"\u039D",
+	"Xi":"\u039E","Omicron":"\u039F","Pi":"\u03A0","Rho":"\u03A1","Sigma":"\u03A3","Tau":"\u03A4","Upsilon":"\u03A5","Phi":"\u03A6",
+	"Chi":"\u03A7","Psi":"\u03A8","Omega":"\u03A9","alpha":"\u03B1","beta":"\u03B2","gamma":"\u03B3","delta":"\u03B4","epsilon":"\u03B5",
+	"zeta":"\u03B6","eta":"\u03B7","theta":"\u03B8","iota":"\u03B9","kappa":"\u03BA","lambda":"\u03BB","mu":"\u03BC","nu":"\u03BD",
+	"xi":"\u03BE","omicron":"\u03BF","pi":"\u03C0","rho":"\u03C1","sigmaf":"\u03C2","sigma":"\u03C3","tau":"\u03C4","upsilon":"\u03C5",
+	"phi":"\u03C6","chi":"\u03C7","psi":"\u03C8","omega":"\u03C9","thetasym":"\u03D1","upsih":"\u03D2","piv":"\u03D6","ensp":"\u2002",
+	"emsp":"\u2003","thinsp":"\u2009","zwnj":"\u200C","zwj":"\u200D","lrm":"\u200E","rlm":"\u200F","ndash":"\u2013","mdash":"\u2014",
+	"lsquo":"\u2018","rsquo":"\u2019","sbquo":"\u201A","ldquo":"\u201C","rdquo":"\u201D","bdquo":"\u201E","dagger":"\u2020","Dagger":"\u2021",
+	"bull":"\u2022","hellip":"\u2026","permil":"\u2030","prime":"\u2032","Prime":"\u2033","lsaquo":"\u2039","rsaquo":"\u203A","oline":"\u203E",
+	"frasl":"\u2044","euro":"\u20AC","image":"\u2111","weierp":"\u2118","real":"\u211C","trade":"\u2122","alefsym":"\u2135","larr":"\u2190",
+	"uarr":"\u2191","rarr":"\u2192","darr":"\u2193","harr":"\u2194","crarr":"\u21B5","lArr":"\u21D0","uArr":"\u21D1","rArr":"\u21D2",
+	"dArr":"\u21D3","hArr":"\u21D4","forall":"\u2200","part":"\u2202","exist":"\u2203","empty":"\u2205","nabla":"\u2207","isin":"\u2208",
+	"notin":"\u2209","ni":"\u220B","prod":"\u220F","sum":"\u2211","minus":"\u2212","lowast":"\u2217","radic":"\u221A","prop":"\u221D",
+	"infin":"\u221E","ang":"\u2220","and":"\u2227","or":"\u2228","cap":"\u2229","cup":"\u222A","int":"\u222B","there4":"\u2234","sim":"\u223C",
+	"cong":"\u2245","asymp":"\u2248","ne":"\u2260","equiv":"\u2261","le":"\u2264","ge":"\u2265","sub":"\u2282","sup":"\u2283","nsub":"\u2284",
+	"sube":"\u2286","supe":"\u2287","oplus":"\u2295","otimes":"\u2297","perp":"\u22A5","sdot":"\u22C5","lceil":"\u2308","rceil":"\u2309",
+	"lfloor":"\u230A","rfloor":"\u230B","lang":"\u2329","rang":"\u232A","loz":"\u25CA","spades":"\u2660","clubs":"\u2663","hearts":"\u2665",
+	"diams":"\u2666"
+};
+
+var currentEntities = commonEntities;
+
+
+function DictionaryParseError(message) {
+	this.message = message;
 }
 
-function lookup_url(url)
-{
-  log("lookup_url(" + url + ")");
-  if (!(state & stateLoading)) {
-    urlObj = new URL();
-    urlObj.location = url;
-    state = state | stateLoading;
-    urlObj.fetchAsync(url_done);
-    startLoadingAnimation();
-    if (!(wm == wmOpen) && !(state & stateTrans)) {
-      smoothTransition(wmOpen);
-    }
-  }
-}
-
-function lookup_word(query)
-{
-  lookup_url(currentURL() + escape(query));
-}
-
-
-function pronReplace(str, dict)
-{
-  if (dict == null) {
-    dict = 'dictionary.com';
-  }
-  
-  switch (dict) {
-    case 'dictionary.com':
-    default:
-//      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<i>(([^<]*))<\/i>/gi];
-      const pronTags = [/<img[^>]*abreve.gif[^>]*>/gi, /<img[^>]*amacr.gif[^>]*>/gi, /<img[^>]*ebreve.gif[^>]*>/gi, /<img[^>]*emacr.gif[^>]*>/gi, /<img[^>]*ibreve.gif[^>]*>/gi, /<img[^>]*imacr.gif[^>]*>/gi, /<img[^>]*oobreve.gif[^>]*>/gi, /<img[^>]*oomacr.gif[^>]*>/gi, /<img[^>]*obreve.gif[^>]*>/gi, /<img[^>]*omacr.gif[^>]*>/gi, /<img[^>]*ubreve.gif[^>]*>/gi, /<img[^>]*umacr.gif[^>]*>/gi, /<img[^>]*schwa.gif[^>]*>/gi, /<img[^>]*oelig.gif[^>]*>/gi, /<img[^>]*khsc.gif[^>]*>/gi, /<img[^>]*nsc.gif[^>]*>/gi, /<img[^>]*lprime.gif[^>]*>/gi, /<img[^>]*prime.gif[^>]*>/gi, /<img[^>]*mdash.gif[^>]*>/gi];
-      const pronStrings = ['\u0103', '\u0101', '\u0115', '\u0113', '\u012d', '\u012b', '\u014f\u014f', '\u014d\u014d', '\u014f', '\u014d', '\u016d', '\u016b', '\u0259', '\u0153', 'KH', 'N', '\u0384', '\u2032', '\u2014'];
-      
-      for (var i in pronTags) {
-        str = str.replace(pronTags[i], pronStrings[i]);
-      }
-      
-      break;
-  }
-  
-  return str;
-}
-
-function thesaurus_com_definition(str)
-{
-  var result;
-  var noResultRE = /no *entry *found/i;
-  
-  // pre-process
-  str = str.replace(/[\r\n]/gm, ' ');
-  
-  if (noResultRE.test(str)) {
-    // find the suggestions
-    result = str.match(/(<h2[^>]*>.*)<p>no entry was found/i);
-    if (result) {
-      return result[1];
-    } else {
-      return false;
-    }
-  }
-  
-  result = str.match(/<h2[^>]*>.*<\/h2>(([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>)/i);
-  if (result) {
-    return result[1];
-  } else {
-    return str;
-  }
-  
-  
-}
-
-
-function mediawiki_definition(str)
-{
-  var result;
-  
-  // pre-process
-  str = str.replace(/[\r\n]/gm, ' ');
-  
-  // result = str.match(/<!-- start content -->(.*)<!-- end content -->/);
-  result = str.match(/(<div id="column-content">.*)<div id="column-one">/);
-  
-  
-  if (result) {
-    str = result[1];
-  } else {
-    return false;
-  }
-  
-  /*
-  // pull out table of contents
-  str = str.replace(/<table id='toc'[^>]*>([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/gi, "");
-  */
-  
-  // pull out jump-to-nav
-  str = str.replace(/<div id="jump-to-nav">([^<]|<[^\/]|<\/[^d]|<\/d[^i]|<\/di[^v]|<\/div[^>])*<\/div>/i, "");
-  
-  // get rid of some extra spaces
-  str = str.replace(/<h1 class="firstHeading">(([^<]|<[^\/]|<\/[^h]|<\/h[^1]|<\/h1[^>])*)<\/h1>/, "<font size=\"+2\">$1</font>");
-  str = str.replace(/<h3 id="siteSub">(([^<]|<[^\/]|<\/[^h]|<\/h[^3]|<\/h3[^>])*)<\/h3>/, "$1");
-  
-  return str;
-  
+function DictionaryWordNotFoundError(message) {
+	this.message = message;
 }
 
 
-function m_w_com_definition(str)
-{
-  var result;
-  
-  // pre-process
-  str = str.replace(/[\r\n]/gm, ' ');
-  
-  result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^d]|<\/td[^>])*)<\/td>/i);
-  
-  // result = str.match(/((Main Entry:|Entry Word:)([^<]|<[^\/]|<\/[^t]|<\/t[^d]|<\/td[^>])*)<\/td>/i);
-  
-  
-  
-  if (result) {
-    str = result[1];
-  } else {
-    result = str.match(/<table cellpadding="5" width="400">([^<]|<[^\/]|<\/[^t]|<\/t[^a]|<\/ta[^b]|<\/tab[^l]|<\/tabl[^e]|<\/table[^>])*<\/table>/);
-    if (result) {
-      str = result[1];
-    } else {
-      return false;
-    }
-  }
-  
-  // Replace pronunciation popup link
-  str = str.replace(/javascript\:popWin\('\/cgi-bin\/audio.pl\?([^']*)'\)/, "http://m-w.com/cgi-bin/audio.pl?$1");
-  
-  return str;
-}
+// resultsBox.data = '<body><h1>Hello!</h1><p>Testing, 1, <span style="font-size: 14px;">2</span>, <i>3</i>...</p><h2>Heading 2</h2><p>More body text... <strong>la la la<br/>line break<br/>another</strong></p><p>More</p><p>and more</p><p>and yet more</p></body>';
 
-function dictionary_com_definition(str)
-{
-  var sections = new Array();
-  var result;
-  var noResultRE = /no *entry *found/i;
-  var newStr = "";
-  
-  // pre-process
-  str = str.replace(/[\r\n]/gm, ' ');
-  
-  if (noResultRE.test(str)) {
-    // find the suggestions
-    result = str.match(/(<h2[^>]*>.*)<p>no entry was found/i);
-    if (result) {
-      return result[1];
-    } else {
-      return false;
-    }
-  }
-  
-  var i = 0;
-  while (result = /<!-- begin (.+) -->(([^<]|<[^!]|<![^-]|<!-[^-]|<!--[^ ]|<!-- [^e]|<!-- e[^n]|<!-- en[^d])+)<!-- end \1 -->/gm.exec(str)) {
-    sections[i] = new Object();
-    sections[i].title = result[1];
-    sections[i].content = result[2];
-    i++;
-  }
-  
-  if (i == 0) {
-    return str;
-  }
-  
-  // Select a preferred dictionary
-  var prefDict = 0;
-  var foundAHD = false;
-  for (var i in sections) {
-    if (sections[i].title == "ahd4") {
-      if (/<\/b><SUP><FONT SIZE="-1">1/.test(sections[i].content)) {
-        prefDict = i;
-        break;
-      }
-      if (!foundAHD) {
-        prefDict = i;
-      }
-    }
-  }
-  
-  // Reformat
-  if (sections[prefDict].title == 'ahd4') {
-    // Heading
-    sections[prefDict].content = sections[prefDict].content.replace(/<b>([^<]*)<\/b>/i, "<font size='14'><b>$1</b></font>");
-    // Replace pronunciation key
-    sections[prefDict].content = sections[prefDict].content.replace(/\/help\/ahd4\/pronkey.html/, "http://dictionary.reference.com/help/ahd4/pronkey.html");
-  }
-  
-  
-  return pronReplace(sections[prefDict].content, "dictionary.com")
-}
+// resultsBox.data = '<body><p>testing<br/>1 2 3 4 5 6 ....<br/>891012031231!</p></body>';
 
 
-function showError(str, extra)
-{
-  var html = ''
-            +'<html><font size="16"><b>Error</b></font><br/>'
-            +'<b>' + str + '</b><br/>';
-  
-  if (extra != null) {
-    html += 'More information:<table>';
-    
-    for (var p in extra) {
-      html += '<tr><td><b>' + p + ':</b></td><td>' + extra[p] + '</td></tr>';
-    }
-    html += '</table>';
-  }
-  html += '</html>';
-  
-  defContent.setHtml(html);
-  
-  historyIndex++;
-  history.splice(historyIndex, history.length - historyIndex, html);
-  updateHistoryButtons();
-  
-}
+// resultsBox.data = '<body><p>hi ho</p><p style="display: none;">ho hi</p><p>off to work</p></body>';
 
+resultsBox.data = '<body><h1>cast</h1><h2>adjective</h2><ol><li>(of molten metal or glass) formed by pouring or pressing into a mold<br/><small> <b><font color="gray">Similar:</font></b> <a class="innerlinks" href="http://word.sc/formed">formed</a></small></li></ol><h2>noun</h2><ol><li>the actors in a play<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/cast_of_characters">cast of characters</a>, <a class="innerlinks" href="http://word.sc/dramatis_personae">dramatis personae</a></small></li><li>container into which liquid is poured to create a given shape when it hardens<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/mold">mold</a>, <a class="innerlinks" href="http://word.sc/mould">mould</a></small></li><li>the distinctive form in which a thing is made; "pottery of this cast was found throughout the region"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/mold">mold</a>, <a class="innerlinks" href="http://word.sc/stamp">stamp</a></small></li><li class=\'more_n\' style=\'display: none\'>the visual appearance of something or someone; "the delicate cast of his features"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/form">form</a>, <a class="innerlinks" href="http://word.sc/shape">shape</a></small></li><li class=\'more_n\' style=\'display: none\'>bandage consisting of a firm covering (often made of plaster of Paris) that immobilizes broken bones while they heal<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/plaster_bandage">plaster bandage</a>, <a class="innerlinks" href="http://word.sc/plaster_cast">plaster cast</a></small></li><li class=\'more_n\' style=\'display: none\'>object formed by a mold<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/casting">casting</a></small></li><li class=\'more_n\' style=\'display: none\'>the act of throwing dice<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/roll">roll</a></small></li><li class=\'more_n\' style=\'display: none\'>the act of throwing a fishing line out over the water by means of a rod and reel<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/casting">casting</a></small></li><li class=\'more_n\' style=\'display: none\'>a violent throw<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/hurl">hurl</a></small></li></ol><h2>verb</h2><ol><li>put or send forth; "She threw the flashlight beam into the corner"; "The setting sun threw long shadows"; "cast a spell"; "cast a warm light"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/contrive">contrive</a>, <a class="innerlinks" href="http://word.sc/project">project</a>, <a class="innerlinks" href="http://word.sc/throw">throw</a></small></li><li>deposit; "cast a vote"; "cast a ballot"<br/></li><li>select to play,sing, or dance a part in a play, movie, musical, opera, or ballet; "He cast a young woman in the role of Desdemona"<br/></li><li class=\'more_v\' style=\'display: none\'>throw forcefully<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/hurl">hurl</a>, <a class="innerlinks" href="http://word.sc/hurtle">hurtle</a></small></li><li class=\'more_v\' style=\'display: none\'>assign the roles of (a movie or a play) to actors; "Who cast this beautiful movie?"<br/></li><li class=\'more_v\' style=\'display: none\'>move about aimlessly or without any destination, often in search of food or employment; "The gypsies roamed the woods"; "roving vagabonds"; "the wandering Jew"; "The cattle roam across the prairie"; "the laborers drift from one town to the next"; "They ro<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/drift">drift</a>, <a class="innerlinks" href="http://word.sc/ramble">ramble</a>, <a class="innerlinks" href="http://word.sc/range">range</a>, <a class="innerlinks" href="http://word.sc/roam">roam</a>, <a class="innerlinks" href="http://word.sc/roll">roll</a>, <a class="innerlinks" href="http://word.sc/rove">rove</a>, <a class="innerlinks" href="http://word.sc/stray">stray</a>, <a class="innerlinks" href="http://word.sc/swan">swan</a>, <a class="innerlinks" href="http://word.sc/tramp">tramp</a>, <a class="innerlinks" href="http://word.sc/vagabond">vagabond</a>, <a class="innerlinks" href="http://word.sc/wander">wander</a></small></li><li class=\'more_v\' style=\'display: none\'>form by pouring (e.g., wax or hot metal) into a cast or mold; "cast a bronze sculpture"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/mold">mold</a>, <a class="innerlinks" href="http://word.sc/mould">mould</a></small></li><li class=\'more_v\' style=\'display: none\'>get rid of; "he shed his image as a pushy boss"; "shed your clothes"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/cast_off">cast off</a>, <a class="innerlinks" href="http://word.sc/drop">drop</a>, <a class="innerlinks" href="http://word.sc/shake_off">shake off</a>, <a class="innerlinks" href="http://word.sc/shed">shed</a>, <a class="innerlinks" href="http://word.sc/throw">throw</a>, <a class="innerlinks" href="http://word.sc/throw_away">throw away</a>, <a class="innerlinks" href="http://word.sc/throw_off">throw off</a></small></li><li class=\'more_v\' style=\'display: none\'>choose at random; "draw a card"; "cast lots"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/draw">draw</a></small></li><li class=\'more_v\' style=\'display: none\'>formulate in a particular style or language; "I wouldn\'\'t put it that way"; "She cast her request in very polite language"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/couch">couch</a>, <a class="innerlinks" href="http://word.sc/frame">frame</a>, <a class="innerlinks" href="http://word.sc/put">put</a>, <a class="innerlinks" href="http://word.sc/redact">redact</a></small></li><li class=\'more_v\' style=\'display: none\'>eject the contents of the stomach through the mouth; "After drinking too much, the students vomited"; "He purged continuously"; "The patient regurgitated the food we gave him last night"<br/><small><b><font color="gray">Synonyms:</font></b> <a class="innerlinks" href="http://word.sc/barf">barf</a>, <a class="innerlinks" href="http://word.sc/be_sick">be sick</a>, <a class="innerlinks" href="http://word.sc/cat">cat</a>, <a class="innerlinks" href="http://word.sc/chuck">chuck</a>, <a class="innerlinks" href="http://word.sc/disgorge">disgorge</a>, <a class="innerlinks" href="http://word.sc/honk">honk</a>, <a class="innerlinks" href="http://word.sc/puke">puke</a>, <a class="innerlinks" href="http://word.sc/purge">purge</a>, <a class="innerlinks" href="http://word.sc/regorge">regorge</a>, <a class="innerlinks" href="http://word.sc/regurgitate">regurgitate</a>, <a class="innerlinks" href="http://word.sc/retch">retch</a>, <a class="innerlinks" href="http://word.sc/sick">sick</a>, <a class="innerlinks" href="http://word.sc/spew">spew</a>, <a class="innerlinks" href="http://word.sc/spue">spue</a>, <a class="innerlinks" href="http://word.sc/throw_up">throw up</a>, <a class="innerlinks" href="http://word.sc/upchuck">upchuck</a>, <a class="innerlinks" href="http://word.sc/vomit">vomit</a>, <a class="innerlinks" href="http://word.sc/vomit_up">vomit up</a></small><small> <b><font color="gray">Antonyms:</font></b> <a class="innerlinks" href="http://word.sc/keep_down">keep down</a></small></li></ol></body>';
 
-function show_definition(str)
-{
-  switch(booksArray[preferences.selectedBook.value].filter) {
-    case "Dictionary.com":
-      str = dictionary_com_definition(str);
-      break;
-    case "Thesaurus.com":
-      str = thesaurus_com_definition(str);
-      break;
-    case "MediaWiki":
-      str = mediawiki_definition(str);
-      break;
-    case "m-w.com":
-      str = m_w_com_definition(str);
-      break;
-    default:
-      break;
-  }
-  
-  if (str == null || str == false) {
-    str = "No entry found for <b>" + query.data + "</b>";
-    return;
-  }
-  
-  var curHref = currentURL();
-  defContent.hrefBase = hrefBase(curHref);
-  
-  var html = closeTags(str);
-  
-  defContent.setHtml(html);
-  
-  historyIndex++;
-  history.splice(historyIndex, history.length - historyIndex, html);
-  updateHistoryButtons();
-}
-
-
-function hrefBase(url)
-{
-  return url.substr(0, url.lastIndexOf("/") + 1);
-}
-
-
-function url_done(url)
-{
-  loadingDots.clipRect = null;
-  updateNow();
-  urlTimer.ticking = false;
-  if (url == null) {
-    url = urlObj;
-  }
-  if (state & stateTrans) {
-    // wait until we're done extending
-    urlTimer.onTimerFired = "url_done(null)";
-    urlTimer.ticking = true;
-    return;
-  } else if (wm != wmOpen) {
-    // we've been closed - cancel
-    urlObj = null;
-    return;
-  }
-  state = state & ~stateLoading;
-  if (url.response == 200) {
-    show_definition(url.result);
-  } else {
-    showError('HTTP Error - server may be down, or connection may be lost.', url);
-  }
-  stopLoadingAnimation();
-}
-
-
-
-function smoothTransition(mode)
-{
-  if (state & stateTrans) {
-    return;
-  }
-  
-  delete main.hOffset0;
-  delete main.hOffset1;
-  delete main.vOffset1;
-  delete main.vOffset2;
-  
-  switch (wm) {
-    case wmCompact:
-      if (shouldExpandLeft()) {
-        main.hOffset0 = main.hOffset;
-        main.hOffset1 = main.hOffset - 117;
-      }
-      if (shouldExpandUp()) {
-        main.vOffset1 = main.vOffset;
-        main.vOffset2 = main.vOffset - 283;
-      }
-      switch (mode) {
-        case wmCompact:
-          return;
-          break;
-        case wmWide:
-          nextWm = nextNextWm = w3ide;
-          break;
-        case wmOpen:
-          nextWm = wmWide;
-          nextNextWm = wmOpen;
-          break;
-      }
-      break;
-    case wmWide:
-      if (shouldExpandLeft()) {
-        main.hOffset1 = main.hOffset;
-        main.hOffset0 = main.hOffset + 117;
-      }
-      if (shouldExpandUp()) {
-        main.vOffset1 = main.vOffset;
-        main.vOffset2 = main.vOffset - 283;
-      }
-      switch (mode) {
-        case wmCompact:
-          nextWm = nextNextWm = wmCompact;
-          break;
-        case wmWide:
-          return;
-          break;
-        case wmOpen:
-          nextWm = nextNextWm = wmOpen;
-          break;
-      }
-      break;
-    case wmOpen:
-      if (shouldExpandLeft()) {
-        main.hOffset1 = main.hOffset;
-        main.hOffset0 = main.hOffset + 117;
-      }
-      if (shouldExpandUp()) {
-        main.vOffset2 = main.vOffset;
-        main.vOffset1 = main.vOffset + 283;
-      }
-      switch (mode) {
-        case wmCompact:
-          nextWm = wmWide;
-          nextNextWm = wmCompact;
-          break;
-        case wmWide:
-          nextWm = nextNextWm = wmWide;
-          break;
-        case wmOpen:
-          return;
-          break;
-      }
-      break;
-  }
-  
-  startTransition();
-}
-
-function startTransition()
-{
-
-  query.editable = false;
-
-  switch (wm) {
-    case wmOpen:
-      defContent.opacity = 0;
-      defContent.setHtml("");
-      history = new Array();
-      historyIndex = -1;
-      break;
-  }
-  
-  switch (nextWm) {
-    case wmWide:
-      main.width = 446;
-      break;
-    case wmOpen:
-      main.height = 334;
-      break;
-  }
-  
-  var slide_time = 750;
-  
-  state = state | stateTrans;
-  
-  animatorA = new CustomAnimation(15, TransitionAnimationUpdate, endTransition);
-  animatorA.duration = slide_time;
-  animatorA.easeType = animator.kEaseInOut;
-  
-  animatorA.objects = new Array();
-  
-  for (var i in transObjects) {
-    var keep = false;
-    var o = new Object();
-    o.begin = new Object();
-    o.end = new Object();
-    for (var j in transObjects[i]) {
-      if (j.substring(j.length - 1) == wm) {
-        o.begin[j.substring(0, j.length - 1)] = transObjects[i][j];
-      }
-      if (j.substring(j.length - 1) == nextWm) {
-        o.end[j.substring(0, j.length - 1)] = transObjects[i][j];
-      }
-    }
-    
-    for (var j in o.begin) {
-      if (o.end[j] != null && o.begin[j] != o.end[j]) {
-        keep = true;
-      } else {
-        delete o.begin[j];
-      }
-    }
-    for (var j in o.end) {
-      if (o.begin[j] != null) {
-        keep = true;
-      } else {
-        delete o.end[j];
-      }
-    }
-    
-    if (keep == true) {
-      o.obj = transObjects[i];
-      animatorA.objects.push(o);
-      /*
-      print(i);
-      pdump(o.begin);
-      pdump(o.end);
-      */
-    }
-  }
-  
-  animator.start(animatorA);
-}
-
-
-function endTransition()
-{
-  wm = nextWm;
-  nextWm = nextNextWm;
-  
-  switch (wm) {
-    case wmCompact:
-      main.width = 329;
-      break;
-    case wmWide:
-      main.height = 51;
-      break;
-  }
-  
-  query.editable = true;
-  
-  switch (wm) {
-    case wmCompact:
-    case wmWide:
-      query.select(-1, -1);
-      break;
-    case wmOpen:
-      // extenderCowl.opacity = 255;
-      defContent.opacity = 255;
-      if (state & stateLoading) {
-        defContent.setHtml("<html><font size='20'>Loading...</font></html>");
-      }
-      break;
-  }
-  
-  if (wm == nextWm) {
-    state = state & ~stateTrans;
-  } else {
-    startTransition();
-  }
-}
-
-
-
-
-
-function limit(x, min, max)
-{
-  if (x <= min)
-    return min;
-  else if (x >= max)
-    return max;
-  else
-    return x;
-}
-
-
-function TransitionAnimationUpdate()
-{
-  var now = animator.milliseconds;
-  var t = limit(now - this.startTime, 0, this.duration);
-  var percent = t / this.duration;
-  
-  if (animator.milliseconds >= (this.startTime + this.duration)) {
-    for (var i in this.objects) {
-      for (var j in this.objects[i].end) {
-        this.objects[i].obj[j] = this.objects[i].end[j];
-      }
-    }
-    return false;
-  } else {
-    for (var i in this.objects) {
-      for (var j in this.objects[i].end) {
-        this.objects[i].obj[j] = animator.ease(this.objects[i].begin[j], this.objects[i].end[j], percent, this.easeType);
-      }
-    }
-    return true;
-  }
-}
-
-
-
-
-function onWillChangePreferences()
-{
-  
-}
-
-
-function onPreferencesChanged()
-{
-  if (preferences.revertToDefaults.value == true) {
-    preferences.books.value = preferences.books.defaultValue;
-    preferences.selectedBook.value = preferences.selectedBook.defaultValue;
-    preferences.revertToDefaults.value = false;
-  }
-  
-  defContent.tagRoot.font = preferences.dictionaryFont.value;
-  defContent.tagRoot.size = parseFloat(preferences.dictionarySize.value);
-  query.font = preferences.dictionaryFont.value;
-  
-  defContent.setHtml(defContent.html);
-  
-  buildBooksArray();
-  buildDropdownMenu();
-  applyBackground();
-}
-
-
-function copy_onSelect()
-{
-  system.clipboard = defContent.plainText;
-}
-
-function paste_onSelect()
-{
-  external_lookup(system.clipboard);
-}
-
-
-function external_lookup(str)
-{
-  query.data = str.substr(0, 32).replace(/^[\s\n]+|[\s\n]+$/, "");
-  lookup_word(query.data);
-}
-
-
-function shouldExpandLeft()
-{
-  switch (preferences.anchor.value) {
-    case "auto":
-      if ((main.hOffset + main.width) > (screen.availWidth * 0.85)) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    case "topleft":
-    case "bottomleft":
-      return false;
-      break;
-    case "topright":
-    case "bottomright":
-      return true;
-      break;
-  }
-}
-
-function shouldExpandUp()
-{
-  switch (preferences.anchor.value) {
-    case "auto":
-      if ((main.vOffset + main.height) > (screen.availHeight * 0.85)) {
-        return true;
-      } else {
-        return false;
-      }
-      break;
-    case "topleft":
-    case "topright":
-      return false;
-      break;
-    case "bottomleft":
-    case "bottomright":
-      return true;
-      break;
-  }
-}
-
-function onUnload()
-{
-  suppressUpdates();
-  // move the window to a proper "closed" position
-  if (shouldExpandLeft() && main.width > 329) {
-    main.hOffset += 117;
-  }
-  if (shouldExpandUp() && main.height > 51) {
-    main.vOffset += 283;
-  }
-  
-  savePreferences();
-}
-
-function hTop_onDragDrop()
-{
-  hTop_onDragExit();
-  if (system.event.data[0] == "string") {
-    external_lookup(system.event.data[1]);
-  }
-}
-
-function hTop_onDragEnter()
-{
-  
-}
-
-function hTop_onDragExit()
-{
-  
-}
-
-function dictionaryTitle_onMouseUp()
-{
-
-}
-
-function startLoadingAnimation()
-{
-  stopLoadingAnimation();
-  loadingAnimationUpdateFunc.a = new CustomAnimation(500, loadingAnimationUpdateFunc);
-  loadingAnimationUpdateFunc.a.numDots = 3;
-  animator.start(loadingAnimationUpdateFunc.a);
-}
-
-function stopLoadingAnimation()
-{
-  if (loadingAnimationUpdateFunc.a) {
-    loadingAnimationUpdateFunc.a.kill();
-  }
-  loadingDots.visible = false;
-}
-
-function loadingAnimationUpdateFunc()
-{
-  if (!loadingDots.visible) {
-    loadingDots.visible = true;
-  }
-  switch (this.numDots) {
-    case 0:
-      loadingDots.clipRect = "0, 0, 0, 0";
-      break;
-    case 1:
-      loadingDots.clipRect = "0, 0, 5, 6";
-      break;
-    case 2:
-      loadingDots.clipRect = "0, 0, 16, 6";
-      break;
-    case 3:
-      loadingDots.clipRect = "0, 0, 28, 6";
-      break;
-    default:
-      this.numDots = 0;
-  }
-  this.numDots++;
-  this.numDots %= 4;
-  return true;
-}
-loadingAnimationUpdateFunc.a = null;
-
-function pdump(obj)
-{
-  print("PDUMP");
-  for (var i in obj) {
-    if (typeof(obj[i]) != "function") {
-      print("  [" + i + "]: " + obj[i]);
-    }
-  }
-}
-
-
-initialize();
-
+// resultsBox.data = '<body><h1>Hello!</h1><p>Testing, 1, 2, 3...</p><h2>Heading 2</h2><p>More body text... la la la</p></body>';
+// resultsBox.data = '<body><p>Testing</p><p>More</p><p>and more</p><p>and yet more</p></body>';

@@ -1,0 +1,61 @@
+/**
+ * jhtml.css
+ * default styles for JHTML display
+ * multi-level selectors are not supported at this time - keep things simple!
+ */
+ 
+body {
+	font-family: "Lucida Grande","Lucida Sans Unicode","Lucida Sans",sans-serif;
+	font-size: 12px;
+	line-height: 1.1;
+	color: #000;
+}
+ 
+h1, h2, h3, h4, h5, h6, p, ol, ul, li, div {
+	display: block;
+}
+
+h1, h2, h3 {
+	font-weight: bold;
+}
+
+ul, ol {
+	padding-left: 5px;
+}
+
+li {
+	padding-bottom: 3px;
+	padding-top: 3px;
+	padding-left: 10px;
+}
+
+h1 {
+	padding-top: 3px;
+	padding-bottom: 8px;
+	font-size: 16px;
+}
+
+h2 {
+	padding-top: 8px;
+	padding-bottom: 4px;
+	font-size: 14px;
+}
+
+a {
+	text-decoration: underline;
+}
+
+i, em {
+	font-style: italic;
+}
+
+b, strong {
+	font-weight: bold;
+}
+
+small {
+	font-size: 10px;
+}
+
+p {
+}

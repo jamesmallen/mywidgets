@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<name>Dictionary</name>
+	<version>2.0</version>
+	<identifier>com.yahoo.widget.vitalitytest</identifier>
+	<author name="James M. Allen" href="http://www.kzoowidgets.com"/>
+	<copyright>(c) 2007 James M. Allen</copyright>
+	<description>A Dictionary Widget</description>
+	<platform minVersion="4.0" />
+</metadata>
