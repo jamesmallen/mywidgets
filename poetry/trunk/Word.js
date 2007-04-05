@@ -31,7 +31,7 @@ function Word()
   
   this.txt = new Text();
   this.txt.hAlign = "center";
-  this.txt.zOrder = this.zOrder;
+  // this.txt.zOrder = this.zOrder;
   
   this.frame = new Frame();
   this.frame.addSubview(this.kmgBg.frame);
@@ -46,7 +46,7 @@ Word.baseZOrder = 0;
 
 // Static Methods
 
-Word.refresh = function()
+Word.reAlign = function()
 {
   for (var i in Word.ids) {
     Word.ids[i].align();
@@ -56,8 +56,10 @@ Word.refresh = function()
 Word.clearAll = function()
 {
   for (var i in Word.ids) {
-    Word.ids[i].clear();
+    Word.ids[i].clear(true); // Cheap clear
   }
+  
+  Word.reZOrder();
 }
 
 Word.reZOrder = function()
@@ -139,12 +141,10 @@ Word.unserialize = function(arrInternal)
     var wrd = new Word();
     // arrWords.push(wrd);
     var arrI = arrInternal[i].split(",");
-    wrd.set("window", main);
+    wrd.set("window", wndMain);
     wrd.set("data", unescape(arrI[0]));
-    // wrd.align();
     wrd.set("hOffset", parseInt(arrI[1]));
     wrd.set("vOffset", parseInt(arrI[2]));
-    // wrd.align();
   }
   
   Word.fitOnPage();
@@ -169,14 +169,18 @@ Word.prototype.clear = function(cheap)
   this.kmgBg = null;
   this.txt.removeFromSuperview();
   this.txt = null;
+  this.frame.removeFromSuperview();
+  this.frame = null;
   
   Word.ids[this.id] = null;
   delete Word.ids[this.id];
   Word.zArr.splice(this.zOrder - Word.baseZOrder, 1);
   
+  
   if (!cheap) {
     Word.reZOrder();
   }
+  
 }
 
 Word.prototype.kmgBg_onMouseDown = function()
@@ -196,8 +200,9 @@ Word.prototype.kmgBg_onMouseUp = function()
 {
   this.dragStart = null;
   
-  if (((this.hOffset + this.width) < 0) || ((this.vOffset + this.height) < 0) || (this.hOffset > main.width) || (this.vOffset > main.height)) {
+  if (((this.hOffset + this.width) < 0) || ((this.vOffset + this.height) < 0) || (this.hOffset > wndMain.width) || (this.vOffset > wndMain.height)) {
     // off the edges - destroy this word!
+    /*
     var i;
     // for (i = 0; i < arrWords.length; i++) {
     for (i in Word.ids) {    
@@ -208,6 +213,7 @@ Word.prototype.kmgBg_onMouseUp = function()
         break;
       }
     }
+    */
     this.clear();
   } else {
     this.keepOn();
@@ -229,7 +235,7 @@ Word.prototype.kmgBg_onMouseMove = function()
   this.set("hOffset", intNewHOffset);
   this.set("vOffset", intNewVOffset);
   
-  this.align(true);
+  // this.align(true);
 }
 
 
@@ -238,25 +244,25 @@ Word.prototype.keepOn = function()
   // off the left side
   if ((this.hOffset + this.width / 2) < 0) {
     this.set("hOffset", this.width / -2);
-    this.align();
+    // this.align();
   }
   
   // off the top
   if ((this.vOffset + this.height / 2) < 0) {
     this.set("vOffset", this.height / -2);
-    this.align();
+    // this.align();
   }
   
   // off the right side
-  if ((this.hOffset + this.width / 2) > main.width) {
-    this.set("hOffset", main.width - this.width / 2);
-    this.align();
+  if ((this.hOffset + this.width / 2) > wndMain.width) {
+    this.set("hOffset", wndMain.width - this.width / 2);
+    // this.align();
   }
   
   // off the bottom
-  if ((this.vOffset + this.height / 2) > main.height) {
-    this.set("vOffset", main.height - this.height / 2);
-    this.align();
+  if ((this.vOffset + this.height / 2) > wndMain.height) {
+    this.set("vOffset", wndMain.height - this.height / 2);
+    // this.align();
   }
 }
 
@@ -266,8 +272,6 @@ Word.prototype.set = function(property, value)
   switch (property) {
     case "data":
       this.txt.data = value;
-      // Call align manually after all changes are done per update cycle
-      // this.align();
       break;
     case "hOffset":
     case "vOffset":
@@ -275,9 +279,6 @@ Word.prototype.set = function(property, value)
     case "zOrder":
       this[property] = value;
       this.frame[property] = value;
-      // this[property] = value;
-      // Call align manually after all changes are done per update cycle
-      // this.align();
       break;
   }
 }

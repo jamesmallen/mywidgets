@@ -12,7 +12,7 @@
 <widget author="James M. Allen" copyright="2005-2006 James M. Allen" version="v0.9" minimumVersion="3.0" debug="verbose">
   <option>allowCustomObjectAttributes</option>
   
-  <window name="main" title="Poetry" width="300" height="300" opacity="255" shadow="0" visible="1"/>
+  <window name="wndMain" title="Poetry" width="300" height="300" opacity="255" shadow="0" visible="1"/>
   
   <action trigger="onLoad" file="Poetry.js" />
   <action trigger="onPreferencesChanged">onPreferencesChanged()</action>
@@ -21,7 +21,7 @@
   
   <preferenceGroup name="appearance" title="Appearance" icon="Resources/AppearanceIcon.png"/>
   <preferenceGroup name="font" title="Font" icon="Resources/FontIcon.png"/>
-  
+  <!--
   <preference name="wordsPerClick" title="Words/click:" type="popup" defaultValue="-1">
 		<option>All</option>
 		<optionValue>-1</optionValue>
@@ -37,9 +37,10 @@
     <optionValue>50</optionValue>
     <description>The number of words that will be added when you click the Add button.</description>
   </preference>
+  -->
   
-  <preference name="revertSources" title="Reset sources" type="checkbox" defaultValue="0" notSaved="true">
-    <description>Checking the above box will reset the word sources list to its default contents, deleting any custom sources you have created.</description>
+  <preference name="revertSources" title="Reload packages" type="checkbox" defaultValue="0" notSaved="true">
+    <description>Checking the above box will reinstall the default Word Packages. You may need to do this after upgrading to a newer version of Poetry, or if your Widget Data folder is deleted.</description>
   </preference>
   
   <preference name="bgColor" group="appearance" title="Background Color:" type="color" defaultValue="#BFBFBF"/>
@@ -62,6 +63,10 @@
   <preference name="wordVTweak" group="font" title="Vertical Tweak:" type="text" defaultValue="0">
     <description>Enter a positive or negative number to adjust the vertical offset of text (With many fonts, you can leave this at 0).</description>
   </preference>
+  
+  <preference name="wordsPerClick" hidden="true" defaultValue="-1" />
+  <preference name="recentFile" hidden="true" />
+  <preference name="recentURL" hidden="true" />
   
   <preference name="doNotCache" hidden="true" defaultValue="0"/>
   <preference name="width" hidden="true" defaultValue="-1"/>

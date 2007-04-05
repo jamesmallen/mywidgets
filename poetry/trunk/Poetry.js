@@ -20,10 +20,10 @@ function main_onLoad()
   strPackageFolder = system.widgetDataFolder + "/Packages";
   
   
-  main.onContextMenu = "main_onContextMenu()";
+  wndMain.onContextMenu = "main_onContextMenu()";
   
   kmgBackground = new KImage();
-  kmgBackground.window = main;
+  kmgBackground.window = wndMain;
   kmgBackground.hOffset = 0;
   kmgBackground.vOffset = 0;
   kmgBackground.src = "Resources/Background*.png";
@@ -32,7 +32,7 @@ function main_onLoad()
   anmButtons = null;
   
   imgTrashButton = new Image();
-  imgTrashButton.window = main;
+  imgTrashButton.window = wndMain;
   imgTrashButton.src = "Resources/TrashButton.png";
   imgTrashButton.opacity = 0;
   imgTrashButton.onMouseEnter = "generic_onMouseEnter('imgTrashButton'); imgTrashButton.opacity = 255;";
@@ -41,7 +41,7 @@ function main_onLoad()
   imgTrashButton.vAlign = "bottom";
   
   imgSaveButton = new Image();
-  imgSaveButton.window = main;
+  imgSaveButton.window = wndMain;
   imgSaveButton.src = "Resources/SaveButton.png";
   imgSaveButton.opacity = 0;
   imgSaveButton.onMouseEnter = "generic_onMouseEnter('imgSaveButton'); imgSaveButton.opacity = 255;";
@@ -52,7 +52,7 @@ function main_onLoad()
   
   
   imgAddButton = new Image();
-  imgAddButton.window = main;
+  imgAddButton.window = wndMain;
   imgAddButton.src = "Resources/AddButton.png";
   imgAddButton.opacity = 0;
   imgAddButton.onMouseEnter = "generic_onMouseEnter('imgAddButton'); imgAddButton.opacity = 255;";
@@ -66,7 +66,7 @@ function main_onLoad()
   objFileCache = new Object();;
   
   rzr = new Resizer();
-  rzr.img.window = main;
+  rzr.img.window = wndMain;
   rzr.onResize = resize;
   rzr.saveWidth = "preferences.width.value";
   rzr.saveHeight = "preferences.height.value";
@@ -84,7 +84,8 @@ function main_onLoad()
   
   loadPackageFromPrefs();
   
-  unserializeWordSources();
+  refreshWordPackages();
+  // unserializeWordSources();
   
   onPreferencesChanged();
   
@@ -128,15 +129,6 @@ function clearAll()
 {
   var result = alert("Are you sure you want to clear all the words?", "Yes", "No");
   if (result == 1) {
-    // Yes
-    /*
-    for (var i in arrWords) {
-      arrWords[i].clear();
-      arrWords[i] = null;
-    }
-    
-    arrWords = new Array();
-    */
     Word.clearAll();
   }
   savePackageToPrefs();
@@ -152,6 +144,7 @@ function savePackageToPrefs()
   preferences.wordPositions.value = Word.serialize().join("|");
 }
 
+/*
 function serializeWordSources()
 {
   var arrCustomURLs = new Array();
@@ -178,6 +171,7 @@ function unserializeWordSources()
     arrWordSourceURLs.push(o);
   }
 }
+
 
 
 function editWordSources()
@@ -290,8 +284,9 @@ function editWordSources()
   serializeWordSources();
   
 }
+*/
 
-
+/*
 function addWordsFromAllFiles(numWords)
 {
   if (typeof(numWords) == "undefined") {
@@ -323,9 +318,9 @@ function addWordsFromAllFiles(numWords)
   }
   
 }
+*/
 
-
-
+/*
 function addWordsFromFile(fileIndex, numWords)
 {
   if (typeof(numWords) == "undefined") {
@@ -351,7 +346,111 @@ function addWordsFromFile(fileIndex, numWords)
   savePackageToPrefs();
   
 }
+*/
 
+
+function importFile()
+{
+  var arrFormFields = new Array();
+  var ff = new FormField();
+  ff.title = "File:";
+  ff.type = "selector";
+  ff.style = "open";
+  ff.extension = [".txt"];
+  ff.defaultValue = preferences.recentFile.value;
+  arrFormFields.push(ff);
+  
+  var ff = new FormField();
+  ff.title = "# of words to add:";
+  ff.type = "popup";
+  ff.option = ["All", "1", "5", "10", "20", "50"];
+  ff.optionValue = ["-1", "1", "5", "10", "20", "50"];
+  ff.defaultValue = preferences.wordsPerClick.value;
+  arrFormFields.push(ff);
+  
+  var result = form(arrFormFields, "Import file", "OK", "Cancel");
+  
+  if (!result) {
+    return;
+  }
+  
+  addWordsFromFile(result[0], result[1]);
+  
+  preferences.recentFile.value = result[0];
+  preferences.wordsPerClick.value = result[1];
+  
+}
+
+function addWordsFromFile(path, numWords)
+{
+  if (typeof(numWords) == "undefined") {
+    numWords = -1;
+  }
+  
+  arrFile = filesystem.readFile(path, true);
+  pdump(arrFile);
+  
+  if (numWords < 0) {
+    for (var i = 0; i < arrFile.length; i++) {
+      addWord(arrFile[i]);
+      
+      if (i % 10 == 0) {
+        updateNow();
+      }
+    }
+  } else {
+    for (var i = 0; i < numWords; i++) {
+      addWord(arrFile[random(0, arrFile.length)]);
+    }
+  }
+  
+  savePackageToPrefs();
+}
+
+function importURL()
+{
+  var arrFormFields = new Array();
+  var ff = new FormField();
+  ff.title = "URL:";
+  ff.type = "text";
+  ff.defaultValue = preferences.recentURL.value;
+  arrFormFields.push(ff);
+  
+  var ff = new FormField();
+  ff.title = "# of words to add:";
+  ff.type = "popup";
+  ff.option = ["All", "1", "5", "10", "20", "50"];
+  ff.optionValue = ["-1", "1", "5", "10", "20", "50"];
+  ff.defaultValue = preferences.wordsPerClick.value;
+  arrFormFields.push(ff);
+  
+  var result = form(arrFormFields, "Import URL", "OK", "Cancel");
+  
+  if (!result) {
+    return;
+  }
+  
+  addWordsFromUrl(result[0], result[1]);
+  
+  preferences.recentURL.value = result[0];
+  preferences.wordsPerClick.value = result[1];
+  
+}
+
+
+function addWordsFromUrl(url, numWords)
+{
+  if (typeof(numWords) == "undefined") {
+    numWords = -1;
+  }
+  
+  var url = new URL();
+  url.location = url;
+  url.numWords = numWords;
+  url.fetchAsync(addWordsFromUrl_done);
+}
+
+/*
 function addWordsFromUrl(urlIndex, numWords)
 {
   if (typeof(numWords) == "undefined") {
@@ -365,7 +464,36 @@ function addWordsFromUrl(urlIndex, numWords)
   
   
 }
+*/
 
+function addWordsFromUrl_done(url)
+{
+  if (url.response > 400) {
+    return;
+  }
+  
+  var str = url.result;
+  str = str.replace(/<script>[^<]*<\/script>/g, " ");
+  str = str.replace(/<[^>]*>/g, " ");
+  str = str.replace(/\&.{1,5};/g, " ");
+  
+  var arrUrl = str.match(/\w+/g);
+  
+  if (url.numWords < 0) {
+    for (var i = 0; i < arrUrl.length; i++) {
+      addWord(arrUrl[i]);
+    }
+  } else {
+    for (var i = 0; i < url.numWords; i++) {
+      addWord(arrUrl[random(0, arrUrl.length)]);
+    }
+  }
+  
+  savePackageToPrefs();
+}
+
+
+/*
 function addWordsFromUrl_done(url)
 {
   if (url.response > 400) {
@@ -393,6 +521,8 @@ function addWordsFromUrl_done(url)
   
 
 }
+*/
+
 
 function popupAddWords()
 {
@@ -416,17 +546,17 @@ function popupAddWords()
   arrPopupMenu.push(mi);
   
   var mi = new MenuItem();
-  mi.title = "Import from URL";
+  mi.title = "Import from URL...";
   mi.onSelect = "importURL();";
   arrPopupMenu.push(mi);
   
   var mi = new MenuItem();
-  mi.title = "Import from file";
+  mi.title = "Import from file...";
   mi.onSelect = "importFile();";
   arrPopupMenu.push(mi);
   
   var mi = new MenuItem();
-  mi.title = "Single word";
+  mi.title = "Single word...";
   mi.onSelect = "addCustomWord();";
   arrPopupMenu.push(mi);
   
@@ -455,12 +585,10 @@ function addCustomWord()
 function addWord(data)
 {
   var w = new Word();
-  // arrWords.push(w);
-  w.set("window", main);
+  w.set("window", wndMain);
   w.set("data", data);
-  // w.align();
-  w.set("hOffset", random(0 + w.width, main.width - w.width));
-  w.set("vOffset", random(0 + w.height, main.height - w.height));
+  w.set("hOffset", random(0 + w.width, wndMain.width - w.width));
+  w.set("vOffset", random(0 + w.height, wndMain.height - w.height));
   w.align();
 }
 
@@ -476,20 +604,20 @@ function autoPosition(spot)
     case "center":
       preferences.width.value = screen.availWidth / 2;
       preferences.height.value = screen.availHeight / 2;
-      main.hOffset = screen.availLeft + screen.availWidth / 2;
-      main.vOffset = screen.availTop + screen.availHeight / 4;
+      wndMain.hOffset = screen.availLeft + screen.availWidth / 2;
+      wndMain.vOffset = screen.availTop + screen.availHeight / 4;
       break;
     case "tallcenter":
       preferences.width.value = screen.availWidth / 2;
       preferences.height.value = screen.availHeight;
-      main.hOffset = screen.availLeft + screen.availWidth / 4;
-      main.vOffset = screen.availTop;
+      wndMain.hOffset = screen.availLeft + screen.availWidth / 4;
+      wndMain.vOffset = screen.availTop;
       break;
     default:
       preferences.width.value = 400;
       preferences.height.value = 240;
-      main.hOffset = screen.availLeft + screen.availWidth / 2;
-      main.vOffset = screen.availTop + screen.availHeight / 4;
+      wndMain.hOffset = screen.availLeft + screen.availWidth / 2;
+      wndMain.vOffset = screen.availTop + screen.availHeight / 4;
   }
   
 }
@@ -507,13 +635,13 @@ function resize(intWidth, intHeight, optimize)
   intWidth = Math.max(150, intWidth);
   intHeight = Math.max(150, intHeight);
   
-  if (intWidth != main.width) {
+  if (intWidth != wndMain.width) {
     kmgBackground.width = intWidth;
     rzr.img.hOffset = intWidth;
     imgSaveButton.hOffset = intWidth / 2;
     imgAddButton.hOffset = intWidth;
   }
-  if (intHeight != main.height) {
+  if (intHeight != wndMain.height) {
     kmgBackground.height = intHeight;
     rzr.img.vOffset = intHeight;
     
@@ -525,15 +653,15 @@ function resize(intWidth, intHeight, optimize)
   if (optimize) {
     // optimized resizing - pre-empt big resizes
     // (these should be cleaned up when resizing is done)
-    if (intWidth > main.width) {
-      main.width = intWidth * 1.25;
+    if (intWidth > wndMain.width) {
+      wndMain.width = intWidth * 1.25;
     }
-    if (intHeight > main.height) {
-      main.height = intHeight * 1.25;
+    if (intHeight > wndMain.height) {
+      wndMain.height = intHeight * 1.25;
     }
   } else {
-    main.width = intWidth;
-    main.height = intHeight;
+    wndMain.width = intWidth;
+    wndMain.height = intHeight;
   }
   
 }
@@ -542,21 +670,14 @@ function onPreferencesChanged()
 {
   if (preferences.revertSources.value == "1") {
     preferences.revertSources.value = "0";
-    preferences.customFiles.value = preferences.customFiles.defaultValue;
-    preferences.customURLs.value = preferences.customURLs.defaultValue;
-    
+    intWordPackages();
   }
   
   
   kmgBackground.opacity = parseInt(preferences.bgOpacity.value);
   kmgBackground.colorize = preferences.bgColor.value;
   
-  Word.refresh();
-  /*
-  for (var i in arrWords) {
-    arrWords[i].align();
-  }
-  */
+  Word.reAlign();
 }
 
 function main_onFirstDisplay()
@@ -633,7 +754,7 @@ function main_onContextMenu()
   mi.onSelect = "donate();";
   contextMenu.push(mi);
   
-  main.contextMenuItems = contextMenu;
+  wndMain.contextMenuItems = contextMenu;
 }
 
 function saveWordPackage()
