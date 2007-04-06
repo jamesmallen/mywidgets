@@ -560,6 +560,15 @@ function KImage(params, parent)
 		this.watch(KImage.propertiesImage[i], _imagePassThruProxy);
 	}
 	
+	var _canvasPassThru = function(property, oldval, newval) {
+		this.canvas[property] = newval;
+		return newval;
+	}
+	
+	for (var i in KImage.propertiesCanvas) {
+		this.watch(KImage.propertiesCanvas[i], _canvasPassThru);
+	}
+	
 	
 	var _refreshPassThru = function(property, oldval, newval) {
 		newval = parseInt(newval);
@@ -632,11 +641,10 @@ function KImage(params, parent)
 	}
 	
 	this.refresh = function() {
-		// log('start refresh');
 		_draw();
 	}
 	
-	// Finally, draw the throbber in its initial state
+	// Finally, draw the KImage in its initial state
 	_draw();
 };
 

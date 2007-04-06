@@ -130,6 +130,7 @@ function JHTML(params, parent)
 	
 	function _fitText(textObj, maxWidth) {
 		if (textObj.width <= maxWidth) {
+			log('No need to truncate "' + textObj.data + '" to ' + maxWidth + ' - it already fits!');
 			// already fits!
 			return '';
 		}
@@ -140,14 +141,14 @@ function JHTML(params, parent)
 		var origText = textObj.data;
 		var lastWidth = textObj.width;
 		
-		// just make a big approximation
+		// just make a big approximation to start
 		textObj.data = _truncate(textObj.data, parseInt((maxWidth / textObj.width) * textObj.data.length));
 		
 		print(textObj.data);
 		
 		
-		log('Truncate test');
-		print(_truncate('Dramatis personae', 1));
+		// log('Truncate test');
+		// print(_truncate('Dramatis personae', 1));
 		
 		// if we're still too wide, shrink it down word by word
 		while (textObj.width > maxWidth && lastWidth != textObj.width) {
@@ -155,14 +156,16 @@ function JHTML(params, parent)
 			textObj.data = _truncate(textObj.data, textObj.data.length - 1);
 		}
 		
-		print(textObj.data);
-		
-		cutoff = origText.substr(textObj.data.length);
-		
+		if (!/\s+/.test(textObj.data) && textObj.hOffset != 0) {
+			log('minimum text is past end of line');
+			// if this is not the beginning of a line, wipe it all
+			textObj.removeFromSuperview();
+			delete textObj;
+			cutoff = origText;
+		} else {
+			cutoff = origText.substr(textObj.data.length);
+		}
 		return cutoff;
-		
-		
-		
 	}
 	
 	function _addText(text, myFrame, myPointer, myStyle) {
@@ -261,19 +264,17 @@ function JHTML(params, parent)
 					log('Text - adding new text ("' + child.nodeValue + '")to Frame named ' + myFrame.name);
 					// pdump(myPointer);
 					
-					log('a');
 					t = _addText(child.nodeValue, myFrame, myPointer, myStyle);
-					log('b');
 					
-					while ((wrappedText = _fitText(t, myFrame.width - myPointer.hOffset)) != '') {
-						log('c');
+					while (!/^\s*$/.test(wrappedText = _fitText(t, myFrame.width - myPointer.hOffset))) {
 						res = _lineBreak(parentFrame, myFrame, myPointer, myStyle, true);
 						myFrame = res.frame;
 						myPointer = res.pointer;
+						log('wrapping to a new a line');
+						pdump(myPointer);
+						wrappedText = wrappedText.replace(/^\s+/, '');
 						t = _addText(wrappedText, myFrame, myPointer, myStyle);
 					}
-					
-					log('d');
 					
 					myPointer.hOffset += t.width;
 					
@@ -377,7 +378,12 @@ function JHTML(params, parent)
 		}
 		print(html);
 		
-		_doc = XMLDOM.parse(html);
+		try {
+			_doc = XMLDOM.parse(html);
+		} catch (ex) {
+			log('Error parsing html - not well-formed!');
+			throw(ex);
+		}
 		
 		_parse();
 		
