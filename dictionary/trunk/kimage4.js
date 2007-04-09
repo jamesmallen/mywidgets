@@ -539,6 +539,14 @@ function KImage(params, parent)
 		// calculate the new srcHeight/srcWidth
 		this.proxy('_updateImages', [ret, (property == 'mask' ? true : false)]);
 		
+		if (this.width < 0) {
+			this.width = this.srcWidth;
+		}
+		
+		if (this.height < 0) {
+			this.height = this.srcHeight;
+		}
+		
 		return ret;
 	}
 	

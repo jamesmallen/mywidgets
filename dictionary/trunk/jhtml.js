@@ -38,11 +38,10 @@ function JHTML(params, parent)
 	
 	// PRIVATE METHODS
 	
-	function _startLine(parentFrame, parentPointer, myStyle, ignorePadding) {
+	function _startBlock(parentFrame, parentPointer, myStyle, ignorePadding) {
 		var myFrame, myPointer;
 		
 		// log('block style - making new frame');
-		// pdump(parentPointer);
 		myFrame = new Frame();
 		
 		myFrame.hOffset = 0;
@@ -61,8 +60,6 @@ function JHTML(params, parent)
 			myFrame.width -= parseInt(myStyle.paddingRight);
 		}
 		
-		// pdump(myFrame);
-		
 		parentFrame.appendChild(myFrame);
 		myPointer = {hOffset: 0, vOffset: 0, baseline: 0};
 		
@@ -73,12 +70,12 @@ function JHTML(params, parent)
 	}
 	
 	
-	function _finishLine(frame, pointer, style, ignorePadding) {
+	function _finishLine(pointer, style, ignorePadding) {
 		// log('New line');
 		// readjust this line's height
-		for (var i = frame.firstChild; i != null; i = i.nextSibling) {
-			if (i.constructor == Text) {
-				i.vOffset = pointer.baseline;
+		for (var i = 0; i < JHTML.lineObjs.length; i++) {
+			if (JHTML.lineObjs[i].constructor == Text) {
+				JHTML.lineObjs[i].vOffset = pointer.vOffset + pointer.baseline;
 			}
 		}
 		pointer.vOffset += pointer.baseline;
@@ -87,23 +84,24 @@ function JHTML(params, parent)
 			pointer.vOffset += parseInt(style.paddingBottom);
 		}
 		
+		JHTML.lineObjs = new Array();
+		
+		pointer.hOffset = 0;
+		
 		return pointer;
 	}
 	
-	function _lineBreak(parentFrame, myFrame, myPointer, myStyle, ignorePadding) {
-		myPointer = _finishLine(myFrame, myPointer, myStyle, ignorePadding);
-		myPointer.vOffset += myFrame.vOffset;
-		res = _startLine(parentFrame, myPointer, myStyle, ignorePadding);
-		myFrame = res.frame;
-		myPointer = res.pointer;
-		myPointer.baseline = _calcLineHeight(myPointer, myStyle);
-		return {
-			frame: myFrame,
-			pointer: myPointer
-		};
+	function _lineBreak(myPointer, myStyle) {
+		myPointer = _finishLine(myPointer, myStyle, true);
+		
+		myPointer.baseline = _calcLineHeight(null, myStyle);
+		return myPointer;
 	}
 	
 	function _calcLineHeight(pointer, style) {
+		if (!pointer) {
+			pointer = { hOffset: 0, vOffset: 0, baseline: 0 };
+		}
 		if (/px$/.test(style.lineHeight)) {
 			return Math.max(pointer.baseline, parseInt(style.lineHeight));
 		} else {
@@ -130,12 +128,12 @@ function JHTML(params, parent)
 	
 	function _fitText(textObj, maxWidth) {
 		if (textObj.width <= maxWidth) {
-			log('No need to truncate "' + textObj.data + '" to ' + maxWidth + ' - it already fits!');
+			// log('No need to truncate "' + textObj.data + '" to ' + maxWidth + ' - it already fits!');
 			// already fits!
 			return '';
 		}
 		
-		log('Truncating "' + textObj.data + '" to ' + maxWidth);
+		// log('Truncating "' + textObj.data + '" to ' + maxWidth);
 		
 		var cutoff = '';
 		var origText = textObj.data;
@@ -144,7 +142,7 @@ function JHTML(params, parent)
 		// just make a big approximation to start
 		textObj.data = _truncate(textObj.data, parseInt((maxWidth / textObj.width) * textObj.data.length));
 		
-		print(textObj.data);
+		// print(textObj.data);
 		
 		
 		// log('Truncate test');
@@ -152,12 +150,12 @@ function JHTML(params, parent)
 		
 		// if we're still too wide, shrink it down word by word
 		while (textObj.width > maxWidth && lastWidth != textObj.width) {
-			log('shrinking more...');
+			// log('shrinking more...');
 			textObj.data = _truncate(textObj.data, textObj.data.length - 1);
 		}
 		
 		if (!/\s+/.test(textObj.data) && textObj.hOffset != 0) {
-			log('minimum text is past end of line');
+			// log('minimum text is past end of line');
 			// if this is not the beginning of a line, wipe it all
 			textObj.removeFromSuperview();
 			delete textObj;
@@ -168,7 +166,7 @@ function JHTML(params, parent)
 		return cutoff;
 	}
 	
-	function _addText(text, myFrame, myPointer, myStyle) {
+	function _addText(text, myFrame, myPointer, myStyle, outOfLine) {
 		t = new Text();
 		for (var i in myStyle) {
 			// apply relevant text style
@@ -185,6 +183,12 @@ function JHTML(params, parent)
 		
 		myFrame.appendChild(t);
 		
+		if (outOfLine) {
+			t.vOffset += myPointer.baseline + parseInt(myStyle.paddingTop);
+		} else {
+			JHTML.lineObjs.push(t);
+		} 
+		
 		return t;
 	}
 	
@@ -194,11 +198,43 @@ function JHTML(params, parent)
 		_clear();
 		
 		// log('parsing recursive');
-		_parseRecurse(_doc.documentElement, self.frame);
+		_parseRecurse(_doc.documentElement, self.frame, self.frame);
 	}
 	
-	function _parseRecurse(domElement, parentFrame, parentPointer, parentStyle) {
-		var myFrame, myPointer, myStyle, t;
+	function _convertPointToFrame(myFrame, x, y) {
+		if (typeof(x) == 'number' && typeof(y) == 'number') {
+			x = { x: x, y: y };
+		}
+		
+		var t = myFrame;
+		while (t != self.frame) {
+			x = t.convertPointToParent(x);
+			t = t.parentNode;
+		}
+		
+	}
+	
+	function _baseHref() {
+		return self.url.replace(/\/[^\/]*$/, '');
+	}
+	
+	function _transformURL(href) {
+		if (/:\/\//.test(href)) {
+			return href;
+		} else {
+			return _baseHref() + href;
+		}
+	}
+	
+	function _applyAttributes(parent, child) {
+		for (var i in parent) {
+			child[i] = parent[i];
+		}
+		return child;
+	}
+	
+	function _parseRecurse(domElement, gpFrame, parentFrame, parentPointer, parentStyle, parentAttributes) {
+		var myFrame, myPointer, myStyle, t, myAttributes;
 		
 		if (!parentPointer) {
 			parentPointer = {hOffset: 0, vOffset: 0, baseline: 0};
@@ -208,9 +244,18 @@ function JHTML(params, parent)
 			parentStyle = new Object();
 		}
 		
+		if (!parentAttributes) {
+			parentAttributes = new Object();
+		}
+		
+		myAttributes = new Object();
+		_applyAttributes(parentAttributes, myAttributes);
+		
+		var parentElement = domElement.parentNode;
+		
 		// log('Calculating style for node: new JHTML.Style(' + domElement.tagName + ', ' + parentStyle + ', "' + domElement.getAttribute('style') + '")');
 		
-		myStyle = new JHTML.Style(domElement.tagName, parentStyle, domElement.getAttribute('style'));
+		myStyle = new JHTML.Style(domElement, parentStyle, domElement.getAttribute('style'));
 		
 		if (myStyle.display == 'none') {
 			return {
@@ -218,13 +263,19 @@ function JHTML(params, parent)
 				frame: parentFrame,
 				pointer: parentPointer
 			};
-		} else if (myStyle.display == 'block' || myStyle.display == 'list-item') {
-			var res = _startLine(parentFrame, parentPointer, myStyle);
+		} else if (myStyle.display == 'list-item') {
+			// add list item
+			var res = _startBlock(parentFrame, parentPointer, myStyle);
+			myFrame = res.frame;
+			myPointer = res.pointer;
+		} else if (myStyle.display == 'block') {
+			var res = _startBlock(parentFrame, parentPointer, myStyle);
 			myFrame = res.frame;
 			myPointer = res.pointer;
 		} else {
 			// log('using existing frame');
 			myFrame = parentFrame;
+			parentFrame = gpFrame;
 			myPointer = parentPointer;
 		}
 		
@@ -233,18 +284,106 @@ function JHTML(params, parent)
 			myPointer.baseline = _calcLineHeight(myPointer, myStyle);
 		}
 		
+		
+		// miscellaneous tag-specific changes
+		
+		if (domElement.tagName == 'ol') {
+			// log('Encountered ol');
+			if (!domElement.getAttribute('start')) {
+				switch (myStyle.listStyleType) {
+					case 'lower-alpha':
+						domElement.setAttribute('start', 'a');
+						break;
+					case 'upper-alpha':
+						domElement.setAttribute('start', 'A');
+						break;
+					case 'lower-roman':
+						domElement.setAttribute('start', 'i');
+						break;
+					case 'upper-roman':
+						domElement.setAttribute('start', 'I');
+						break;
+					case 'decimal':
+					default:
+						domElement.setAttribute('start', 1);
+				}
+			}
+			domElement.setAttribute('current', domElement.getAttribute('start'));
+			// log('handled ol');
+		}
+		
+		if (domElement.tagName == 'li') {
+			var listMarker;
+			switch (parentElement.tagName) {
+				case 'ol':
+					listMarker = parentElement.getAttribute('current');
+					parentElement.setAttribute('current', JHTML.getNextLI(listMarker, myStyle.listStyleType));
+					listMarker += '.';
+					break;
+				case 'ul':
+				default:
+					switch (myStyle.listStyleType) {
+						case 'square':
+							listMarker = '\u25aa';
+							break;
+						case 'circle':
+							listMarker = '\u25cb';
+							break;
+						case 'none':
+							listMarker = '';
+							break;
+						case 'disc':
+						default:
+							listMarker = '\u2022';
+							break;
+					}
+			}
+			_addText(listMarker, parentFrame, parentPointer, myStyle, true)
+		}
+		
+		
+		if (domElement.tagName == 'a') {
+			var name = domElement.getAttribute('name');
+			var href = domElement.getAttribute('href');
+			var onclick = domElement.getAttribute('onclick');
+			if (name) {
+				self.anchors[name] = _convertPointToFrame(myFrame, myPointer.hOffset, myPointer.vOffset).y;
+			}
+			if (onclick) {
+				myAttributes.onMouseUp = 'var tOnClick = function() { ' + onclick + ' }; var openLink = tOnClick();';
+			}
+			if (href) {
+				var url = _transformURL(href);
+				// log('adding link to ' + url);
+				var target = domElement.getAttribute('target');
+				/*
+				// experimental - support for inline links
+				if (target == '_self') {
+					myAttributes.onMouseUp = 'var tUrl = new URL(); tUrl.location = unescape("' + escape(url) + '"); tUrl.fetchAsync(function(tUrl) { JHTML.ids[' + self.id + '].data = tUrl.result; });';
+				} else {
+					myAttributes.onMouseUp = 'openURL(unescape("' + escape(url) + '"));';
+				}
+				*/
+				if (!myAttributes.onMouseUp) {
+					myAttributes.onMouseUp = 'openURL(unescape("' + escape(url) + '"));';
+				} else {
+					myAttributes.onMouseUp += ' if (openLink) { openURL(unescape("' + escape(url) + '")); }';
+				}
+			}
+		}
+		
+		
+		
 		for (var child = domElement.firstChild; child != null; child = child.nextSibling) {
-			// pdump(child);
 			switch (child.nodeType) {
 				case 1: // Element
 					switch (child.tagName) {
 						case 'br':
-							res = _lineBreak(parentFrame, myFrame, myPointer, myStyle, true);
-							myFrame = res.frame;
-							myPointer = res.pointer;
+							// log('br - making new line');
+							myPointer = _lineBreak(myPointer, myStyle);
 							break;
 						default:
-							var res = _parseRecurse(child, myFrame, myPointer, myStyle);
+							var res = _parseRecurse(child, parentFrame, myFrame, myPointer, myStyle, myAttributes);
 							// log('Returned from _parseRecurse');
 							if (res.display == 'block') {
 								myPointer.vOffset = (res.frame.vOffset + res.pointer.vOffset);
@@ -261,19 +400,18 @@ function JHTML(params, parent)
 					break;
 				case 3: // Text
 					// add some text objects to the current frame, dealing with word wrap
-					log('Text - adding new text ("' + child.nodeValue + '")to Frame named ' + myFrame.name);
-					// pdump(myPointer);
+					// log('Text - adding new text ("' + child.nodeValue + '")to Frame named ' + myFrame.name);
 					
 					t = _addText(child.nodeValue, myFrame, myPointer, myStyle);
+					// pdump(myAttributes);
+					_applyAttributes(myAttributes, t);
 					
 					while (!/^\s*$/.test(wrappedText = _fitText(t, myFrame.width - myPointer.hOffset))) {
-						res = _lineBreak(parentFrame, myFrame, myPointer, myStyle, true);
-						myFrame = res.frame;
-						myPointer = res.pointer;
-						log('wrapping to a new a line');
-						pdump(myPointer);
+						myPointer = _lineBreak(myPointer, myStyle);
+						// log('wrapping to a new a line');
 						wrappedText = wrappedText.replace(/^\s+/, '');
 						t = _addText(wrappedText, myFrame, myPointer, myStyle);
+						_applyAttributes(myAttributes, t);
 					}
 					
 					myPointer.hOffset += t.width;
@@ -297,7 +435,7 @@ function JHTML(params, parent)
 		
 		
 		if (myStyle.display == 'block') {
-			pointer = _finishLine(myFrame, myPointer, myStyle);
+			pointer = _finishLine(myPointer, myStyle);
 		}
 		
 		return {
@@ -320,6 +458,8 @@ function JHTML(params, parent)
 			root.removeChild(root.firstChild);
 		}
 		
+		JHTML.lineObjs = new Array();
+		
 	}
 	
 	
@@ -328,6 +468,8 @@ function JHTML(params, parent)
 	// PUBLIC PROPERTIES
 	// this.frame
 	// see JHTML.prototype for more
+	this.id = JHTML.ids.length;
+	JHTML.ids.push(this);
 	
 	
 	// handle any changes to the canvas object through this KImage object
@@ -464,18 +606,15 @@ JHTML.parseColor = function(colorString, normalize) {
 	return ret;
 }
 
+JHTML.ids = [ ];
 
 JHTML.prototype = {
+	anchors: [ ],
 	hOffset: 0,
 	height: 0,
 	opacity: 255,
 	rotation: 0,
-	mask: '',
-	maskHeight: -1,
-	maskHOffset: 0,
-	maskOperation: 'destination-out',
-	maskVOffset: 0,
-	maskWidth: -1,
+	url: '',
 	visible: true,
 	vOffset: 0,
 	width: 0
@@ -534,7 +673,7 @@ JHTML.parseCSSProperties = function(propertiesString) {
  * Constructor
  * applies cascaded styles, specified styles, and finally custom styles
  */
-JHTML.Style = function(selector, parent, inline) {
+JHTML.Style = function(domElement, parent, inline) {
 	if (parent) {
 		for (var i in parent) {
 			if (JHTML.styleInherit[i]) {
@@ -543,8 +682,17 @@ JHTML.Style = function(selector, parent, inline) {
 		}
 	}
 	
-	for (var i in JHTML.defaultStyle[selector]) {
-		this[i] = JHTML.defaultStyle[selector][i];
+	for (var i in JHTML.defaultStyle[domElement.tagName]) {
+		this[i] = JHTML.defaultStyle[domElement.tagName][i];
+	}
+	
+	// Replace (usually deprecated) HTML attributes with CSS
+	var attribMap = JHTML.styleFromHTMLAttributes[domElement.tagName];
+	for (var i in attribMap) {
+		var attrib = domElement.getAttribute(attribMap[i].attributeName);
+		if (attrib && attribMap[i].values[attrib]) {
+			this[attribMap[i].cssProperty] = attribMap[i][values][attrib]
+		}
 	}
 	
 	if (typeof(inline) == 'string') {
@@ -582,6 +730,7 @@ JHTML.styleText = {
 	fontStretch:true,
 	fontStyle:true,
 	fontWeight:true,
+	onMouseUp:true,
 	textAlign:true,
 	textDecoration:true,
 	KONShadow:true,
@@ -605,6 +754,7 @@ JHTML.styleFromJS = {
 	fontStyle: 'font-style',
 	fontWeight: 'font-weight',
 	lineHeight: 'line-height',
+	listStyleType: 'list-style-type',
 	opacity: 'opacity',
 	padding: 'padding',
 	paddingBottom: 'padding-bottom',
@@ -625,6 +775,120 @@ for (var i in JHTML.styleFromJS) {
 	JHTML.styleFromCSS[JHTML.styleFromJS[i]] = i;
 }
 
+JHTML.getNextLI = function(currentLI, listStyleType) {
+	if (!listStyleType) {
+		if (/^[0-9]+$/.test(currentLI)) {
+			listStyleType = 'decimal';
+		} else if (/^[a-z]+$/.test(currentLI)) {
+			listStyleType = 'lower-alpha';
+		} else if (/^[A-Z]+$/.test(currentLI)) {
+			listStyleType = 'upper-alpha';
+		} else {
+			throw new Error('Unable to determine listStyleType - please supply.');
+		}
+	}
+	
+	switch (listStyleType) {
+		case 'none':
+			return '';
+			break;
+		case 'lower-alpha':
+		case 'upper-alpha':
+			return String.fromCharCode(currentLI.charCodeAt(0) + 1);
+			break;
+		case 'lower-roman':
+			return JHTML.intToRoman(JHTML.romanToInt(currentLI) + 1).toLowerCase();
+			break;
+		case 'upper-roman':
+			return JHTML.intToRoman(JHTML.romanToInt(currentLI) + 1).toUpperCase();
+			break;
+		case 'decimal':
+		default:
+			return parseInt(currentLI) + 1;
+			break;
+		
+	}
+	
+}
+
+
+JHTML.intToRoman = function(x) {
+	if (x > 1399) {
+		throw new Error('integer out of range (must be lower than 1400)');
+	}
+	
+	var ret = '';
+	var map = JHTML.romanNumerals;
+	for (var i = 0; i < map.length; i++) {
+		while (x - map[i][0] >= 0) {
+			ret += map[i][1];
+			x -= map[i][0];
+		}
+	}
+	
+	return ret;
+}
+
+JHTML.romanToInt = function(x) {
+	var ret = 0;
+	var map = JHTML.romanNumerals;
+	
+	x = x.toUpperCase();
+	
+	while (x) {
+		var match = false;
+		for (var i = 0; i < map.length; i++) {
+			if (x.indexOf(map[i][1]) == 0) {
+				ret += map[i][0];
+				x = x.substr(map[i][1].length);
+				match = true;
+				break;
+			}
+		}
+		if (!match) {
+			throw new Error("Not a valid roman numeral, or value greater than 3999");
+		}
+	}
+	
+	return ret;
+}
+
+JHTML.romanNumerals = [
+	[1000, 'M'],
+	[900,  'CM'],
+	[500,  'D'],
+	[400,  'CD'],
+	[100,  'C'],
+	[90,   'XC'],
+	[50,   'L'],
+	[40,   'XL'],
+	[10,   'X'],
+	[9,    'IX'],
+	[5,    'V'],
+	[1,    'I']
+];
+
+
+JHTML.styleFromHTMLAttributes = {
+	ol: [
+		{ attributeName: 'type', cssProperty: 'listStyleType', map: {
+				'1': 'decimal',
+				'a': 'lower-alpha',
+				'i': 'lower-roman',
+				'A': 'upper-alpha',
+				'I': 'upper-roman'
+			}
+		}
+	],
+	ul: [
+		{ attributeName: 'type', cssProperty: 'listStyleType', map: {
+				'circle': 'circle',
+				'disc': 'disc',
+				'square': 'square'
+			}
+		}
+	]
+}
 
 
 
@@ -684,10 +948,6 @@ function ddump(obj, level)
     }
   }
 }
-
-
-
-
 
 
 

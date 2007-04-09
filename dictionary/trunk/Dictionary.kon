@@ -5,16 +5,16 @@
 		<setting name="debug" value="verbose" />
 	</settings>
 	
-	<window name="main_window" id="main_window" width="246" height="244">
+	<window name="mainWindow" id="mainWindow" width="246" height="44">
 	</window>
 	
 	<preferenceGroup name="colors" title="Colors" />
 	
 	<preference group="colors" name="bgColor" type="color" title="Background Color" defaultValue="#000000" />
-	<preference group="colors" name="bgOpacity" type="slider" title="Background Opacity" minLength="0" maxLength="255" ticks="8" defaultValue="122" />
+	<preference group="colors" name="bgOpacity" type="slider" title="Background Opacity" minLength="0" maxLength="255" ticks="11" defaultValue="127" />
 	
 	
-	
+	<script src="entities.js"></script>
 	<script src="throbber.js"></script>
 	<script src="kimage4.js"></script>
 	<script src="jhtml.js"></script>

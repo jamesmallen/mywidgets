@@ -96,6 +96,16 @@ function Throbber(params, parent)
 	this.active = false;
 	// see Throbber.prototype for more
 	
+	var _canvasPassThru = function(property, oldval, newval) {
+		this.canvas[property] = newval;
+		return newval;
+	}
+	
+	for (var i in Throbber.propertiesCanvas) {
+		this.watch(Throbber.propertiesCanvas[i], _canvasPassThru);
+	}
+	
+	
 	// Initialization of private and public properties
 	
 	// override defaults with any passed-in params
@@ -308,16 +318,6 @@ Throbber.parseColor = function(colorString, normalize) {
  */
 Throbber.prototype = {
 	/**
-	 * Horizontal offset of the canvas relative to the parent object.
-	 * Only applicable if a canvas is not specified.
-	 */
-	hOffset: 0,
-	/**
-	 * Vertical offset of the canvas relative to the parent object.
-	 * Only applicable if a canvas is not specified.
-	 */
-	vOffset: 0,
-	/**
 	 * Horizontal offset of the throbber within the canvas.
 	 * Defaults to center.
 	 */
@@ -382,3 +382,5 @@ Throbber.prototype = {
 	 */
 	clockwise: true
 }
+
+Throbber.propertiesCanvas = ['hAlign', 'hOffset', 'onClick', 'onContextMenu', 'onDragDrop', 'onDragEnter', 'onDragExit', 'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel', 'onMultiClick', 'opacity', 'style', 'tooltip', 'tracking', 'vAlign', 'visible', 'vOffset', 'zOrder'];
