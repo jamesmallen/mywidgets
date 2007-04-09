@@ -6,9 +6,8 @@
  *
  * By James M. Allen <james.m.allen@gmail.com>
  *
- * You are free to use this code to produce derivative works, provided that 
- * you give proper credit and you e-mail the author to inform him of any 
- * derivative works.
+ * You are not free to reuse this code without express written consent from the
+ * author.
  *
  *
  * ---------------
