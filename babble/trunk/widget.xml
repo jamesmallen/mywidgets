@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<name>Babble</name>
+	<version>0.7</version>
+	<identifier>com.kzoowidgets.widget.babble</identifier>
+	<image usage="security" src="Resources/SecurityIcon.png" />
+	<image usage="dock" src="Resources/DockIcon.png" />
+	<author name="James M. Allen" href="http://www.kzoowidgets.com" />
+	<copyright>(c) 2007 James M. Allen</copyright>
+	<description>A word game similar to Scrabble(R)</description>
+	<platform minVersion="4.0" />
+</metadata>
