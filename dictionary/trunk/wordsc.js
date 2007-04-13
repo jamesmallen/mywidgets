@@ -36,9 +36,27 @@ sources.wordsc = {
 		}
 		
 		// Look for error
-		var res = response.match(/was not found in our dictionary./);
+		var res = response.match(/Sorry, but .* was not found in our dictionary./);
 		if (res) {
-			throw new DictionaryWordNotFoundError();
+			// look for guesses
+			ret += '<p>' + res[0] + '</p>';
+			// var res = response.match(/Did you mean...<br\/>(<ul>([^<]|<[^\/]|<\/[^u]|<\/u[^l]|<\/ul[^>])*<\/ul>)/);
+			var res = response.match(/Did you mean\.\.\.<br\/><ul>(([^<]|<[^b]|<b[^r]|<br[^\/]|<br\/[^>])*)<br\/>/);
+			if (res) {
+				ret += '<p>Perhaps you made a spelling mistake. Did you mean...</p>';
+				
+				var suggestions = res[1];
+				
+				log('Suggestions: ' + suggestions);
+				
+				suggestions = suggestions.replace(/<a href="http:\/\/www\.word\.sc\/([^"]+)"/g, '<a href="http://$1" onclick="lookup(\'$1\', \'wordsc\'); return false;"');
+				
+				log('New Suggestions: ' + suggestions);
+				
+				ret += '<ul>' + suggestions + '</ul>';
+			} else {
+				throw new DictionaryWordNotFoundError();
+			}
 		}
 		
 		// Find word type groupings
@@ -51,6 +69,8 @@ sources.wordsc = {
 			
 			ret += '<ol>' + deEnt(res[5]) + "</ol>\n";
 		}
+		
+		ret = ret.replace(/<\/?font[^>]*>/g, '');
 		
 		return ret;
 	}

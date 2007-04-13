@@ -212,7 +212,7 @@ function lookup(word, source) {
 					}
 					break;
 				default:
-					this.target.data = this.status + ' ' + this.statusText;
+					this.target.data = '<h1>Error ' + this.status + '</h1><p>' + this.statusText + '</p>';
 					break;
 			}
 			
