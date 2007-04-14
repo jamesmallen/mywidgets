@@ -274,10 +274,10 @@ function KImage(params, parent)
 			case 'full':
 			case 'vert':
 			case 'hori':
-				cVOffset = 0;
+				cVOffset = vOffset;
 				
 				for (var i = 0; i < 3; i++) { // row
-					cHOffset = 0;
+					cHOffset = hOffset;
 					for (var j = 0; j < 3; j++) { // column
 						var ij = i * 3 + j;
 						cWidth = 0;
@@ -328,6 +328,7 @@ function KImage(params, parent)
 		var cWidth, cHeight, cHOffset, cVOffset;
 		
 		var workingHeight, workingWidth, workingMaskHeight, workingMaskWidth;
+		var workingMaskHOffset, workingMaskVOffset;
 		
 		if (self.width < 0) {
 			workingWidth = self.srcWidth;
@@ -372,7 +373,31 @@ function KImage(params, parent)
 				workingMaskHeight = self.maskHeight;
 			}
 			
-			_draw_pattern(_maskImages, _maskPattern, self.maskHOffset, self.maskVOffset, workingMaskWidth, workingMaskHeight);
+			// position mask relative to alignment
+			workingMaskHOffset = _offsetForAlignment(self.hAlign, self.maskHOffset, workingMaskWidth, workingWidth);
+			workingMaskVOffset = _offsetForAlignment(self.vAlign, self.maskVOffset, workingMaskHeight, workingHeight);
+			
+			// log('hOffset: ' + workingMaskHOffset, ', vOffset: ' + workingMaskVOffset);
+			
+			_draw_pattern(_maskImages, _maskPattern, workingMaskHOffset, workingMaskVOffset, workingMaskWidth, workingMaskHeight);
+		}
+	}
+	
+	function _offsetForAlignment(alignment, offset, max, containerMax) {
+		// log('_offsetForAlignment(' + alignment + ', ' + offset + ', ' + max + ', ' + containerMax + ')');
+		switch (alignment) {
+			case 'center':
+				return (containerMax - max) / 2 + offset;
+				break;
+			case 'bottom':
+			case 'right':
+				return containerMax - max - offset;
+				break;
+			case 'top':
+			case 'left':
+			default:
+				return offset;
+				break;
 		}
 	}
 	
@@ -666,6 +691,7 @@ function KImage(params, parent)
  * Values of -1 below (and specified at run-time) will try to figure out the best "fit."
  */
 KImage.prototype = {
+	hAlign: 'left',
 	hOffset: 0,
 	height: -1,
 	opacity: 255,
@@ -681,6 +707,7 @@ KImage.prototype = {
 	srcWidth: 0,
 	minWidth: 0,
 	minHeight: 0,
+	vAlign: 'top',
 	vOffset: 0,
 	width: -1
 };
@@ -700,7 +727,7 @@ KImage.patterns = {
 };
 
 
-KImage.propertiesCanvas = ['onClick', 'onContextMenu', 'onDragDrop', 'onDragEnter', 'onDragExit', 'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel', 'onMultiClick', 'opacity', 'style', 'tooltip', 'tracking', 'visible', 'zOrder'];
+KImage.propertiesCanvas = ['hAlign', 'onClick', 'onContextMenu', 'onDragDrop', 'onDragEnter', 'onDragExit', 'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel', 'onMultiClick', 'opacity', 'style', 'tooltip', 'tracking', 'vAlign', 'visible', 'zOrder'];
 
 KImage.propertiesRefresh = ['height', 'hOffset', 'hRegistrationPoint', 'rotation', 'vRegistrationPoint', 'vOffset', 'width'];
 

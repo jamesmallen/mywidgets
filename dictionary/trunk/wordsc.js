@@ -47,11 +47,11 @@ sources.wordsc = {
 				
 				var suggestions = res[1];
 				
-				log('Suggestions: ' + suggestions);
+				// log('Suggestions: ' + suggestions);
 				
 				suggestions = suggestions.replace(/<a href="http:\/\/www\.word\.sc\/([^"]+)"/g, '<a href="http://$1" onclick="lookup(\'$1\', \'wordsc\'); return false;"');
 				
-				log('New Suggestions: ' + suggestions);
+				// log('New Suggestions: ' + suggestions);
 				
 				ret += '<ul>' + suggestions + '</ul>';
 			} else {

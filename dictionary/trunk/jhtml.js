@@ -517,7 +517,7 @@ function JHTML(params, parent)
 		if (!/^<body>/.test(html)) {
 			html = '<body>' + html + '</body>';
 		}
-		print(html);
+		// print(html);
 		
 		try {
 			_doc = XMLDOM.parse(html);

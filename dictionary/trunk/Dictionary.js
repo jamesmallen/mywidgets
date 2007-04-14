@@ -7,6 +7,12 @@ const extendDuration = 600;
  * Window set up
  */
 
+if (preferences.repositionWindow.value == 1) {
+	mainWindow.vOffset += 200;
+	preferences.repositionWindow.value = 0;
+	savePreferences();
+}
+
 
 var currentWidth = 246;
 var currentHeight = 244;
@@ -18,20 +24,25 @@ var extenderBG = new KImage({src: 'Resources/ExtenderBG*.png', colorize:'#000', 
 var extender = new KImage({src: 'Resources/Extender*.png', height: 44, mask: 'Resources/SearchBarBG<.png', maskHeight:44}, extenderFrame);
 
 extenderContentsFrame = new Frame();
+extenderContentsFrame.opacity = 0;
+extenderContentsFrame.vOffset = 33;
 extenderFrame.appendChild(extenderContentsFrame);
-resultsBox = new JHTML({hOffset: 16, vOffset: 33, width: currentWidth - 32 - 20, height: 195}, extenderContentsFrame);
+resultsBox = new JHTML({hOffset: 20, vOffset: 0, width: currentWidth - 32 - 24, height: 195}, extenderContentsFrame);
 resultsBox.vScrollBar = new ScrollBar();
 resultsBox.vScrollBar.hOffset = currentWidth - 34;
-resultsBox.vScrollBar.vOffset = 44;
+resultsBox.vScrollBar.vOffset = 11;
 resultsBox.vScrollBar.height = 180;
-resultsBox.vScrollBar.opacity = 127;
+resultsBox.vScrollBar.opacity = 211;
 extenderContentsFrame.appendChild(resultsBox.vScrollBar);
 
-var searchBarBG = new KImage({src: 'Resources/SearchBarBG<.png', colorize:'#000', opacity:122}, mainWindow);
+searchBarFrame = new Frame();
+mainWindow.appendChild(searchBarFrame);
 
-var searchBar = new KImage({src: 'Resources/SearchBar<.png'}, mainWindow);
+var searchBarBG = new KImage({src: 'Resources/SearchBarBG<.png', colorize:'#000', opacity:122}, searchBarFrame);
 
-var throbber = new Throbber({size: 15, hOffset: currentWidth - 31, vOffset: 12, inactiveColor: 'rgba(0,0,0,0)'}, mainWindow);
+var searchBar = new KImage({src: 'Resources/SearchBar<.png'}, searchBarFrame);
+
+var throbber = new Throbber({size: 15, hOffset: currentWidth - 31, vOffset: 12, inactiveColor: 'rgba(0,0,0,0)'}, searchBarFrame);
 
 var cancelButton = new Image();
 cancelButton.hOffset = currentWidth - 31;
@@ -42,16 +53,16 @@ cancelButton.onMouseEnter = function() { this.opacity = 255; };
 cancelButton.onMouseExit = function() { this.opacity = 127; };
 cancelButton.onMouseUp = cancelAll;
 cancelButton.visible = false;
-mainWindow.appendChild(cancelButton);
+searchBarFrame.appendChild(cancelButton);
 
 var searchBarIcon = new Image();
 searchBarIcon.hOffset = 61;
 searchBarIcon.vOffset = 11;
 searchBarIcon.src = 'Resources/MagnifyIcon.png';
-mainWindow.appendChild(searchBarIcon);
+searchBarFrame.appendChild(searchBarIcon);
 
 
-var searchBarGlow = new KImage({src: 'Resources/SearchBarGlow<.png', visible: false}, mainWindow);
+var searchBarGlow = new KImage({src: 'Resources/SearchBarGlow<.png', visible: false}, searchBarFrame);
 
 
 var searchBarInput = new TextArea();
@@ -98,7 +109,7 @@ searchBarInput.onKeyPress = function() {
 	}
 }
 
-mainWindow.appendChild(searchBarInput);
+searchBarFrame.appendChild(searchBarInput);
 
 
 
@@ -108,6 +119,10 @@ function hideExtender() {
 			new KResizeAnimation(extenderBG, currentWidth, 44, extendDuration, animator.kEaseInOut),
 			new KResizeAnimation(extender, currentWidth, 44, extendDuration, animator.kEaseInOut),
 			new KFadeAnimation(extenderFrame, 0, extendDuration, animator.kEaseIn, function() {
+				if (showExtender.direction == 'up') {
+					searchBarFrame.vOffset = 0;
+					mainWindow.vOffset += 200;
+				}
 				mainWindow.height = 44;
 			})
 		];
@@ -118,16 +133,45 @@ function hideExtender() {
 
 function showExtender() {
 	mainWindow.height = 244;
-	var showAnms = [
-		new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
-		new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
-		new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
-			var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
-			animator.start(fadeAnm);
-		})
-	];
+	
+	if (mainWindow.vOffset + 244 > screen.availHeight) {
+		showExtender.direction = 'up';
+		// stretch upwards
+		mainWindow.vOffset -= 200;
+		searchBarFrame.vOffset = 200;
+		extenderFrame.vAlign = extenderBG.vAlign = extender.vAlign = 'bottom';
+		extenderFrame.vOffset = extenderBG.vOffset = extender.vOffset = 244;
+		extenderContentsFrame.vOffset = 10;
+		resultsBox.vScrollBar.vOffset = 6;
+		var showAnms = [
+			new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
+			new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
+			new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
+				var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
+				animator.start(fadeAnm);
+			})
+		]
+		
+		
+	} else {
+		showExtender.direction = 'down';
+		extenderFrame.vAlign = 'top';
+		extenderFrame.vOffset = 0;
+		extenderContentsFrame.vOffset = 33;
+		resultsBox.vScrollBar.vOffset = 11;
+		var showAnms = [
+			new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
+			new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
+			new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
+				var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
+				animator.start(fadeAnm);
+			})
+		];
+	}
 	animator.start(showAnms);
 }
+
+showExtender.direction = 'down';
 
 
 
@@ -193,7 +237,7 @@ function lookup(word, source) {
 	request.open('GET', url, true);
 	request.onreadystatechange = function() {
 		if (this.readyState == 4) {
-			pdump(this);
+			// pdump(this);
 			switch (this.status) {
 				case 200:
 					try {
@@ -239,6 +283,14 @@ function updatePreferences()
 }
 
 widget.onPreferencesChanged = updatePreferences;
+
+widget.onUnload = function() {
+	if (mainWindow.height == 244 && showExtender.direction == 'up') {
+		preferences.repositionWindow.value = 1;
+		savePreferences();
+	}
+	
+}
 
 updatePreferences();
 

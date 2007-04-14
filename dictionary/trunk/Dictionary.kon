@@ -6,6 +6,7 @@
 	
 	<preference name="bgColor" type="color" title="Background Color" defaultValue="#000000" />
 	<preference name="bgOpacity" type="slider" title="Background Opacity" minLength="0" maxLength="255" ticks="11" defaultValue="127" />
+	<preference name="repositionWindow" hidden="true" defaultValue="0" />
 	
 	<script src="entities.js"></script>
 	<script src="throbber.js"></script>
