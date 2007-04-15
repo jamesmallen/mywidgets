@@ -25,12 +25,10 @@ var extender = new KImage({src: 'Resources/Extender*.png', height: 44, mask: 'Re
 
 extenderContentsFrame = new Frame();
 extenderContentsFrame.opacity = 0;
-extenderContentsFrame.vOffset = 33;
 extenderFrame.appendChild(extenderContentsFrame);
 resultsBox = new JHTML({hOffset: 20, vOffset: 0, width: currentWidth - 32 - 24, height: 195}, extenderContentsFrame);
 resultsBox.vScrollBar = new ScrollBar();
 resultsBox.vScrollBar.hOffset = currentWidth - 34;
-resultsBox.vScrollBar.vOffset = 11;
 resultsBox.vScrollBar.height = 180;
 resultsBox.vScrollBar.opacity = 211;
 extenderContentsFrame.appendChild(resultsBox.vScrollBar);
@@ -114,61 +112,63 @@ searchBarFrame.appendChild(searchBarInput);
 
 
 function hideExtender() {
-	var fadeAnm = new KFadeAnimation(extenderContentsFrame, 0, extendDuration, animator.kEaseInOut, function() {
-		var hideAnms = [
-			new KResizeAnimation(extenderBG, currentWidth, 44, extendDuration, animator.kEaseInOut),
-			new KResizeAnimation(extender, currentWidth, 44, extendDuration, animator.kEaseInOut),
-			new KFadeAnimation(extenderFrame, 0, extendDuration, animator.kEaseIn, function() {
-				if (showExtender.direction == 'up') {
-					searchBarFrame.vOffset = 0;
-					mainWindow.vOffset += 200;
-				}
-				mainWindow.height = 44;
-			})
-		];
-		animator.start(hideAnms);
-	});
-	animator.start(fadeAnm);
+	if (mainWindow.height == 244) {
+		var fadeAnm = new KFadeAnimation(extenderContentsFrame, 0, extendDuration, animator.kEaseInOut, function() {
+			var hideAnms = [
+				new KResizeAnimation(extenderBG, currentWidth, 44, extendDuration, animator.kEaseInOut),
+				new KResizeAnimation(extender, currentWidth, 44, extendDuration, animator.kEaseInOut),
+				new KFadeAnimation(extenderFrame, 0, extendDuration, animator.kEaseIn, function() {
+					if (showExtender.direction == 'up') {
+						searchBarFrame.vOffset = 0;
+						mainWindow.vOffset += 200;
+					}
+					mainWindow.height = 44;
+				})
+			];
+			animator.start(hideAnms);
+		});
+		animator.start(fadeAnm);
+	}
 }
 
 function showExtender() {
-	mainWindow.height = 244;
-	
-	if (mainWindow.vOffset + 244 > screen.availHeight) {
-		showExtender.direction = 'up';
-		// stretch upwards
-		mainWindow.vOffset -= 200;
-		searchBarFrame.vOffset = 200;
-		extenderFrame.vAlign = extenderBG.vAlign = extender.vAlign = 'bottom';
-		extenderFrame.vOffset = extenderBG.vOffset = extender.vOffset = 244;
-		extenderContentsFrame.vOffset = 10;
-		resultsBox.vScrollBar.vOffset = 6;
-		var showAnms = [
-			new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
-			new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
-			new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
-				var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
-				animator.start(fadeAnm);
-			})
-		]
+	if (mainWindow.height == 44) {
+		mainWindow.height = 244;
 		
-		
-	} else {
-		showExtender.direction = 'down';
-		extenderFrame.vAlign = 'top';
-		extenderFrame.vOffset = 0;
-		extenderContentsFrame.vOffset = 33;
-		resultsBox.vScrollBar.vOffset = 11;
-		var showAnms = [
-			new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
-			new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
-			new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
-				var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
-				animator.start(fadeAnm);
-			})
-		];
+		if (mainWindow.vOffset + 244 > screen.availHeight) {
+			showExtender.direction = 'up';
+			// stretch upwards
+			mainWindow.vOffset -= 200;
+			searchBarFrame.vOffset = 200;
+			extenderFrame.vAlign = extenderBG.vAlign = extender.vAlign = 'bottom';
+			extenderFrame.vOffset = extenderBG.vOffset = extender.vOffset = 244;
+			extenderContentsFrame.vOffset = 10;
+			resultsBox.vScrollBar.vOffset = 6;
+			var showAnms = [
+				new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
+				new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
+				new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
+					var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
+					animator.start(fadeAnm);
+				})
+			];
+		} else {
+			showExtender.direction = 'down';
+			extenderFrame.vAlign = extenderBG.vAlign = extender.vAlign = 'top';
+			extenderFrame.vOffset = extenderBG.vOffset = extender.vOffset = 0;
+			extenderContentsFrame.vOffset = 33;
+			resultsBox.vScrollBar.vOffset = 11;
+			var showAnms = [
+				new KFadeAnimation(extenderFrame, 255, extendDuration, animator.kEaseOut),
+				new KResizeAnimation(extenderBG, currentWidth, 244, extendDuration, animator.kEaseInOut),
+				new KResizeAnimation(extender, currentWidth, 244, extendDuration, animator.kEaseInOut, function() {
+					var fadeAnm = new KFadeAnimation(extenderContentsFrame, 255, extendDuration, animator.kEaseNone);
+					animator.start(fadeAnm);
+				})
+			];
+		}
+		animator.start(showAnms);
 	}
-	animator.start(showAnms);
 }
 
 showExtender.direction = 'down';
@@ -237,7 +237,6 @@ function lookup(word, source) {
 	request.open('GET', url, true);
 	request.onreadystatechange = function() {
 		if (this.readyState == 4) {
-			// pdump(this);
 			switch (this.status) {
 				case 200:
 					try {

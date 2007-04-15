@@ -40,7 +40,6 @@ function JHTML(params, parent)
 	function _startBlock(parentFrame, parentPointer, myStyle, ignorePadding) {
 		var myFrame, myPointer;
 		
-		// log('block style - making new frame');
 		myFrame = new Frame();
 		
 		myFrame.hOffset = 0;
@@ -70,7 +69,6 @@ function JHTML(params, parent)
 	
 	
 	function _finishLine(pointer, style, ignorePadding) {
-		// log('New line');
 		// readjust this line's height
 		for (var i = 0; i < JHTML.lineObjs.length; i++) {
 			if (JHTML.lineObjs[i].constructor == Text) {
@@ -127,12 +125,9 @@ function JHTML(params, parent)
 	
 	function _fitText(textObj, maxWidth) {
 		if (textObj.width <= maxWidth) {
-			// log('No need to truncate "' + textObj.data + '" to ' + maxWidth + ' - it already fits!');
 			// already fits!
 			return '';
 		}
-		
-		// log('Truncating "' + textObj.data + '" to ' + maxWidth);
 		
 		var cutoff = '';
 		var origText = textObj.data;
@@ -141,20 +136,12 @@ function JHTML(params, parent)
 		// just make a big approximation to start
 		textObj.data = _truncate(textObj.data, parseInt((maxWidth / textObj.width) * textObj.data.length));
 		
-		// print(textObj.data);
-		
-		
-		// log('Truncate test');
-		// print(_truncate('Dramatis personae', 1));
-		
 		// if we're still too wide, shrink it down word by word
 		while (textObj.width > maxWidth && lastWidth != textObj.width) {
-			// log('shrinking more...');
 			textObj.data = _truncate(textObj.data, textObj.data.length - 1);
 		}
 		
 		if (!/\s+/.test(textObj.data) && textObj.hOffset != 0) {
-			// log('minimum text is past end of line');
 			// if this is not the beginning of a line, wipe it all
 			textObj.removeFromSuperview();
 			delete textObj;
@@ -177,8 +164,6 @@ function JHTML(params, parent)
 		t.hOffset = myPointer.hOffset;
 		t.vOffset = myPointer.vOffset;
 		t.data = text;
-		t.bgColor = '#ff0000';
-		// t.bgOpacity = 40;
 		
 		myFrame.appendChild(t);
 		
@@ -193,10 +178,8 @@ function JHTML(params, parent)
 	
 	
 	function _parse() {
-		// log('clearing');
 		_clear();
 		
-		// log('parsing recursive');
 		_parseRecurse(_doc.documentElement, self.frame, self.frame);
 	}
 	
@@ -252,8 +235,6 @@ function JHTML(params, parent)
 		
 		var parentElement = domElement.parentNode;
 		
-		// log('Calculating style for node: new JHTML.Style(' + domElement.tagName + ', ' + parentStyle + ', "' + domElement.getAttribute('style') + '")');
-		
 		myStyle = new JHTML.Style(domElement, parentStyle, domElement.getAttribute('style'));
 		
 		if (myStyle.display == 'none') {
@@ -272,7 +253,6 @@ function JHTML(params, parent)
 			myFrame = res.frame;
 			myPointer = res.pointer;
 		} else {
-			// log('using existing frame');
 			myFrame = parentFrame;
 			parentFrame = gpFrame;
 			myPointer = parentPointer;
@@ -287,7 +267,6 @@ function JHTML(params, parent)
 		// miscellaneous tag-specific changes
 		
 		if (domElement.tagName == 'ol') {
-			// log('Encountered ol');
 			if (!domElement.getAttribute('start')) {
 				switch (myStyle.listStyleType) {
 					case 'lower-alpha':
@@ -308,7 +287,6 @@ function JHTML(params, parent)
 				}
 			}
 			domElement.setAttribute('current', domElement.getAttribute('start'));
-			// log('handled ol');
 		}
 		
 		if (domElement.tagName == 'li') {
@@ -353,16 +331,8 @@ function JHTML(params, parent)
 			}
 			if (href) {
 				var url = _transformURL(href);
-				// log('adding link to ' + url);
 				var target = domElement.getAttribute('target');
-				/*
-				// experimental - support for inline links
-				if (target == '_self') {
-					myAttributes.onMouseUp = 'var tUrl = new URL(); tUrl.location = unescape("' + escape(url) + '"); tUrl.fetchAsync(function(tUrl) { JHTML.ids[' + self.id + '].data = tUrl.result; });';
-				} else {
-					myAttributes.onMouseUp = 'openURL(unescape("' + escape(url) + '"));';
-				}
-				*/
+				
 				if (!myAttributes.onMouseUp) {
 					myAttributes.onMouseUp = 'openURL(unescape("' + escape(url) + '"));';
 				} else {
@@ -378,12 +348,10 @@ function JHTML(params, parent)
 				case 1: // Element
 					switch (child.tagName) {
 						case 'br':
-							// log('br - making new line');
 							myPointer = _lineBreak(myPointer, myStyle);
 							break;
 						default:
 							var res = _parseRecurse(child, parentFrame, myFrame, myPointer, myStyle, myAttributes);
-							// log('Returned from _parseRecurse');
 							if (res.display == 'block') {
 								myPointer.vOffset = (res.frame.vOffset + res.pointer.vOffset);
 							} else if (res.display == 'none') {
@@ -399,15 +367,11 @@ function JHTML(params, parent)
 					break;
 				case 3: // Text
 					// add some text objects to the current frame, dealing with word wrap
-					// log('Text - adding new text ("' + child.nodeValue + '")to Frame named ' + myFrame.name);
-					
 					t = _addText(child.nodeValue, myFrame, myPointer, myStyle);
-					// pdump(myAttributes);
 					_applyAttributes(myAttributes, t);
 					
 					while (!/^\s*$/.test(wrappedText = _fitText(t, myFrame.width - myPointer.hOffset))) {
 						myPointer = _lineBreak(myPointer, myStyle);
-						// log('wrapping to a new a line');
 						wrappedText = wrappedText.replace(/^\s+/, '');
 						t = _addText(wrappedText, myFrame, myPointer, myStyle);
 						_applyAttributes(myAttributes, t);
@@ -428,10 +392,6 @@ function JHTML(params, parent)
 					break;
 			}
 		}
-		
-		// log('finishing node');
-		
-		
 		
 		if (myStyle.display == 'block') {
 			pointer = _finishLine(myPointer, myStyle);
@@ -513,11 +473,9 @@ function JHTML(params, parent)
 	
 	// PRIVILEGED METHODS
 	this.setHtml = function(html) {
-		// log('Setting HTML...');
 		if (!/^<body>/.test(html)) {
 			html = '<body>' + html + '</body>';
 		}
-		// print(html);
 		
 		try {
 			_doc = XMLDOM.parse(html);

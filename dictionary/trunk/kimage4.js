@@ -266,8 +266,6 @@ function KImage(params, parent)
 	// PRIVATE METHODS
 	
 	function _draw_pattern(images, pattern, hOffset, vOffset, width, height) {
-		// log('_draw_pattern(..., ..., ' + hOffset + ', ' + vOffset + ', ' + width + ', ' + height + ')');
-		
 		var cWidth = 0, cHeight = 0, cHOffset, cVOffset;
 		
 		switch (pattern) {
@@ -307,7 +305,6 @@ function KImage(params, parent)
 								}
 							}
 							
-							// log('drawImage(' + ij + ', ' + cHOffset + ', ' + cVOffset + ', ' + cWidth + ', ' + cHeight + ')');
 							_ctx.drawImage(images[ij], cHOffset, cVOffset, cWidth, cHeight);
 						}
 						cHOffset += cWidth;
@@ -356,8 +353,6 @@ function KImage(params, parent)
 		
 		_draw_pattern(_images, _pattern, 0, 0, workingWidth, workingHeight);
 		
-		// log('end draw');
-		
 		if (self.mask) {
 			_ctx.globalCompositeOperation = self.maskOperation;
 			
@@ -377,14 +372,11 @@ function KImage(params, parent)
 			workingMaskHOffset = _offsetForAlignment(self.hAlign, self.maskHOffset, workingMaskWidth, workingWidth);
 			workingMaskVOffset = _offsetForAlignment(self.vAlign, self.maskVOffset, workingMaskHeight, workingHeight);
 			
-			// log('hOffset: ' + workingMaskHOffset, ', vOffset: ' + workingMaskVOffset);
-			
 			_draw_pattern(_maskImages, _maskPattern, workingMaskHOffset, workingMaskVOffset, workingMaskWidth, workingMaskHeight);
 		}
 	}
 	
 	function _offsetForAlignment(alignment, offset, max, containerMax) {
-		// log('_offsetForAlignment(' + alignment + ', ' + offset + ', ' + max + ', ' + containerMax + ')');
 		switch (alignment) {
 			case 'center':
 				return (containerMax - max) / 2 + offset;
@@ -430,8 +422,6 @@ function KImage(params, parent)
 				images[i].removeFromSuperview();
 			}
 		}
-		
-		// _images = new Array(9);
 		
 		if (newSrc) {
 			for (var i = 0; i < 3; i++) {
