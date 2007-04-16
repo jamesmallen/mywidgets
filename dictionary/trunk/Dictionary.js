@@ -2,6 +2,12 @@ var activeRequest;
 
 const extendDuration = 600;
 
+include('lib.js');
+include('entities.js');
+include('throbber.js');
+include('kimage4.js');
+include('jhtml.js');
+
 
 /**
  * Window set up
@@ -223,6 +229,8 @@ function lookup(word, source) {
 	var source = sources[source];
 	var url = source.getURL(word);
 	
+	searchBarInput.data = word;
+	
 	var request = new XMLHttpRequest();
 	
 	if (activeRequest) {
@@ -255,7 +263,8 @@ function lookup(word, source) {
 					}
 					break;
 				default:
-					this.target.data = '<h1>Error ' + this.status + '</h1><p>' + this.statusText + '</p>';
+					this.target.data = '<h1>' + word + '</h1><p>Sorry, but the word ' + word + ' was not found.</p>';
+					this.target.data += '<p>Additionally, error ' + this.status + ' (' + this.statusText + ') was returned when trying to retrieve the definition.</p>';
 					break;
 			}
 			

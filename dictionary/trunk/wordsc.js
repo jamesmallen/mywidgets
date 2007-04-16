@@ -23,7 +23,7 @@ sources.wordsc = {
 		
 		// add helpful formatting markup
 		response = response.replace(/<small>/g, '<div style="padding-top: 2px;"><small>').replace(/<\/small>/g, '</small></div>');
-		response = response.replace(/<a class="innerlinks" href="http:\/\/word.sc\/([^"]+)"/g, '<a class="innerlinks" href="http://$1" onclick="lookup(\'$1\', \'wordsc\'); return false;"');
+		response = response.replace(/<a class="innerlinks" href="http:\/\/word.sc\/([^"]+)"/g, function(str, p1) { return '<a class="innerlinks" href="http://$1" onclick="lookup(unescape(\'' + escape(p1) + '\'), \'wordsc\'); return false;"'; });
 		
 		// Find title
 		var res = response.match(/<font face="Arial" style="font-size: 17pt"><b>\s*([^<]*)<\/b>/);
@@ -36,7 +36,7 @@ sources.wordsc = {
 		}
 		
 		// Look for error
-		var res = response.match(/Sorry, but .* was not found in our dictionary./);
+		var res = response.match(/Sorry, but /);
 		if (res) {
 			// look for guesses
 			ret += '<p>' + res[0] + '</p>';
@@ -44,7 +44,7 @@ sources.wordsc = {
 			if (res) {
 				ret += '<p>Perhaps you made a spelling mistake. Did you mean...</p>';
 				
-				var suggestions = res[1].replace(/<a href="http:\/\/www\.word\.sc\/([^"]+)"/g, '<a href="http://$1" onclick="lookup(\'$1\', \'wordsc\'); return false;"');
+				var suggestions = res[1].replace(/<a href="http:\/\/www\.word\.sc\/([^"]+)"/g, function(str, p1) { return '<a href="http://$1" onclick="lookup(unescape(\'' + escape(p1) + '\'), \'wordsc\'); return false;"'; } );
 				
 				ret += '<ul>' + suggestions + '</ul>';
 			} else {
@@ -52,14 +52,25 @@ sources.wordsc = {
 			}
 		}
 		
-		// Find word type groupings
-		RegExp.lastIndex = 0;
-		
-		while (res = /<a name="_([^"]+)"><\/a><div id="\1">([^<]|<[^b]|<b[^>])*<b>([^<]*)<\/b>([^<]|<[^o]|<o[^l]|<ol[^>])*<ol>(([^<]|<[^\/]|<\/[^o]|<\/o[^l]|<\/ol[^>])*)<\/ol>/g.exec(response)) {
-			ret += '<h2>' + deEnt(res[3]) + "</h2>\n";
+		// Find advanced search results
+		if (/Here are some words /.test(response)) {
+			var res = response.match(/Here are some words that match your criteria:<br\/><br\/><ul>(([^<]|<[^\/]|<\/[^u]|<\/u[^l]|<\/ul[^>])*)<\/ul>/);
 			
-			ret += '<ol>' + deEnt(res[5]) + "</ol>\n";
+			var searchResults = res[1].replace(/<a href="http:\/\/www\.word\.sc\/([^"]+)"/g, function(str, p1) { return '<a href="http://$1" onclick="lookup(unescape(\'' + escape(p1) + '\'), \'wordsc\'); return false;"'; } );
+			
+			ret += '<p>Here are some words that match your criteria:</p><ul>' + searchResults + '</ul>';
+		} else {
+			
+			// Find word type groupings
+			RegExp.lastIndex = 0;
+			
+			while (res = /<a name="_([^"]+)"><\/a><div id="\1">([^<]|<[^b]|<b[^>])*<b>([^<]*)<\/b>([^<]|<[^o]|<o[^l]|<ol[^>])*<ol>(([^<]|<[^\/]|<\/[^o]|<\/o[^l]|<\/ol[^>])*)<\/ol>/g.exec(response)) {
+				ret += '<h2>' + deEnt(res[3]) + "</h2>\n";
+				
+				ret += '<ol>' + deEnt(res[5]) + "</ol>\n";
+			}
 		}
+		
 		
 		ret = ret.replace(/<\/?font[^>]*>/g, '');
 		

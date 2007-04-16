@@ -180,7 +180,13 @@ function JHTML(params, parent)
 	function _parse() {
 		_clear();
 		
-		_parseRecurse(_doc.documentElement, self.frame, self.frame);
+		var res = _parseRecurse(_doc.documentElement, self.frame, self.frame);
+		self.frame.updateScrollBars();
+		pdump(res.pointer);
+		var paddingFrame = new Frame();
+		paddingFrame.height = res.pointer.vOffset;
+		self.frame.appendChild(paddingFrame);
+		
 	}
 	
 	function _convertPointToFrame(myFrame, x, y) {
