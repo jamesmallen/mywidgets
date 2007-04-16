@@ -1,12 +1,18 @@
 <?konfabulator xml-strict="true"?>
 <widget minimumVersion="4.0">
 	
-	<window title="Babble" name="mainWindow" id="mainWindow" width="304" height="304">
+	<settings>
+		<setting name="allowCustomObjectAttributes" value="true" />
+	</settings>
+	
+	<window title="Babel" name="mainWindow" id="mainWindow" width="304" height="304">
 	</window>
 	
 	<preference type="popup" name="scale" title="Size:" defaultValue="32">
-		<option>Small</option>
+		<option>Extra Small</option>
 		<optionValue>16</optionValue>
+		<option>Small</option>
+		<optionValue>24</optionValue>
 		<option>Medium</option>
 		<optionValue>32</optionValue>
 		<option>Large</option>
@@ -15,13 +21,13 @@
 		<optionValue>64</optionValue>
 	</preference>
 	
-	<script src="babble.js"></script>
+	<script src="Babel.js"></script>
 	
 	<about-box>
 		<about-image>Resources/AboutBox.png</about-image>
 		<about-text hOffset="99" vOffset="158" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12" url="http://www.kzoowidgets.com">
 			<shadow hOffset="0" vOffset="2" color="#000000"/>
-			Babble is a Kalamazoo Widget.
+			Babel is a Kalamazoo Widget.
 		</about-text>
 		<about-version hOffset="159" vOffset="109" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
 			<shadow hOffset="0" vOffset="2" color="#000000"/>
