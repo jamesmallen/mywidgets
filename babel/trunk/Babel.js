@@ -6,7 +6,12 @@ var globals = {
 	trays: [ [], [], [], [] ],
 	bag: [],
 	boardMatrix: [],
-	currentTray: 0
+	stickersMatrix: [],
+	currentTray: 0,
+	firstMove: true,
+	currentMove: [],
+	lastMove: [],
+	challengeMode: new Boolean(parseInt(preferences.challengeMode.value))
 };
 
 
@@ -42,11 +47,14 @@ gridFrame.appendChild(grid);
 
 
 
+globals.stickersMatrix = globals.boardVars.blankBoard.slice(0, globals.boardVars.blankBoard.length);
 
 addStickers('TripleWordScore', globals.boardVars.tripleWordScores);
 addStickers('DoubleWordScore', globals.boardVars.doubleWordScores);
 addStickers('TripleLetterScore', globals.boardVars.tripleLetterScores);
 addStickers('DoubleLetterScore', globals.boardVars.doubleLetterScores);
+
+globals.stickers.push(new Sticker(7, 7, 'HomeSquare'))
 
 /*
 for (var i in globals.stickers) {
@@ -94,6 +102,49 @@ sortRandomButton.onMouseDown = function() { this.src = 'Resources/SortXDown.png'
 sortRandomButton.onMouseUp = function() { traySort(globals.currentTray, 'random'); this.src = 'Resources/SortX.png'; };
 sortRandomButton.tooltip = 'Mix up letters (shortcut key: spacebar)';
 mainWindow.appendChild(sortRandomButton);
+
+
+/**
+ * Create the stats window and objects
+ */
+var endTurnButton = new Text();
+endTurnButton.data = 'End Turn';
+endTurnButton.style.fontSize = '24px';
+endTurnButton.style.color = '#005';
+endTurnButton.vOffset = 40;
+endTurnButton.onMouseUp = function() {
+	try {
+		endTurn();
+		
+		fillTray(globals.currentTray);
+		updateTray(globals.currentTray);
+	} catch (ex) {
+		switch (ex.constructor) {
+			case MoveEmpty:
+				log('You cannot make an empty move!');
+				break;
+			case MoveNotLine:
+				log('Your move is not in a single straight row or column.');
+				break;
+			case MoveNotConsecutive:
+				log('Placed letters must be adjacent.');
+				break;
+			case MoveNotCoverHome:
+				log('The first move must cover the Home Square.');
+				break;
+			case MoveNotTouching:
+				log('Placed letters must be touching existing letters.');
+				break;
+				
+			default:
+				log('Unknown exception');
+				pdump(ex);
+				break;
+		}
+	}
+}
+statsWindow.appendChild(endTurnButton);
+
 
 
 widget.onKeyDown = function() {

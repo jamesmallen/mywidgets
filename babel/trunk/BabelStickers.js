@@ -88,9 +88,21 @@ function Sticker(row, col, type) {
 	this.image = new Image();
 	
 	this.image.hAlign = this.image.vAlign = 'center';
-	this.image.opacity = 213;
+	this.image.opacity = 183;
+	this.image.tooltip = Sticker.tooltips[type];
+	
+	globals.stickersMatrix[this.row * 15 + this.col] = this;
 	
 	gridFrame.appendChild(this.image)
+}
+
+
+Sticker.tooltips = {
+	DoubleLetterScore: 'Double Letter Score',
+	DoubleWordScore: 'Double Word Score',
+	HomeSquare: 'Home Square (Double Word)',
+	TripleLetterScore: 'Triple Letter Score',
+	TripleWordScore: 'Triple Word Score'
 }
 
 

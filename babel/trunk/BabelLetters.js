@@ -85,7 +85,7 @@ function placeLetters(startRow, startCol, letters, direction) {
 			*/
 			
 			for (var i = 0; i < letters.length; i++) {
-				globals.boardMatrix[((startRow + i) * 15) + startCol] = letters[i].letter;
+				globals.boardMatrix[((startRow + i) * 15) + startCol] = letters[i];
 				letters[i].location = 'board';
 				letters[i].coords = { y: startRow + i, x: startCol };
 				gridFrame.appendChild(letters[i].image);
@@ -103,7 +103,7 @@ function placeLetters(startRow, startCol, letters, direction) {
 			*/
 			
 			for (var i = 0; i < letters.length; i++) {
-				globals.boardMatrix[(startRow * 15) + (startCol + i)] = letters[i].letter;
+				globals.boardMatrix[(startRow * 15) + (startCol + i)] = letters[i];
 				letters[i].location = 'board';
 				letters[i].coords = { y: startRow, x: startCol + i };
 				gridFrame.appendChild(letters[i].image);
@@ -128,7 +128,7 @@ function loadBoard(matrix) {
 				letter.row = Math.floor(i / 15);
 				letter.col = i % 15;
 			}
-			globals.boardMatrix[i] = matrix[i];
+			globals.boardMatrix[i] = letter;
 		}
 	}
 }
@@ -224,6 +224,7 @@ function Letter(letter, location, coords) {
 	this.points = globals.boardVars.letters[this.letter].points;
 	this.image = new Image();
 	this.image.letterObject = this;
+	this.image.tooltip = this.letter + ': ' + this.points + ' point' + (this.points != 1 ? 's' : '');
 	
 	this.anms = [];
 }
@@ -265,9 +266,13 @@ Letter.prototype.remove = function() {
 }
 
 
+
+
+
 Letter.prototype.place = function() {
 	switch (this.location) {
 		case 'board':
+		case 'limbo':
 			this.image.src = getScaledImage('Tile' + this.letter);
 			this.image.width = this.image.height = globals.scale;
 			
@@ -276,8 +281,6 @@ Letter.prototype.place = function() {
 			this.image.hOffset = boardOffset.x;
 			this.image.vOffset = boardOffset.y;
 			
-			// log('clearing tray events');
-			this.image.onMouseUp = this.image.onMouseDown = this.image.onMouseDrag = null;
 			break;
 			
 		case 'tray':
@@ -306,6 +309,24 @@ Letter.prototype.place = function() {
 			break;
 	}
 }
+
+
+Letter.prototype.lock = function() {
+	if (this.image.parentNode != gridFrame) {
+		var gridPoint = gridFrame.convertPointFromWindow(this.image.parentNode.convertPointToWindow(this.image.hOffset, this.image.vOffset));
+		
+		gridFrame.appendChild(this.image);
+		
+		this.image.hOffset = gridPoint.x;
+		this.image.vOffset = gridPoint.y;
+	}
+	
+	this.location = 'board';
+	
+	this.image.onMouseUp = this.image.onMouseDown = this.image.onMouseDrag = null;
+}
+
+
 
 Letter.prototype.getBoardPosition = function() {
 	return {
@@ -359,36 +380,31 @@ Letter.tray_onMouseUp = function() {
 		
 		if (!globals.boardMatrix[spot.y * 15 + spot.x]) {
 			switch (this.letterObject.location) {
-				case 'board':
+				case 'limbo':
 					globals.boardMatrix[this.letterObject.coords.y * 15 + this.letterObject.coords.x] = 0;
 					break;
 				case 'tray':
 					spliceOutTray(this.letterObject.coords.y, this.letterObject.coords.x);
 					updateTray(this.letterObject.coords.y);
+					globals.currentMove.push(this.letterObject);
 					break;
 			}
 			
-			globals.boardMatrix[spot.y * 15 + spot.x] = this.letterObject.letter;
+			globals.boardMatrix[spot.y * 15 + spot.x] = this.letterObject;
 			
-			this.letterObject.location = 'board';
+			this.letterObject.location = 'limbo';
 			this.letterObject.coords = spot;
 			returnLetter = false;
-			/*
-			// this needs to happen later...
-			gridFrame.appendChild(this);
-			
-			this.hOffset = gridPoint.x - this.width / 2;
-			this.vOffset = gridPoint.y - this.height / 2;
-			*/
 			
 			var boardOffset = this.letterObject.getBoardPosition();
 			boardOffset = gridFrame.convertPointToWindow(boardOffset.x, boardOffset.y);
 			this.letterObject.anmQueue(new MoveAnimation(this, boardOffset.x, boardOffset.y, 225, animator.kEaseOut, this.letterObject.anmDone));
 		}
 	} else {
-		if (this.letterObject.location == 'board') {
+		if (this.letterObject.location == 'limbo') {
 			// return to tray
-			log('spliceInTray');
+			removeFromBoard(this.letterObject);
+			removeFromCurrentMove(this.letterObject);
 			spliceInTray(globals.currentTray, this.letterObject);
 		} else {
 			spliceOutTray(globals.currentTray, this.letterObject.coords.x);
@@ -402,7 +418,7 @@ Letter.tray_onMouseUp = function() {
 				// return it to the tray
 				updateTray(globals.currentTray);
 				break;
-			case 'board':
+			case 'limbo':
 				// return it to its old spot on the board
 				var boardOffset = this.letterObject.getBoardPosition();
 				boardOffset = gridFrame.convertPointToWindow(boardOffset.x, boardOffset.y);
@@ -437,6 +453,19 @@ Letter.tray_onMouseDrag = function() {
 }
 
 
+function removeFromCurrentMove(letter) {
+	for (var i in globals.currentMove) {
+		if (globals.currentMove[i] == letter) {
+			globals.currentMove.splice(i, 1);
+			break;
+		}
+	}
+}
+
+
+function removeFromBoard(letter) {
+	globals.boardMatrix[letter.coords.y * 15 + letter.coords.x] = 0;
+}
 
 Letter.anmHoldEvents = [
 	'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel'
