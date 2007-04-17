@@ -1,4 +1,55 @@
 
+const BIGOBJECT_SIZE = 100000;
+
+function BigObject() {
+	this.arr = [];
+	for (var i = 0; i < BIGOBJECT_SIZE; i++) {
+		this.arr.push(i);
+	}
+	
+}
+
+BigObject.prototype = {
+	arr: null,
+	next: null,
+	previous: null,
+	push: function(q) {
+		this.next = q;
+		q.previous = this;
+	},
+	eraseToEnd: function() {
+		this.next = null;
+	}
+}
+
+
+
+function assert(q, str) {
+	if (!q) { throw new Error('Assertion failed' + (str ? (': ' + str) : '')); }
+}
+
+
+// Array.prototype.copy = function() {
+arrayCopy = function(arr) {
+	var ret = [];
+	for (var i = 0; i < arr.length; i++) {
+		ret.push(arr[i]);
+	}
+	return ret;
+}
+
+
+// Array.prototype.shuffle = function() {
+arrayShuffle = function(arr) {
+	// var c = this.copy(), t, ret = [];
+	var c = arrayCopy(arr), t, ret = [];
+	while (c.length > 0 && (t = c.splice(random(c.length), 1)[0])) {
+		ret.push(t);
+	}
+	return ret;
+};
+
+
 SQLite.prototype.catchQuery = function(sql) {
 	try {
 		return this.query(sql);
@@ -7,7 +58,7 @@ SQLite.prototype.catchQuery = function(sql) {
 		throw ex;
 		return null;
 	}
-}
+};
 
 SQLite.prototype.catchExec = function(sql) {
 	try {
@@ -16,7 +67,7 @@ SQLite.prototype.catchExec = function(sql) {
 		pdump(ex);
 		throw ex;
 	}
-}
+};
 
 
 
@@ -117,7 +168,39 @@ Point.prototype.within = function(left, top, right, bottom, noEdges) {
 	}
 	
 	return false;
+};
+
+
+
+function emptyFrame(obj) {
+	while (obj.firstChild) {
+		obj.removeChild(obj.firstChild);
+	}
 }
 
 
-
+/**
+ * exchangePoint(src, dst, pointX, pointY)
+ * exchangePoint(src, dst, point)
+ * Converts a point from one context to another
+ */
+function convertPoint(src, dst, pointX, pointY) {
+	var point;
+	if (typeof(pointX) == 'number') {
+		point = { x: pointX, y: pointY };
+	} else {
+		point = pointX;
+	}
+	
+	if (src.constructor == Window) {
+		windowPoint = point;
+	} else {
+		windowPoint = src.convertPointToWindow(point.x, point.y);
+	}
+	
+	if (dst.constructor == Window) {
+		return windowPoint;
+	} else {
+		return dst.convertPointFromWindow(windowPoint.x, windowPoint.y);
+	}
+}
