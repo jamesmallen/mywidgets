@@ -347,6 +347,11 @@ Letter.prototype.getTrayPosition = function() {
 	};
 }
 
+
+Letter.prototype.toString = function() {
+	return this.letter;
+}
+
 Letter.tray_onMouseDown = function() {
 	/*
 	if (this.parentNode.convertPointToWindow) {
@@ -405,10 +410,10 @@ Letter.tray_onMouseUp = function() {
 			// return to tray
 			removeFromBoard(this.letterObject);
 			removeFromCurrentMove(this.letterObject);
-			spliceInTray(globals.currentTray, this.letterObject);
+			spliceInTray(globals.currentPlayer, this.letterObject);
 		} else {
-			spliceOutTray(globals.currentTray, this.letterObject.coords.x);
-			spliceInTray(globals.currentTray, this.letterObject);
+			spliceOutTray(globals.currentPlayer, this.letterObject.coords.x);
+			spliceInTray(globals.currentPlayer, this.letterObject);
 		}
 	}
 	
@@ -416,7 +421,7 @@ Letter.tray_onMouseUp = function() {
 		switch (this.letterObject.location) {
 			case 'tray':
 				// return it to the tray
-				updateTray(globals.currentTray);
+				updateTray(globals.currentPlayer);
 				break;
 			case 'limbo':
 				// return it to its old spot on the board

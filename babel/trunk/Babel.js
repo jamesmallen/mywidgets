@@ -7,11 +7,14 @@ var globals = {
 	bag: [],
 	boardMatrix: [],
 	stickersMatrix: [],
-	currentTray: 0,
+	currentPlayer: 0,
+	numberPlayers: 1,
+	scores: [],
 	firstMove: true,
 	currentMove: [],
 	lastMove: [],
-	challengeMode: new Boolean(parseInt(preferences.challengeMode.value))
+	lastScore: 0,
+	challengeMode: null
 };
 
 
@@ -75,7 +78,7 @@ for (var i in globals.trays) {
 	y.src = 'Resources/Tray.png';
 	t.appendChild(y);
 	
-	if (i == globals.currentTray) {
+	if (i == globals.currentPlayer) {
 		t.visible = true;
 	} else {
 		t.visible = false;
@@ -85,21 +88,21 @@ for (var i in globals.trays) {
 var sortAlphaButton = new Image();
 sortAlphaButton.src = 'Resources/SortA.png';
 sortAlphaButton.onMouseDown = function() { this.src = 'Resources/SortADown.png'; };
-sortAlphaButton.onMouseUp = function() { traySort(globals.currentTray, 'alpha'); this.src = 'Resources/SortA.png'; };
+sortAlphaButton.onMouseUp = function() { traySort(globals.currentPlayer, 'alpha'); this.src = 'Resources/SortA.png'; };
 sortAlphaButton.tooltip = 'Sort letters alphabetically (double-click to reverse)';
 mainWindow.appendChild(sortAlphaButton);
 
 var sortPointsButton = new Image();
 sortPointsButton.src = 'Resources/Sort1.png';
 sortPointsButton.onMouseDown = function() { this.src = 'Resources/Sort1Down.png'; };
-sortPointsButton.onMouseUp = function() { traySort(globals.currentTray, 'points'); this.src = 'Resources/Sort1.png'; };
+sortPointsButton.onMouseUp = function() { traySort(globals.currentPlayer, 'points'); this.src = 'Resources/Sort1.png'; };
 sortPointsButton.tooltip = 'Sort letters by points value (double-click to reverse)';
 mainWindow.appendChild(sortPointsButton);
 
 var sortRandomButton = new Image();
 sortRandomButton.src = 'Resources/SortX.png';
 sortRandomButton.onMouseDown = function() { this.src = 'Resources/SortXDown.png'; };
-sortRandomButton.onMouseUp = function() { traySort(globals.currentTray, 'random'); this.src = 'Resources/SortX.png'; };
+sortRandomButton.onMouseUp = function() { traySort(globals.currentPlayer, 'random'); this.src = 'Resources/SortX.png'; };
 sortRandomButton.tooltip = 'Mix up letters (shortcut key: spacebar)';
 mainWindow.appendChild(sortRandomButton);
 
@@ -116,8 +119,9 @@ endTurnButton.onMouseUp = function() {
 	try {
 		endTurn();
 		
-		fillTray(globals.currentTray);
-		updateTray(globals.currentTray);
+		globals.currentPlayer = (globals.currentPlayer + 1) % globals.numberPlayers;
+		fillTray(globals.currentPlayer);
+		updateTray(globals.currentPlayer);
 	} catch (ex) {
 		switch (ex.constructor) {
 			case MoveEmpty:
@@ -125,6 +129,9 @@ endTurnButton.onMouseUp = function() {
 				break;
 			case MoveNotLine:
 				log('Your move is not in a single straight row or column.');
+				break;
+			case MoveShort:
+				log('You must put down at least two letters for the first move.');
 				break;
 			case MoveNotConsecutive:
 				log('Placed letters must be adjacent.');
@@ -134,6 +141,9 @@ endTurnButton.onMouseUp = function() {
 				break;
 			case MoveNotTouching:
 				log('Placed letters must be touching existing letters.');
+				break;
+			case MoveInvalidWords:
+				log('Invalid words were played: ' + ex.words.join(', '));
 				break;
 				
 			default:
@@ -154,31 +164,21 @@ widget.onKeyDown = function() {
 }
 
 
-/**
- * Set up a game 
- */
 
-clearBoard();
-
-loadLetters(globals.boardVars.letters);
-
-mixBag();
-
-// placeString(3, 5, 'babelz', 'horizontal');
-
-fillTray(0);
+widget.onPreferencesChanged = function() {
+	updateScale();
+	
+	globals.challengeMode = ((preferences.challengeMode.value == '0') ? false : true);
+}
 
 
 
 
+widget.onPreferencesChanged();
 
-widget.onPreferencesChanged = updateScale;
-
-
-
+newGame();
 
 
-updateScale();
 
 
 
@@ -254,4 +254,29 @@ function updateScale() {
 }
 
 
+/**
+ * Set up a game 
+ */
+function newGame() {
+	clearBoard();
+	loadLetters(globals.boardVars.letters);
+	
+	mixBag();
+	
+	globals.trays = new Array(globals.numberPlayers);
+	globals.scores = new Array(globals.numberPlayers);
+	
+	for (var i = 0; i < globals.numberPlayers; i++) {
+		globals.trays[i] = [];
+		fillTray(i);
+	}
+	
+	globals.currentPlayer = random(0, globals.numberPlayers);
+	
+	updateTray(globals.currentPlayer);
+	
+	globals.currentMove = [];
+	globals.lastMove = [];
+	globals.lastScore = 0;
+}
 
