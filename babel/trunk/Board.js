@@ -18,7 +18,7 @@ Board.prototype = {
 	
 	/**
 	 * get(row, col)
-	 * Gets the Letter at a partiular row and column
+	 * Gets the object at a partiular row and column
 	 */
 	get: function(row, col) {
 		this.assertInBounds(row, col);
@@ -26,12 +26,63 @@ Board.prototype = {
 	},
 	
 	/**
-	 * put(row, col, letter)
-	 * Puts the Letter at a particular row and olumn
+	 * put(row, col, obj)
+	 * Puts the object at a particular row and olumn
 	 */
-	put: function(row, col, letter) {
+	put: function(row, col, obj) {
 		this.assertInBounds(row, col);
-		this.arr[row * BOARD_WIDTH + col] = letter;
+		this.arr[row * BOARD_WIDTH + col] = obj;
+	},
+	
+	/**
+	 * remove(row, col)
+	 * remove(obj)
+	 * Removes any object at the specified location, or, if an object is
+	 * passed, removes the object.
+	 * Returns the object that was removed (if any), otherwise null.
+	 */
+	remove: function(row, col) {
+		if (typeof(row) != 'number') {
+			var t = this.find(row);
+			if (t) {
+				row = t.row;
+				col = t.col;
+			} else {
+				return null;
+			}
+		}
+		
+		var obj = this.get(row, col);
+		this.put(row, col, null);
+		
+		return obj;
+	},
+	
+	/**
+	 * find(obj)
+	 * Searches the Board for the specified obj.
+	 * obj can be passed as a string or the object itself
+	 */
+	find: function(obj) {
+		if (typeof(q) == 'string') {
+			for (var row = 0; row < BOARD_HEIGHT; row++) {
+				for (var col = 0; col < BOARD_WIDTH; col++) {
+					if (this.get(row, col).toString() == q) {
+						return { row: row, col: col };
+					}
+				}
+			}
+		} else {
+			for (var row = 0; row < BOARD_HEIGHT; row++) {
+				for (var col = 0; col < BOARD_WIDTH; col++) {
+					if (this.get(row, col) == obj) {
+						return { row: row, col: col };
+					}
+				}
+			}
+		}
+		
+		return null;
 	},
 	
 	/**

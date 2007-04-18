@@ -4,7 +4,7 @@
 
 // CONSTRUCTOR
 function GameState(numPlayers) {
-	if (typeof(numPlayers) == 'object' && numPlayers.constructor == GameState) {
+	if (typeof(numPlayers) == 'object' && numPlayers instanceof GameState) {
 		// COPY CONSTRUCTOR
 		var src = numPlayers;
 		numPlayers = src.players.length;
@@ -29,6 +29,7 @@ GameState.prototype = {
 	bag: null,
 	previousState: null,
 	nextState: null,
+	currentPlayer: 0,
 	
 	
 	// PUBLIC METHODS

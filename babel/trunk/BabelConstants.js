@@ -5,6 +5,10 @@ const TRAY_SIZE = 7;
 
 const PIECE_MOVE_DURATION = 225;
 
+const PIECE_MOVE_EASETYPE = animator.kEaseOut;
+
+const CUSTOM_ANIMATION_INTERVAL = 5;
+
 const LETTER_SETUP = {
 	_:   { qty:  2, points:  0 },
 	E:   { qty: 12, points:  1 },

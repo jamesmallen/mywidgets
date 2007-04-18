@@ -5,6 +5,7 @@ function Letter(letter) {
 	this.letter = letter;
 	this.points = LETTER_SETUP[letter].points;
 	this.image = new Image();
+	this.image.letterObject = this;
 }
 
 Letter.prototype = {

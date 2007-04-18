@@ -9,6 +9,7 @@ include('Player.js');
 include('Board.js');
 include('GameState.js');
 include('WordDB.js');
+include('AnimationQueue.js');
 
 
 
@@ -85,6 +86,8 @@ BabelController = {
 		for (var i in this.state.players) {
 			this.state.players[i].tray.fill(this.state.bag);
 		}
+		
+		this.newMove();
 	},
 	
 	/**
@@ -103,10 +106,56 @@ BabelController = {
 	},
 	
 	
-	
+	/**
+	 * newMove()
+	 * Initializes things for a new move.
+	 */
 	newMove: function() {
-		move = new Board();
+		this.move = new Board();
+	},
+	
+	/**
+	 * addToMove(letter, row, col)
+	 * Attempts to add a letter to the current move.
+	 * Returns true if the letter was added, or false if it was not.
+	 */
+	addToMove: function(letter, row, col) {
+		// make sure the space is unoccupied
+		if (!(this.move.get(row, col)) && !(this.state.board.get(row, col))) {
+			// remove the letter if it's currently on the Move board or in the tray
+			this.state.players[this.state.currentPlayer].tray.remove(letter);
+			this.move.remove(letter);
+			// add it at the correct location
+			this.move.put(row, col, letter);
+			return true;
+		} else {
+			return false;
+		}
+	},
+	
+	
+	/**
+	 * removeFromMove(letter)
+	 * Removes the specified Letter from the current move.
+	 * Returns true if the Letter was removed, or false if the Letter 
+	 * was not in the move to begin with.
+	 */
+	removeFromMove: function(letter) {
+		if (this.move.remove(letter)) {
+			// add it back into the tray
+			this.state.players[this.state.currentPlayer].tray.put(letter);
+			return true;
+		} else {
+			return false;
+		}
+	},
+	
+	
+	sortTray: function(criteria, autoReverse) {
+		this.state.players[this.state.currentPlayer].tray.sort(criteria, autoReverse);
 	}
+	
+	
 };
 
 
@@ -192,7 +241,32 @@ BabelView = {
 			sortAlphaButton.scaleHOffset = 2.5;
 			sortPointsButton.scaleHOffset = 3.5;
 			sortRandomButton.scaleHOffset = 4.5;
-
+			
+			sortAlphaButton.onMouseDown = function() {
+				this.src = BabelView.imagesPath + 'SortADown.png';
+			};
+			sortAlphaButton.onMouseUp = function() {
+				this.src = BabelView.imagesPath + 'SortA.png';
+				BabelController.sortTray('alpha');
+				AnimationQueue.queue(BabelView.animateTray());
+			};
+			sortPointsButton.onMouseDown = function() {
+				this.src = BabelView.imagesPath + 'Sort1Down.png';
+			};
+			sortPointsButton.onMouseUp = function() {
+				this.src = BabelView.imagesPath + 'Sort1.png';
+				BabelController.sortTray('points');
+				AnimationQueue.queue(BabelView.animateTray());
+			};
+			sortRandomButton.onMouseDown = function() {
+				this.src = BabelView.imagesPath + 'SortXDown.png';
+			};
+			sortRandomButton.onMouseUp = function() {
+				this.src = BabelView.imagesPath + 'SortX.png';
+				BabelController.sortTray('random');
+				AnimationQueue.queue(BabelView.animateTray());
+			};
+			
 			this.trayFrames[i].appendChild(sortAlphaButton);
 			this.trayFrames[i].appendChild(sortPointsButton);
 			this.trayFrames[i].appendChild(sortRandomButton);
@@ -275,9 +349,10 @@ BabelView = {
 				letter = board.get(row, col);
 				if (letter) {
 					this.initLetter(letter);
-					letter.image.scaleMultiplier = 1;
-					letter.image.scaleHOffset = col;
-					letter.image.scaleVOffset = row;
+					var attribs = alignLetterOnBoard(letter, row, col);
+					for (var a in attribs) {
+						letter.image[a] = attribs[a];
+					}
 					gridFrame.appendChild(letter.image);
 				}
 			}
@@ -296,43 +371,88 @@ BabelView = {
 	
 	
 	/**
-	 * drawTrays(id)
-	 * Draws the trays. If id is specified, only draws the specific tray - otherwise draws all trays
+	 * drawTray()
+	 * drawTray(id)
+	 * Draws the trays. If id is specified, draws the specific tray.
+	 * Otherwise draws the current player's tray
 	 */
-	drawTrays: function(id) {
-		var trays = [null, null, null, null];
-		if (!id) {
-			for (var i = 0; i < BabelController.state.players.length; i++) {
-				trays[i] = BabelController.state.players[i].tray;
-			}
-		} else {
-			trays[id] = BabelController.state.players[id].tray;
+	drawTray: function(id) {
+		if (typeof(id) == 'undefined') {
+			id = BabelController.state.currentPlayer;
 		}
 		
-		for (var i in trays) {
-			if (trays[i]) {
-				emptyFrame(this.moveFrames[i]);
+		var tray = BabelController.state.players[id].tray;
+		
+		if (tray) {
+			emptyFrame(this.moveFrames[id]);
+			
+			for (var j in tray.arr) {
+				var letter = tray.arr[j];
+				this.initLetter(letter);
 				
-				for (var j in trays[i].arr) {
-					var letter = trays[i].arr[j];
-					this.initLetter(letter);
-					letter.image.scaleMultiplier = 2;
-					letter.image.scaleHOffset = 16.5 - 2 * (trays[i].arr.length - j);
-					letter.image.scaleVOffset = 18.45;
-					
-					for (var k in this.trayLetterImagePrototype) {
-						letter.image[k] = this.trayLetterImagePrototype[k];
-					}
-					
-					this.moveFrames[i].appendChild(letter.image);
+				var attribs = this.alignLetterInTray(letter, j, tray);
+				for (var a in attribs) {
+					letter.image[a] = attribs[a];
 				}
 				
-				this.drawScaledRecursive(this.trayFrames[i]);
+				// assign event handlers, etc.
+				for (var k in this.trayLetterImagePrototype) {
+					letter.image[k] = this.trayLetterImagePrototype[k];
+				}
+				
+				this.moveFrames[id].appendChild(letter.image);
 			}
+			
+			this.drawScaledRecursive(this.trayFrames[id]);
 		}
 		
 	},
 	
+	/**
+	 * alignLetterInTray(letter, tray)
+	 * alignLetterInTray(letter, pos, tray)
+	 * Returns target attributes for a Letter inside a given Tray.
+	 * Useful for previewing where a Letter needs to go (and animating it).
+	 */
+	alignLetterInTray: function(letter, pos, tray) {
+		if (pos instanceof Tray) {
+			tray = pos;
+			pos = tray.indexOf(letter);
+			var trayLength = tray.arr.length;
+		}
+		if (tray instanceof Tray) {
+			var trayLength = tray.arr.length;
+		}
+		
+		return {
+			scaleMultiplier: 2,
+			scaleHOffset: 9.5 - (trayLength - 2 * pos),
+			scaleVOffset: 18.45
+		};
+	},
+	
+	/**
+	 * alignLetterOnBoard(letter, board)
+	 * alignLetterOnBoard(letter, row, col)
+	 * Returns target attributes for a Letter on the Board.
+	 * Useful for previewing where a Letter needs to go (and animating it).
+	 */
+	alignLetterOnBoard: function(letter, row, col) {
+		if (row instanceof Board) {
+			var board = row;
+			var t = board.find(letter);
+			row = t.row;
+			col = t.col;
+		}
+		
+		var addlOffset = convertPoint(this.gridFrame.parentNode, letter.image.parentNode, this.gridFrame.hOffset, this.gridFrame.vOffset);
+		
+		return {
+			scaleMultiplier: 1,
+			scaleHOffset: col + addlOffset.x / this.scale,
+			scaleVOffset: row + addlOffset.y / this.scale
+		};
+	},
 	
 	trayLetterImagePrototype: {
 		onMouseDown: function() {
@@ -344,11 +464,13 @@ BabelView = {
 			
 			var gridPoint = convertPoint(this, BabelView.gridFrame, system.event.x, system.event.y);
 			
-			if (gridPoint.within(0, 0, BabelView.gridFrame.width, BabelView.gridFrame.height)) {
+			if (gridPoint.within(0, 0, BabelView.gridFrame.width, BabelView.gridFrame.height, true)) {
 				this.scaleMultiplier = 1;
 			} else {
 				this.scaleMultiplier = 2;
 			}
+			
+			BabelView.drawScaledRecursive(this);
 			
 			var parentPoint = convertPoint(mainWindow, this.parentNode,
 				Math.max(0, Math.min(mainWindow.width - this.width, windowPoint.x - this.width / 2)),
@@ -362,71 +484,148 @@ BabelView = {
 		},
 		
 		onMouseUp: function() {
-			var windowPoint = this.convertPointToWindow(system.event.x, system.event.y);
+			var windowPoint = convertPoint(this, mainWindow, system.event.x, system.event.y);
 			
-			var gridPoint = gridFrame.convertPointFromWindow(windowPoint);
+			var gridPoint = convertPoint(this, BabelView.gridFrame, system.event.x, system.event.y);
 			
 			var returnLetter = true;
 			
-			if (gridPoint.within(0, 0, gridFrame.width, gridFrame.height)) {
-				var spot = {
-					x: Math.floor(gridPoint.x / globals.scale),
-					y: Math.floor(gridPoint.y / globals.scale)
-				};
-				
-				if (!globals.boardMatrix[spot.y * 15 + spot.x]) {
-					switch (this.letterObject.location) {
-						case 'limbo':
-							globals.boardMatrix[this.letterObject.coords.y * 15 + this.letterObject.coords.x] = 0;
-							break;
-						case 'tray':
-							spliceOutTray(this.letterObject.coords.y, this.letterObject.coords.x);
-							updateTray(this.letterObject.coords.y);
-							globals.currentMove.push(this.letterObject);
-							break;
-					}
-					
-					globals.boardMatrix[spot.y * 15 + spot.x] = this.letterObject;
-					
-					this.letterObject.location = 'limbo';
-					this.letterObject.coords = spot;
-					returnLetter = false;
-					
-					var boardOffset = this.letterObject.getBoardPosition();
-					boardOffset = gridFrame.convertPointToWindow(boardOffset.x, boardOffset.y);
-					this.letterObject.anmQueue(new MoveAnimation(this, boardOffset.x, boardOffset.y, 225, animator.kEaseOut, this.letterObject.anmDone));
-				}
+			if (gridPoint.within(0, 0, BabelView.gridFrame.width, BabelView.gridFrame.height, true)) {
+				BabelController.addToMove(this.letterObject, Math.floor(gridPoint.y / BabelView.scale), Math.floor(gridPoint.x / BabelView.scale));
 			} else {
-				if (this.letterObject.location == 'limbo') {
-					// return to tray
-					removeFromBoard(this.letterObject);
-					removeFromCurrentMove(this.letterObject);
-					spliceInTray(globals.currentPlayer, this.letterObject);
-				} else {
-					spliceOutTray(globals.currentPlayer, this.letterObject.coords.x);
-					spliceInTray(globals.currentPlayer, this.letterObject);
-				}
+				BabelController.removeFromMove(this.letterObject);
+				BabelController.state.players[BabelController.state.currentPlayer].tray.sort('hOffset', false);
 			}
 			
-			if (returnLetter) {
-				switch (this.letterObject.location) {
-					case 'tray':
-						// return it to the tray
-						updateTray(globals.currentPlayer);
-						break;
-					case 'limbo':
-						// return it to its old spot on the board
-						var boardOffset = this.letterObject.getBoardPosition();
-						boardOffset = gridFrame.convertPointToWindow(boardOffset.x, boardOffset.y);
-						this.letterObject.anmQueue(new MoveAnimation(this, boardOffset.x, boardOffset.y, 225, animator.kEaseOut, this.letterObject.anmDone));
-						break;
-				}
-			}
-			
-			// pdump(gridPoint);
+			// animate the transitions
+			AnimationQueue.queue([BabelView.animateTray(), BabelView.animateMove(null, true)]);
 		}
 	},
 	
+	
+	/**
+	 * animateTray(id, noDone)
+	 * animateTray(id)
+	 * animateTray()
+	 * Returns an animation object for the tray, suitable for use with
+	 * AnimationQueue. Set noDone to true or an alternate doneFunc if you 
+	 * would not like AnimationQueue.done() set as the doneFunc
+	 */
+	animateTray: function(id, noDone) {
+		if (typeof(id) == 'undefined' || id == null) {
+			id = BabelController.state.currentPlayer;
+		}
+		var tray = BabelController.state.players[id].tray;
+		
+		if (noDone == true) {
+			var anm = new CustomAnimation(CUSTOM_ANIMATION_INTERVAL, this.animateHelpers.updateFunc);
+		} else {
+			var anm = new CustomAnimation(CUSTOM_ANIMATION_INTERVAL, this.animateHelpers.updateFunc, (noDone ? noDone : AnimationQueue.done));
+		}
+		
+		anm.objs = [];
+		for (var i in tray.arr) {
+			var itMoves = false;
+			var letter = tray.arr[i];
+			var t = {
+				obj: letter.image,
+				start: {},
+				finish: {}
+			};
+			t.finish = this.alignLetterInTray(letter, i, tray);
+			for (var a in t.finish) {
+				if (letter.image[a] != t.finish[a]) {
+					itMoves = true;
+					t.start[a] = letter.image[a];
+				}
+			}
+			if (itMoves) {
+				anm.objs.push(t);
+			}
+		}
+		
+		return anm;
+	},
+	
+	
+	/**
+	 * animateMove(move, noDone)
+	 * animateMove(move)
+	 * animateMove()
+	 * Returns an animation object for a Move, suitable for use 
+	 * with AnimationQueue. Set noDone to true or an alternate doneFunc
+	 * if you would not like AnimationQueue.done() set as the doneFunc.
+	 */
+	animateMove: function(move, noDone) {
+		if (typeof(move) == 'undefined' || move == null) {
+			move = BabelController.move;
+		}
+		
+		if (noDone == true) {
+			var anm = new CustomAnimation(CUSTOM_ANIMATION_INTERVAL, this.animateHelpers.updateFunc);
+		} else {
+			var anm = new CustomAnimation(CUSTOM_ANIMATION_INTERVAL, this.animateHelpers.updateFunc, (noDone ? noDone : AnimationQueue.done));
+		}
+		
+		anm.objs = [];
+		for (var row = 0; row < BOARD_HEIGHT; row++) {
+			for (var col = 0; col < BOARD_WIDTH; col++) {
+				var letter = move.get(row, col);
+				if (!letter) {
+					continue;
+				}
+				var itMoves = false;
+				var t = {
+					obj: letter.image,
+					start: {},
+					finish: {}
+				};
+				t.finish = this.alignLetterOnBoard(letter, row, col);
+				for (var a in t.finish) {
+					if (letter.image[a] != t.finish[a]) {
+						itMoves = true;
+						t.start[a] = letter.image[a];
+					}
+				}
+				if (itMoves) {
+					anm.objs.push(t);
+				}
+			}
+		}
+		
+		return anm;
+	},
+	
+	animateHelpers: {
+		updateFunc: function() {
+			var now = animator.milliseconds;
+			
+			var t = Math.max(now - this.startTime, 0);
+			
+			if (t >= PIECE_MOVE_DURATION) {
+				for (var i in this.objs) {
+					var t = this.objs[i];
+					for (var a in t.finish) {
+						t.obj[a] = t.finish[a];
+					}
+					BabelView.drawScaledRecursive(t.obj);
+				}
+				return false;
+			} else {
+				var percent = t / PIECE_MOVE_DURATION;
+				for (var i in this.objs) {
+					var t = this.objs[i];
+					for (var a in t.start) {
+						t.obj[a] = animator.ease(t.start[a], t.finish[a], percent, PIECE_MOVE_EASETYPE);
+					}
+					BabelView.drawScaledRecursive(t.obj);
+				}
+				return true;
+			}
+		},
+		
+		
+	}, 	
 	
 	
 	refresh: function() {
@@ -534,65 +733,6 @@ WordDB.init();
 
 
 
-function updateScale() {
-	
-	mainWindow.width = board.width = board.height = 19 * globals.scale;
-	mainWindow.height = 21.5 * globals.scale;
-	
-	grid.src = 'Resources/Grid' + globals.scale + '.png';
-	grid.fillMode = 'tile';
-	grid.tileOrigin = 'topLeft';
-	
-	gridFrame.width = gridFrame.height = grid.width = grid.height = 15 * globals.scale;
-	gridFrame.hOffset = gridFrame.vOffset = 2 * globals.scale;
-	
-	for (var i in globals.stickers) {
-		globals.stickers[i].image.src = getScaledImage(globals.stickers[i].type);
-		// pdump(globals.stickers[i]);
-		var res = globals.stickers[i].image.src.match(/(\d+)\.png$/i);
-		if (!res) {
-			log('Error calculating sticker\'s base Scale');
-			continue;
-		}
-		
-		var baseScale = res[1];
-		
-		globals.stickers[i].image.width = (globals.scale) * globals.stickers[i].image.srcWidth / baseScale;
-		globals.stickers[i].image.height = (globals.scale) * globals.stickers[i].image.srcHeight / baseScale;
-		globals.stickers[i].image.hOffset = (globals.scale / 2) + globals.stickers[i].col * globals.scale;
-		globals.stickers[i].image.vOffset = (globals.scale / 2) + globals.stickers[i].row * globals.scale;
-		
-	}
-	
-	for (var i in trayFrames) {
-		var t = trayFrames[i];
-		var u = t.firstChild;
-		
-		t.width = mainWindow.width;
-		t.height = mainWindow.height;
-		
-		u.width = 16 * globals.scale;
-		u.height = 4 * globals.scale;
-		
-		u.hOffset = 1.5 * globals.scale;
-		u.vOffset = 17.5 * globals.scale;
-	}
-	
-	sortAlphaButton.width = sortAlphaButton.height = sortPointsButton.width = sortPointsButton.height = sortRandomButton.width = sortRandomButton.height = 0.65625 * globals.scale;
-	sortAlphaButton.vOffset = sortPointsButton.vOffset = sortRandomButton.vOffset = 20.484375 * globals.scale;
-	
-	sortAlphaButton.hOffset = 2.5 * globals.scale;
-	sortPointsButton.hOffset = 3.5 * globals.scale;
-	sortRandomButton.hOffset = 4.5 * globals.scale;
-	
-	for (var i in globals.letters) {
-		globals.letters[i].place();
-	}
-	
-}
-
-
-
 BabelController.init();
 
 
@@ -600,6 +740,6 @@ ct = BabelController;
 vw = BabelView;
 
 vw.trayFrames[0].opacity = 255;
-vw.drawTrays(0);
+vw.drawTray(0);
 
 
