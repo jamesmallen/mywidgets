@@ -1,5 +1,7 @@
 /**
  * jhtml.css
+ * $Id$
+ *
  * default styles for JHTML display
  * multi-level selectors are not supported at this time - keep things simple!
  */
@@ -38,7 +40,7 @@ li {
 }
 
 h1 {
-	padding-top: 3px;
+	padding-top: 6px;
 	padding-bottom: 8px;
 	font-size: 16px;
 }

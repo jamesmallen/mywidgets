@@ -1,3 +1,13 @@
+/**
+ * Dictionary
+ * by James M. Allen <james.m.allen@gmail.com>
+ * $Id$
+ *
+ * All images and code are copyright James M. Allen,
+ * and may not be used without permission.
+ */
+
+
 var activeRequest;
 
 const extendDuration = 600;
@@ -20,6 +30,14 @@ if (preferences.repositionWindow.value == 1) {
 }
 
 
+var contextMenu = [];
+var mi = new MenuItem();
+mi.title = "Make a Donation";
+mi.onSelect = "donate();";
+contextMenu.push(mi);
+mainWindow.contextMenuItems = contextMenu;
+
+
 var currentWidth = 246;
 var currentHeight = 244;
 
@@ -32,7 +50,7 @@ var extender = new KImage({src: 'Resources/Extender*.png', height: 44, mask: 'Re
 extenderContentsFrame = new Frame();
 extenderContentsFrame.opacity = 0;
 extenderFrame.appendChild(extenderContentsFrame);
-resultsBox = new JHTML({hOffset: 20, vOffset: 0, width: currentWidth - 32 - 24, height: 195}, extenderContentsFrame);
+resultsBox = new JHTML({hOffset: 20, vOffset: 0, width: currentWidth - 32 - 26, height: 195}, extenderContentsFrame);
 resultsBox.vScrollBar = new ScrollBar();
 resultsBox.vScrollBar.hOffset = currentWidth - 34;
 resultsBox.vScrollBar.height = 180;
@@ -100,7 +118,11 @@ searchBarInput.onKeyPress = function() {
 	switch (system.event.keyString) {
 		case 'Return':
 		case 'Enter':
-			activeRequest = lookup(this.data, 'wordsc');
+			if (!this.data) {
+				cancelAll();
+			} else {
+				activeRequest = lookup(this.data, 'wordsc');
+			}
 			break;
 		case 'Tab':
 			this.rejectKeyPress();

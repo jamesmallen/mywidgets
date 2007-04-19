@@ -1,3 +1,11 @@
+/**
+ * Entities handling
+ * $Id$
+ *
+ * Based on code contributed by Ricky Romero at
+ * http://konfabulator.wikia.com/wiki/Convert_HTML_entities
+ */
+
 function deEnt( s, entities )
 {
 	if (entities) {

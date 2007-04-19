@@ -5,13 +5,12 @@
  *  A class for creating "throbber"-type loading animations on Canvases
  *
  * By James M. Allen <james.m.allen@gmail.com>
+ * $Id$
  *
  * You are free to use this code to produce derivative works, provided that 
  * you give proper credit and you e-mail the author to inform him of any 
  * derivative works.
  *
- *
- * For usage examples, see throbber_test.js.
  *
  * ---------------
  * Release History

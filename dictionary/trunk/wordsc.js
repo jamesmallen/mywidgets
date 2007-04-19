@@ -1,4 +1,7 @@
-
+/**
+ * Word Source sources plugin
+ * $Id$
+ */
 log('loading word source plugin');
 
 // Word Source (word.sc) plugin

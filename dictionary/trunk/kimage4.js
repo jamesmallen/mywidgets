@@ -4,18 +4,18 @@
  * -------------
  *  A class for creating flexible auto-stretching images using Canvas objects
  *
- * By James M. Allen <james.m.allen@gmail.com>
+ * by James M. Allen <james.m.allen@gmail.com>
+ * $Id$
  *
  * You are not free to reuse this code without express written consent from the
  * author.
  *
- *
  * ---------------
  * Release History
  * ---------------
- * 4.0 - XX April 2007
- * - New release for Y!WE4 - uses Canvas objects instead of Frames
- *
+ * 4.0 - 19 April 2007
+ * - New release for Yahoo! Widgets 4 - uses Canvas objects instead of Frames
+ * Prior releases
  */
  
 

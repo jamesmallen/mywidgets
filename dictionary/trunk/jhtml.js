@@ -4,17 +4,17 @@
  * -------------
  *  A class for rendering HTML using Frame and Text objects
  *
- * By James M. Allen <james.m.allen@gmail.com>
+ * by James M. Allen <james.m.allen@gmail.com>
+ * $Id$
  *
  * You are not free to reuse this code without express written consent from the
  * author.
  *
- *
  * ---------------
  * Release History
  * ---------------
- * 1.0 - XX April 2007
- * - Initial release - yay Yahoo! Widget Engine 4.0!
+ * 1.0 - 19 April 2007
+ * - Initial release - yay Yahoo! Widgets 4.0!
  *
  */
  
@@ -182,7 +182,6 @@ function JHTML(params, parent)
 		
 		var res = _parseRecurse(_doc.documentElement, self.frame, self.frame);
 		self.frame.updateScrollBars();
-		pdump(res.pointer);
 		var paddingFrame = new Frame();
 		paddingFrame.height = res.pointer.vOffset;
 		self.frame.appendChild(paddingFrame);
@@ -851,65 +850,6 @@ JHTML.styleFromHTMLAttributes = {
 			}
 		}
 	]
-}
-
-
-
-
-function pdump(obj)
-{
-  print("PDUMP of " + obj);
-  for (var i in obj) {
-    if (typeof(obj[i]) != "function") {
-      print("  [" + i + "]: " + obj[i]);
-    }
-  }
-}
-
-function domdump(obj, level)
-{
-	if (!level) {
-		print('DOMDUMP');
-		print(obj.name);
-		level = 0;
-	} else if (level > 5) {
-		return;
-	}
-	
-	var indent = '';
-	for (var i = 0; i < level; i++) {
-		indent += '  ';
-	}
-	
-	for (var i = obj.firstChild; i != null; i = i.nextSibling) {
-		print(indent + '  ' + i.name);
-		if (i.firstChild) {
-			domdump(i, level + 1);
-		}
-	}
-	
-}
-
-function ddump(obj, level)
-{
-	if (!level) {
-		print('DDUMP');
-		level = 0;
-	} else if (level > 3) {
-		return;
-	}
-	var indent = '';
-	for (var i = 0; i < level; i++) {
-		indent += '  ';
-	}
-  for (var i in obj) {
-		if (typeof(obj[i]) == 'object') {
-			print(indent + '  [' + i + ']: OBJECT');
-			ddump(obj[i], level + 1);
-		} else if (typeof(obj[i]) != "function") {
-      print(indent + "  [" + i + "]: " + obj[i]);
-    }
-  }
 }
 
 
