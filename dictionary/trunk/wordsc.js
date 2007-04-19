@@ -42,7 +42,7 @@ sources.wordsc = {
 		var res = response.match(/Sorry, but /);
 		if (res) {
 			// look for guesses
-			ret += '<p>' + res[0] + '</p>';
+			ret += '<p>Sorry, but the word was not found in our dictionary.</p>';
 			var res = response.match(/Did you mean\.\.\.<br\/><ul>(([^<]|<[^b]|<b[^r]|<br[^\/]|<br\/[^>])*)<br\/>/);
 			if (res) {
 				ret += '<p>Perhaps you made a spelling mistake. Did you mean...</p>';
