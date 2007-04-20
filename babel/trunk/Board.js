@@ -16,6 +16,24 @@ Board.prototype = {
 		return ret;
 	},
 	
+	
+	/**
+	 * getAll()
+	 * Returns an array of all of the objects in the Board and their coordinates.
+	 */
+	getAll: function() {
+		var ret = [], t;
+		for (var row = 0; row < BOARD_WIDTH; row++) {
+			for (var col = 0; col < BOARD_HEIGHT; col++) {
+				if (t = this.get(row, col)) {
+					ret.push({ row: row, col: col, obj: t });
+				}
+			}
+		}
+		return ret;
+	},
+	
+	
 	/**
 	 * get(row, col)
 	 * Gets the object at a partiular row and column

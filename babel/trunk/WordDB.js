@@ -55,7 +55,7 @@ WordDB = {
 	lookup: function(word) {
 		var ret, sql;
 		word = word.replace(' ', '_');
-		sql = 'SELECT COUNT(*) FROM words WHERE word LIKE "' + addSlashes(str) + '"';
+		sql = 'SELECT COUNT(*) FROM words WHERE word LIKE "' + addSlashes(word) + '"';
 		log(sql);
 		var res = this.db.catchQuery(sql);
 		if (res.getColumn(0) >= 0) {

@@ -9,6 +9,7 @@ include('Player.js');
 include('Board.js');
 include('GameState.js');
 include('WordDB.js');
+include('BabelRules.js');
 include('AnimationQueue.js');
 
 
@@ -105,6 +106,32 @@ BabelController = {
 		BabelView.scale = parseInt(preferences.scale.value);
 	},
 	
+	
+	isValidMove: function() {
+		try {
+			if (BabelRules.isValidMove(this.move, this.state.board)) {
+				return true;
+			}
+		} catch (ex) {
+			pdump(ex);
+		}
+		return false;
+	},
+	
+	
+	/**
+	 * endTurn()
+	 * Analyzes the current move and attempts to end it
+	 */
+	endTurn: function() {
+		if (this.isValidMove()) {
+			// adjust score
+			
+			// fill tray
+			
+			// end the turn
+		}
+	},
 	
 	/**
 	 * newMove()
