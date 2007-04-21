@@ -8,9 +8,6 @@
 	<window title="Babel" name="mainWindow" id="mainWindow" width="304" height="304">
 	</window>
 	
-	<window title="Babel" name="statsWindow" id="statsWindow" width="300" height="200" style="background-color: #aaa;">
-	</window>
-	
 	<preference type="popup" name="scale" title="Size:" defaultValue="32">
 		<option>Extra Small</option>
 		<optionValue>16</optionValue>
@@ -22,6 +19,13 @@
 		<optionValue>48</optionValue>
 		<option>Extra Large</option>
 		<optionValue>64</optionValue>
+	</preference>
+	
+	<preference type="popup" name="statsSide" title="Tray Side" defaultValue="right">
+		<option>Left</option>
+		<optionValue>left</optionValue>
+		<option>Right</option>
+		<optionValue>right</optionValue>
 	</preference>
 	
 	<preference type="checkbox" name="challengeMode" title="Enable Challenges" defaultValue="0">

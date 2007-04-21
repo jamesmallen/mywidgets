@@ -1,16 +1,21 @@
 
 include('lib.js');
 
+include('ImageText.js');
+
 include('BabelConstants.js');
 include('Letter.js');
 include('Bag.js');
 include('Tray.js');
 include('Player.js');
 include('Board.js');
+include('GameSetup.js');
 include('GameState.js');
 include('WordDB.js');
 include('BabelRules.js');
 include('AnimationQueue.js');
+include('BabelStats.js');
+include('FadeButton.js');
 
 
 
@@ -27,6 +32,7 @@ include('AnimationQueue.js');
 
 BabelController = {
 	// PROPERTIES
+	setup: null, // GameSetup object
 	state: null, // GameState object
 	
 	stickers: null, // Board object
@@ -37,12 +43,11 @@ BabelController = {
 	 * init()
 	 */
 	init: function() {
+		this.setup = new GameSetup();
 		
 		this.initStickers();
 		
 		this.updateFromPreferences();
-		
-		this.newGame();
 		
 		BabelView.init();
 		BabelView.refresh();
@@ -80,15 +85,18 @@ BabelController = {
 	 * newGame()
 	 * Initializes values to defaults, creates important stuff
 	 */
-	newGame: function() {
-		var numPlayers = Math.min(parseInt(preferences.numPlayers.value) + ((preferences.cpuPlayer.value == 1) ? 1 : 0), 4);
-		this.state = new GameState(parseInt(preferences.numPlayers.value));
+	newGame: function(numPlayers) {
+		numPlayers = Math.min(numPlayers, 4);
+		this.state = new GameState(numPlayers);
 		
 		for (var i in this.state.players) {
 			this.state.players[i].tray.fill(this.state.bag);
 		}
 		
+		BabelView.newGame();
+		
 		this.newMove();
+		BabelView.newMove();
 	},
 	
 	/**
@@ -104,6 +112,8 @@ BabelController = {
 			mainWindow.vOffset -= mainOffsetDiff;
 		}
 		BabelView.scale = parseInt(preferences.scale.value);
+		
+		BabelView.statsSide = preferences.statsSide.value;
 	},
 	
 	
@@ -196,6 +206,8 @@ BabelView = {
 	imagesPath: 'Resources/',
 	
 	// VIEW OBJECTS
+	statsFrame: null,
+	statsWritingFrame: null,
 	boardFrame: null,
 	gridFrame: null,
 	trayFrames: [null, null, null, null],
@@ -209,11 +221,39 @@ BabelView = {
 	 * Make sure that this.scale has been set before calling!
 	 */
 	init: function() {
-		mainWindow.scaleWidth = 19;
+		mainWindow.scaleWidth = 25;
 		mainWindow.scaleHeight = 21.5;
 		
+		// statsFrame
+		log('creating statsFrame');
+		this.statsFrame = new Frame();
+		mainWindow.appendChild(this.statsFrame);
+		
+		var statsBG = new Image();
+		statsBG.scaleSrc = 'StatsBG';
+		statsBG.scaleWidth = 8;
+		statsBG.scaleHeight = 19;
+		this.statsFrame.appendChild(statsBG);
+		
+		var statsLogo = new Image();
+		statsLogo.scaleSrc = 'StatsLogo';
+		statsLogo.scaleWidth = 3.5078125;
+		statsLogo.scaleHeight = 1.03125;
+		statsLogo.hAlign = 'center';
+		statsLogo.scaleHOffset = 4;
+		statsLogo.scaleVOffset = 2.5625;
+		this.statsFrame.appendChild(statsLogo);
+		
+		this.statsWritingFrame = new Frame();
+		this.statsWritingFrame.opacity = 191;
+		this.statsFrame.appendChild(this.statsWritingFrame);
+		
+		this.initStatsUI();
+		
+		// boardFrame
 		this.boardFrame = new Frame();
 		mainWindow.appendChild(this.boardFrame);
+		
 		var board = new Image();
 		board.scaleSrc = 'Board';
 		board.scaleWidth = board.scaleHeight = 19;
@@ -235,6 +275,107 @@ BabelView = {
 		this.initTrays();
 	},
 	
+	/**
+	 * refresh()
+	 * updates positions and all that jazz
+	 */
+	refresh: function() {
+		switch (this.statsSide) {
+			case 'left':
+				this.statsFrame.scaleHOffset = 0;
+				this.boardFrame.scaleHOffset = 6;
+			break;
+			case 'right':
+			default:
+				this.statsFrame.scaleHOffset = 17;
+				this.boardFrame.scaleHOffset = 0;
+			break;
+		}
+		this.drawScaledRecursive(mainWindow);
+	},
+	
+	
+	initStatsUI: function() {
+		this.mainMenuFrame = new Frame();
+		this.statsFrame.appendChild(this.mainMenuFrame);
+		
+		var newGame = makeFadeButton();
+		newGame.scaleSrc = 'Menu/NewGame';
+		newGame.hAlign = 'center';
+		newGame.scaleHOffset = 4;
+		newGame.scaleVOffset = 4.5;
+		newGame.scaleWidth = 4;
+		newGame.scaleHeight = 1.34375;
+		newGame.onClick = function() { BabelView.playersMenuFrame.visible = true; };
+		this.mainMenuFrame.appendChild(newGame);
+		
+		this.playersMenuFrame = new Frame();
+		this.playersMenuFrame.visible = false;
+		this.mainMenuFrame.appendChild(this.playersMenuFrame);
+		
+		this.playerControllers = [];
+		for (var i = 0; i < 4; i++) {
+			var tLabel = new Image();
+			tLabel.scaleSrc = 'Menu/P' + (i + 1) + '_';
+			tLabel.hAlign = 'center';
+			tLabel.scaleWidth = 4;
+			tLabel.scaleHeight = 0.5;
+			tLabel.scaleHOffset = 4;
+			tLabel.scaleVOffset = 6.5 + i;
+			tLabel.opacity = FADEBUTTON_OPACITY;
+			this.playersMenuFrame.appendChild(tLabel);
+			
+			var tButton = makeFadeButton();
+			tButton.hAlign = 'center';
+			tButton.scaleWidth = 4;
+			tButton.scaleHeight = 0.5;
+			tButton.scaleHOffset = 4;
+			tButton.scaleVOffset = 6.5 + i;
+			this.playersMenuFrame.appendChild(tButton);
+			
+		}
+		
+		
+		var help = makeFadeButton();
+		help.scaleSrc = 'Menu/Help';
+		help.hAlign = 'center';
+		help.scaleHOffset = 4;
+		help.scaleVOffset = 16;
+		help.scaleWidth = 4;
+		help.scaleHeight = 0.421875;
+		help.onClick = function() { BabelView.playersMenuFrame.visible = false; BabelView.showHelp(); };
+		this.mainMenuFrame.appendChild(help);
+		
+	},
+	
+	/**
+	 * cyclePlayerController(player)
+	 * Cycles through the possible controllers for a player while in the menu.
+	 */
+	cyclePlayerController: function(player, img) {
+		var newController = BabelController.setup.cycleController(player);
+		img.scaleSrc = BabelView.getControllerSrc(player);
+		BabelView.drawScaledRecursive(img);
+	},
+	
+	
+	/**
+	 * getControllerSrc(player)
+	 */
+	getControllerSrc: function(player) {
+		switch (BabelController.setup.getController(player)) {
+			case 'human':
+				return 'Menu/Human';
+				break;
+			case 'cpu':
+				return 'Menu/CPU';
+				break;
+			case null:
+			default:
+				return 'Menu/Out';
+				break;
+		}
+	},
 	
 	/**
 	 * initTrays()
@@ -244,7 +385,7 @@ BabelView = {
 		for (var i in this.trayFrames) {
 			this.trayFrames[i] = new Frame;
 			this.trayFrames[i].opacity = 0;
-			mainWindow.appendChild(this.trayFrames[i]);
+			this.boardFrame.appendChild(this.trayFrames[i]);
 			
 			var tray = new Image();
 			tray.scaleSrc = 'Tray';
@@ -655,11 +796,6 @@ BabelView = {
 	}, 	
 	
 	
-	refresh: function() {
-		this.drawScaledRecursive(mainWindow);
-	},
-	
-	
 	/**
 	 * drawScaledRecursive
 	 */
@@ -680,12 +816,12 @@ BabelView = {
 			}
 		}
 		for (var i in this.drawScaledRecursive.multiplyAttribs) {
-			if (container[i]) {
+			if (typeof(container[i]) != 'undefined') {
 				container[this.drawScaledRecursive.multiplyAttribs[i]] = multiplier * this.scale * container[i];
 			}
 		}
 		for (var i in this.drawScaledRecursive.attribs) {
-			if (container[i]) {
+			if (typeof(container[i]) != 'undefined') {
 				container[this.drawScaledRecursive.attribs[i]] = this.scale * container[i];
 			}
 		}
@@ -714,7 +850,7 @@ BabelView = {
 		if (typeof(this.scaledSrc.cache[name][idealSize]) == 'undefined') {
 			// get all potential files for this type
 			var curSrc, curSize, bestSize = 0, matchRE = new RegExp('^' + name + '(\\d+)\\.png$', 'i');
-			var dh = filesystem.getDirectoryContents(this.imagesPath);
+			var dh = filesystem.getDirectoryContents(this.imagesPath, true);
 			
 			for (var i in dh) {
 				var res = dh[i].match(matchRE);
@@ -731,6 +867,15 @@ BabelView = {
 		}
 		
 		return this.scaledSrc.cache[name][idealSize];
+	},
+	
+	
+	/**
+	 * showHelp()
+	 * Shows playing help/rules to the user
+	 */
+	showHelp: function() {
+		alert('Help is on the way!');
 	}
 };
 
@@ -752,7 +897,7 @@ widget.onPreferencesChanged = function() {
 
 
 
-widget.onPreferencesChanged();
+BabelController.updateFromPreferences();
 
 
 // after interface elements have been created, update the DB
@@ -765,8 +910,5 @@ BabelController.init();
 
 ct = BabelController;
 vw = BabelView;
-
-vw.trayFrames[0].opacity = 255;
-vw.drawTray(0);
 
 
