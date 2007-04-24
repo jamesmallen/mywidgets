@@ -1,23 +1,41 @@
-/**
- * Error Numbers
- */
-
 
 /**
  * BabelRules singleton
- * Functions for scoring and checking validity of moves
+ * Functions for scoring and checking validity of Plays
  */
 BabelRules = {
-	isValidMove: function(move, board) {
-		var moveAll = move.getAll();
+	isValidPlay: function(play) {
+		var playInfo;
 		
-		if (moveAll.length <= 0) {
-			throw new InvalidMove(MOVE_EMPTY);
+		if (play.getAll().length == 0) {
+			throw new InvalidPlay(PLAY_EMPTY);
 		}
 		
-		if (!BabelRules.isStraightLine(moveAll)) {
-			throw new InvalidMove(MOVE_CROOKED);
+		playInfo = play.getInfo();
+		
+		if (!playInfo.direction || !playInfo.continuous) {
+			throw new InvalidPlay(PLAY_CROOKED);
 		}
+		
+		if (playInfo.words.length == 0) {
+			throw new InvalidPlay(PLAY_EMPTY);
+		}
+		
+		var words = playInfo.words;
+		if (play.board.getAll().length > 0) {
+			var usesExisting = false;
+			for (var i in words) {
+				for (var j in words[i].letters) {
+					if (words[i].letters[j].existingLetter) {
+						usesExisting = true;
+					}
+				}
+			}
+			if (!usesExisting) {
+				throw new InvalidPlay(PLAY_DISCONNECTED);
+			}
+		}
+		
 		
 		
 		
@@ -25,56 +43,40 @@ BabelRules = {
 	},
 	
 	
-	
-	
-	
 	/**
-	 * isStraightLine(moveAll)
-	 * Determines if a move is in a straight line
-	 * startRow / startCol may be specified to speed up detection
+	 * calculate score for a play
 	 */
-	isStraightLine: function(moveAll) {
-		var letter, moveRow = null, moveCol = null, vertical = true, horizontal = true;
-		
-		for (var i in moveAll) {
-			if (moveRow == null) {
-				moveRow = moveAll[i].row;
-			} else if (moveRow != moveAll[i].row) {
-				horizontal = false;
-			}
-			if (moveCol == null) {
-				moveCol = moveAll[i].col;
-			} else if (moveCol != moveAll[i].col) {
-				vertical = false;
-			}
-			
-			if (!vertical && !horizontal) {
-				return false;
-			}
-		}
-		
-		return true;
+	scoreWord: function(wordAll) {
+		var totalScore = 0;
 	}
-}
-
-
-function InvalidMove(code) {
-	this.code = code;
 	
-	if (InvalidMove.messages[code]) {
-		this.message = InvalidMove.messages[code];
-	} else {
-		this.message = code;
-	}
 }
 
 
+function InvalidPlay(code) {
+	var message;
+	if (InvalidPlay.messages[code]) {
+		message = InvalidPlay.messages[code];
+	} else {
+		message = code;
+	}
+	
+	Error.apply(this, [message]);
+	
+	this.code = code;
+	this.message = message;
+}
 
-const MOVE_EMPTY = 1;
-const MOVE_CROOKED = 2;
+InvalidPlay.prototype = new Error();
+InvalidPlay.prototype.constructor = InvalidPlay;
+
+const PLAY_EMPTY = 1;
+const PLAY_CROOKED = 2;
+const PLAY_DISCONNECTED = 3;
 
 
-InvalidMove.messages = {
-	1: 'MOVE_EMPTY - No letters found in move',
-	2: 'MOVE_CROOKED - Move is not in a straight line'
+InvalidPlay.messages = {
+	1: 'PLAY_EMPTY - No letters found in play',
+	2: 'PLAY_CROOKED - Play is not in a continuous straight line',
+	3: 'PLAY_DISCONNECTED - Play is not connected to any pre-existing letters'
 }

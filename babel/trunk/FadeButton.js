@@ -1,12 +1,17 @@
-const FADEBUTTON_OPACITY = 120;
-const FADEBUTTON_OPACITY_OVER = 190;
+const FADEBUTTON_OPACITY = 180;
+const FADEBUTTON_OPACITY_OVER = 240;
 const FADEBUTTON_OPACITY_CLICK = 255;
-const FADEBUTTON_OPACITY_DISABLED = 70;
+const FADEBUTTON_OPACITY_DISABLED = 60;
 
 const FADEBUTTON_DURATION = 240;
 const FADEBUTTON_EASETYPE = animator.kEaseOut;
 
-function makeFadeButton() {
+/**
+ * makeFadeButton
+ * Returns an Image object with special mouse handlers set for
+ * use with a button with "hover"-type states
+ */
+function makeFadeButton(params, parent) {
 	var ret = new Image();
 	ret.disabled = false;
 	ret.mouseOver = false;
@@ -67,6 +72,18 @@ function makeFadeButton() {
 	ret.onMouseDown = FadeButton.onMouseDown;
 	ret.onMouseUp = FadeButton.onMouseUp;
 	
+	
+	if (typeof(parent) == 'object' && parent.appendChild) {
+		parent.appendChild(ret);
+	}
+	
+	// override defaults with any passed-in params
+	if (typeof(params) == 'object') {
+		for (var p in params) {
+			ret[p] = params[p];
+		}
+	}
+	
 	return ret;
 	
 }
@@ -103,9 +120,9 @@ FadeButton = {
 				this.onClickInternal();
 			}
 		}
-		if (this.mouseOver) {
+		if (this.mouseOver && this.onMouseEnter) {
 			this.onMouseEnter();
-		} else {
+		} else if (this.onMouseExit) {
 			this.onMouseExit();
 		}
 		this.mouseDown = false;

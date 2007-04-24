@@ -11,7 +11,7 @@ function GameSetup() {
 GameSetup.controllers = [
 	null,
 	'human',
-	'cpu'
+	'simple'
 ];
 
 GameSetup.prototype = {
@@ -21,6 +21,10 @@ GameSetup.prototype = {
 	// PUBLIC METHODS
 	cycleController: function(player) {
 		this.players[player] = (this.players[player] + 1) % GameSetup.controllers.length;
+		if (this.players[player] == 0 && this.players[player + 1] > 0) {
+			// prevent "out" from being selected if there are filled slots below
+			this.players[player]++;
+		}
 		return this.getController(player);
 	},
 	

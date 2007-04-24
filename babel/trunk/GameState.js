@@ -3,6 +3,7 @@
  */
 
 // CONSTRUCTOR
+// GameState(numPlayers)
 function GameState(numPlayers) {
 	if (typeof(numPlayers) == 'object' && numPlayers instanceof GameState) {
 		// COPY CONSTRUCTOR
@@ -14,7 +15,7 @@ function GameState(numPlayers) {
 	
 	this.players = [];
 	for (var i = 0; i < numPlayers; i++) {
-		this.players.push(new Player());
+		this.players[i] = new Player();
 	}
 	
 	this.bag = new Bag();
@@ -30,16 +31,19 @@ GameState.prototype = {
 	previousState: null,
 	nextState: null,
 	currentPlayer: 0,
+	firstPasser: null,
 	
 	
 	// PUBLIC METHODS
 	copy: function() {
-		var ret = new GameState(this.players.length);
+		var ret = new GameState();
 		ret.board = this.board.copy();
 		for (var i in this.players) {
 			ret.players[i] = this.players[i].copy();
 		}
 		ret.bag = this.bag.copy();
+		ret.currentPlayer = this.currentPlayer;
+		ret.firstPasser = this.firstPasser;
 		
 		return ret;
 	},
@@ -55,8 +59,8 @@ GameState.prototype = {
 		this.nextState = null;
 	},
 	
-	stepForward: function(forceNew) {
-		if (forceNew) {
+	stepForward: function(redo) {
+		if (!redo) {
 			this.eraseFuture();
 		}
 		if (!this.nextState) {

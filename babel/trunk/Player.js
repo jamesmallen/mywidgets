@@ -10,6 +10,7 @@ Player.prototype = {
 	tray: null,
 	score: 0,
 	loseNextTurn: false,
+	passedLastTurn: false,
 	
 	// PUBLIC METHODS
 	copy: function() {

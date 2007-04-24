@@ -32,15 +32,7 @@
 		<description>By default, challenges are off and all words are checked against the ENABLE word list. If you would like to be required to call out challenges, check this box.</description>
 	</preference>
 	
-	<preference type="popup" name="numPlayers" title="Human Players:" defaultValue="1">
-		<option>1</option>
-		<option>2</option>
-		<option>3</option>
-		<option>4</option>
-	</preference>
-	
-	<preference type="checkbox" name="cpuPlayer" title="Play against CPU" defaultValue="1">
-		<description>If you wish to play against the computer and you are playing with 3 or less human players, check this box. Babel can not be played with more than 4 players total.</description>
+	<preference name="lastGameSetup" defaultValue="1,2,0,0" hidden="true">
 	</preference>
 	
 	<script src="Babel.js"></script>

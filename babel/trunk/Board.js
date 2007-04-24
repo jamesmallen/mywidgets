@@ -17,6 +17,14 @@ Board.prototype = {
 	},
 	
 	
+	merge: function(board) {
+		var t = board.getAll();
+		for (var i in t) {
+			this.put(t[i].row, t[i].col, t[i].obj);
+		}
+	},
+	
+	
 	/**
 	 * getAll()
 	 * Returns an array of all of the objects in the Board and their coordinates.
@@ -86,7 +94,7 @@ Board.prototype = {
 			for (var row = 0; row < BOARD_HEIGHT; row++) {
 				for (var col = 0; col < BOARD_WIDTH; col++) {
 					if (this.get(row, col).toString() == q) {
-						return { row: row, col: col };
+						return { row: row, col: col, obj: obj };
 					}
 				}
 			}
@@ -94,7 +102,7 @@ Board.prototype = {
 			for (var row = 0; row < BOARD_HEIGHT; row++) {
 				for (var col = 0; col < BOARD_WIDTH; col++) {
 					if (this.get(row, col) == obj) {
-						return { row: row, col: col };
+						return { row: row, col: col, obj: obj };
 					}
 				}
 			}

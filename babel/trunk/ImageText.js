@@ -30,21 +30,15 @@ function ImageText(params, parent) {
 			return;
 		}
 		var tHOffset = 0;
-		log('refresh');
+		this.data = this.data.toString();
 		for (var i = 0; i < this.data.length; i++) {
 			var letter = this.data[i];
-			log('adding letter ' + letter);
 			var t = new Image();
 			var newSrc = this.src.replace('*', escape(letter));
-			log('newSrc: ' + newSrc);
 			t.src = newSrc;
-			log('new width: ' + (t.srcWidth * this.scaleMultiplier));
 			t.width = t.srcWidth * this.scaleMultiplier;
-			log('new height: ' + (t.srcHeight * this.scaleMultiplier));
 			t.height = t.srcHeight * this.scaleMultiplier;
-			log('new hOffset: ' + tHOffset);
 			t.hOffset = tHOffset;
-			log('done');
 			this.frame.appendChild(t);
 			
 			if (this.letterSpacing < 0) {
@@ -90,9 +84,9 @@ function ImageText(params, parent) {
 	
 }
 
-ImageText.propertiesFrame = ['colorize', 'hAlign', 'onClick', 'onContextMenu', 'onDragDrop', 'onDragEnter', 'onDragExit', 'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel', 'onMultiClick', 'opacity', 'style', 'tooltip', 'tracking', 'vAlign', 'visible', 'zOrder'];
+ImageText.propertiesFrame = ['colorize', 'hAlign', 'onClick', 'onContextMenu', 'onDragDrop', 'onDragEnter', 'onDragExit', 'onMouseDown', 'onMouseDrag', 'onMouseEnter', 'onMouseExit', 'onMouseMove', 'onMouseUp', 'onMouseWheel', 'onMultiClick', 'opacity', 'scaleHOffset', 'scaleVOffset', 'style', 'tooltip', 'tracking', 'vAlign', 'visible', 'zOrder'];
 
-ImageText.propertiesRefresh = ['letterSpacing', 'data', 'src', 'scale'];
+ImageText.propertiesRefresh = ['letterSpacing', 'data', 'src', 'scaleMultiplier'];
 
 
 ImageText.prototype = {

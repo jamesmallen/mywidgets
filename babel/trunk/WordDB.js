@@ -58,7 +58,7 @@ WordDB = {
 		sql = 'SELECT COUNT(*) FROM words WHERE word LIKE "' + addSlashes(word) + '"';
 		log(sql);
 		var res = this.db.catchQuery(sql);
-		if (res.getColumn(0) >= 0) {
+		if (res.getColumn(0) >= 1) {
 			ret = true;
 		} else {
 			ret = false;
@@ -67,6 +67,47 @@ WordDB = {
 		return ret;
 	},
 	
+	
+	/**
+	 * find(pattern, limit)
+	 * find(pattern)
+	 */
+	find: function(pattern, limit) {
+		if (!limit) {
+			limit = 50;
+		}
+		
+		var whereStr;
+		
+		if (pattern instanceof Array) {
+			whereStr = [];
+			for (var i in pattern) {
+				whereStr.push('word LIKE "' + addSlashes(pattern[i]) + '"');
+			}
+			whereStr = whereStr.join(' OR ');
+		} else {
+			whereStr = 'word LIKE "' + addSlashes(pattern) + '"';
+		}
+		
+		var ret = [], sql, t;
+		
+		log('start query');
+		
+		sql = 'SELECT * FROM words WHERE ' + whereStr + ' LIMIT ' + limit;
+		// sql = 'SELECT COUNT(*) FROM words WHERE word LIKE "' + addSlashes(pattern) + '" LIMIT ' + limit;
+		log(sql);
+		var res = this.db.catchQuery(sql);
+		
+		while ((t = res.getRow()) != null) {
+			ret.push(t['word']);
+		}
+		
+		log('end query');
+		
+		// ret = res.getColumn(0);
+		res.dispose();
+		return ret;
+	},
 	
 	/**
 	 * add(words, wipe)

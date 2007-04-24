@@ -16,8 +16,8 @@ include('BabelRules.js');
 include('AnimationQueue.js');
 include('BabelStats.js');
 include('FadeButton.js');
-
-
+include('BabelAI.js');
+include('BabelPlay.js');
 
 
 
@@ -36,7 +36,7 @@ BabelController = {
 	state: null, // GameState object
 	
 	stickers: null, // Board object
-	move: null,  // Board object
+	play: null,  // Board object
 	
 	// METHODS
 	/**
@@ -44,6 +44,7 @@ BabelController = {
 	 */
 	init: function() {
 		this.setup = new GameSetup();
+		this.setup.fromString(preferences.lastGameSetup.value);
 		
 		this.initStickers();
 		
@@ -81,23 +82,50 @@ BabelController = {
 		
 	},
 	
+	
+	backToMainMenu: function() {
+		this.init();
+	},
+	
+	
 	/**
 	 * newGame()
 	 * Initializes values to defaults, creates important stuff
 	 */
-	newGame: function(numPlayers) {
-		numPlayers = Math.min(numPlayers, 4);
-		this.state = new GameState(numPlayers);
+	newGame: function() {
+		this.state = new GameState();
 		
-		for (var i in this.state.players) {
-			this.state.players[i].tray.fill(this.state.bag);
+		for (var i in this.setup.players) {
+			if (this.setup.getController(i)) {
+				this.state.players[i] = new Player();
+			}
+		}
+		
+		this.state.currentPlayer = this.pickStartingPlayer();
+		alert('Player ' + parseInt(this.state.currentPlayer + 1) + ' will go first.');
+		
+		for (var i = 0; i < this.state.players.length; i++) {
+			this.state.players[(i + this.state.currentPlayer) % this.state.players.length].tray.fill(this.state.bag);
 		}
 		
 		BabelView.newGame();
 		
-		this.newMove();
-		BabelView.newMove();
+		this.newPlay();
+		
 	},
+	
+	getNextPlayer: function(p) {
+		if (typeof(p) == 'undefined') {
+			p = this.state.currentPlayer;
+		}
+		return (p + 1) % this.state.players.length;
+	},
+	
+	
+	pickStartingPlayer: function() {
+		return random(0, this.state.players.length);
+	},
+	
 	
 	/**
 	 * updateFromPreferences()
@@ -117,13 +145,15 @@ BabelController = {
 	},
 	
 	
-	isValidMove: function() {
+	isValidPlay: function(debug) {
 		try {
-			if (BabelRules.isValidMove(this.move, this.state.board)) {
+			if (BabelRules.isValidPlay(this.play)) {
 				return true;
 			}
 		} catch (ex) {
-			pdump(ex);
+			if (debug) {
+				pdump(ex);
+			}
 		}
 		return false;
 	},
@@ -131,54 +161,127 @@ BabelController = {
 	
 	/**
 	 * endTurn()
-	 * Analyzes the current move and attempts to end it
+	 * Analyzes the current play and attempts to end it
 	 */
 	endTurn: function() {
-		if (this.isValidMove()) {
+		if (this.isValidPlay(true)) {
+			log('play is valid!');
+			
+			var playInfo = this.play.getInfo();
+			
+			// move to the next state
+			this.state = this.state.stepForward();
+			
+			log('Playing ' + this.play);
+			// modify board
+			this.state.board.merge(this.play);
+			BabelView.drawBoard();
+			
+			
 			// adjust score
+			// TODO
+			this.state.players[this.state.currentPlayer].score += 20;
 			
 			// fill tray
+			this.state.players[this.state.currentPlayer].tray.fill(this.state.bag);
 			
 			// end the turn
+			this.state.firstPasser = null;
+			this.nextPlayer();
 		}
 	},
 	
-	/**
-	 * newMove()
-	 * Initializes things for a new move.
-	 */
-	newMove: function() {
-		this.move = new Board();
+	nextPlayer: function() {
+		this.state.currentPlayer = this.getNextPlayer();
+		this.newPlay();
+		
+	},
+	
+	
+	pass: function() {
+		log('player[' + this.state.currentPlayer + '] passing - last passer = ' + this.state.firstPasser);
+		this.state = this.state.stepForward();
+		if (this.state.firstPasser == this.state.currentPlayer || this.state.players.length == 1) {
+			if (this.state.board.getAll.length == 0) {
+				alert('All players have passed on the first turn - restarting game.');
+				this.newGame();
+			} else {
+				alert('All players have passed - ending game.');
+				this.endGame();
+			}
+		} else if (this.state.firstPasser == null) {
+			this.state.firstPasser = this.state.currentPlayer;
+		}
+		
+		this.nextPlayer();
 	},
 	
 	/**
-	 * addToMove(letter, row, col)
-	 * Attempts to add a letter to the current move.
+	 * newPlay()
+	 * Initializes things for a new play.
+	 */
+	newPlay: function() {
+		this.play = new BabelPlay(this.state.board);
+		
+		var curController = this.setup.getController(this.state.currentPlayer);
+		
+		if (curController == 'human') {
+			// hand off control to the view
+			BabelView.newPlay();
+		} else if (BabelAI[curController]) {
+			var AI = new BabelAI[curController](this.state.board, this.state.players[this.state.currentPlayer].tray);
+			AI.makePlay(this.play);
+ 		} else {
+			log('uh oh - a controller-less player is in the game!');
+			throw new Error('Controller error');
+		}
+		
+	},
+	
+	/**
+	 * addToPlay(letter, row, col)
+	 * Attempts to add a letter to the current play.
 	 * Returns true if the letter was added, or false if it was not.
 	 */
-	addToMove: function(letter, row, col) {
+	addToPlay: function(letter, row, col) {
 		// make sure the space is unoccupied
-		if (!(this.move.get(row, col)) && !(this.state.board.get(row, col))) {
-			// remove the letter if it's currently on the Move board or in the tray
+		try {
+			if (this.play.get(row, col, true)) {
+				return false;
+			} else {
+				this.state.players[this.state.currentPlayer].tray.remove(letter);
+				this.play.remove(letter);
+				this.play.put(row, col, letter);
+			}
+		} catch (ex) {
+			pdump(ex);
+		}
+		
+		return true;
+		
+		/*
+		if (!(this.play.get(row, col)) && !(this.state.board.get(row, col))) {
+			// remove the letter if it's currently on the Play board or in the tray
 			this.state.players[this.state.currentPlayer].tray.remove(letter);
-			this.move.remove(letter);
+			this.play.remove(letter);
 			// add it at the correct location
-			this.move.put(row, col, letter);
+			this.play.put(row, col, letter);
 			return true;
 		} else {
 			return false;
 		}
+		*/
 	},
 	
 	
 	/**
-	 * removeFromMove(letter)
-	 * Removes the specified Letter from the current move.
+	 * removeFromPlay(letter)
+	 * Removes the specified Letter from the current play.
 	 * Returns true if the Letter was removed, or false if the Letter 
-	 * was not in the move to begin with.
+	 * was not in the play to begin with.
 	 */
-	removeFromMove: function(letter) {
-		if (this.move.remove(letter)) {
+	removeFromPlay: function(letter) {
+		if (this.play.remove(letter)) {
 			// add it back into the tray
 			this.state.players[this.state.currentPlayer].tray.put(letter);
 			return true;
@@ -211,7 +314,7 @@ BabelView = {
 	boardFrame: null,
 	gridFrame: null,
 	trayFrames: [null, null, null, null],
-	moveFrames: [null, null, null, null],
+	playFrames: [null, null, null, null],
 	
 	
 	// METHODS
@@ -221,11 +324,25 @@ BabelView = {
 	 * Make sure that this.scale has been set before calling!
 	 */
 	init: function() {
+		// clear things out
+		emptyFrame(mainWindow);
+		
+		// Build context menu
+		var cxt = [];
+		var tItem = new MenuItem();
+		tItem.title = 'Back to Main Menu';
+		tItem.onSelect = function() {
+			if (1 == alert('Are you sure you want to go back to the Main Menu? This will end any game in progress.', 'Yes', 'No')) {
+				BabelController.backToMainMenu();
+			}
+		};
+		cxt.push(tItem);
+		mainWindow.contextMenuItems = cxt;
+		
 		mainWindow.scaleWidth = 25;
 		mainWindow.scaleHeight = 21.5;
 		
 		// statsFrame
-		log('creating statsFrame');
 		this.statsFrame = new Frame();
 		mainWindow.appendChild(this.statsFrame);
 		
@@ -292,28 +409,91 @@ BabelView = {
 			break;
 		}
 		this.drawScaledRecursive(mainWindow);
+		this.updateScores();
+	},
+	
+	
+	showMenu: function() {
+		this.fadeStatsFrames(this.mainMenuFrame);
+	},
+	
+	showScores: function() {
+		this.fadeStatsFrames(this.scoresFrame);
+	},
+	
+	fadeStatsFrames: function(activeFrame) {
+		var anms = [];
+		for (var i = this.statsFrame.firstChild; i != null; i = i.nextSibling) {
+			if (i instanceof Frame && i != activeFrame && i.opacity > 0) {
+				anms.push(new FadeAnimation(i, 0, STATS_FADE_DURATION));
+			}
+		}
+		anms.push(new FadeAnimation(activeFrame, 255, STATS_FADE_DURATION));
+		animator.start(anms);
+	},
+	
+	fadeTrayFrames: function(activeFrame) {
+		var anms = [];
+		for (var i in this.trayFrames) {
+			if (i instanceof Frame && i != activeFrame && i.opacity > 0) {
+				anms.push(new FadeAnimation(i, 0, TRAY_FADE_DURATION));
+			}
+		}
+		if (activeFrame) {
+			anms.push(new FadeAnimation(activeFrame, 255, TRAY_FADE_DURATION));
+		}
+		animator.start(anms);
+	},
+	
+	
+	updateScores: function() {
+		emptyFrame(this.scoreDigitsFrame);
+		if (BabelController.state) {
+			for (var i = 0; i < BabelController.state.players.length; i++) {
+				this.scoreLabels[i].visible = true;
+				
+				tScore = new ImageText({src: 'Resources/ScoreDigits/*.png', scaleHOffset: 4.0, scaleVOffset: 6.575 + i}, this.scoreDigitsFrame);
+				tScore.scaleMultiplier = 0.5 * (this.scale / 64);
+				tScore.data = BabelController.state.players[i].score;
+			}
+			for (; i < this.scoreLabels.length; i++) {
+				this.scoreLabels[i].visible = false;
+			}
+			this.curPlayerLabel.scaleVOffset = 6.5 + (1 * BabelController.state.currentPlayer);
+		}
+		this.drawScaledRecursive(this.scoresFrame);
 	},
 	
 	
 	initStatsUI: function() {
 		this.mainMenuFrame = new Frame();
+		this.mainMenuFrame.opacity = 0;
 		this.statsFrame.appendChild(this.mainMenuFrame);
 		
-		var newGame = makeFadeButton();
+		this.scoresFrame = new Frame();
+		this.scoresFrame.opacity = 0;
+		this.statsFrame.appendChild(this.scoresFrame);
+		
+		this.scoreDigitsFrame = new Frame();
+		this.scoreDigitsFrame.opacity = FADEBUTTON_OPACITY;
+		this.scoresFrame.appendChild(this.scoreDigitsFrame);
+		
+		
+		var newGame = new Image();
+		newGame.opacity = FADEBUTTON_OPACITY;
 		newGame.scaleSrc = 'Menu/NewGame';
 		newGame.hAlign = 'center';
 		newGame.scaleHOffset = 4;
 		newGame.scaleVOffset = 4.5;
 		newGame.scaleWidth = 4;
 		newGame.scaleHeight = 1.34375;
-		newGame.onClick = function() { BabelView.playersMenuFrame.visible = true; };
 		this.mainMenuFrame.appendChild(newGame);
 		
 		this.playersMenuFrame = new Frame();
-		this.playersMenuFrame.visible = false;
 		this.mainMenuFrame.appendChild(this.playersMenuFrame);
 		
-		this.playerControllers = [];
+		this.scoreLabels = [];
+		
 		for (var i = 0; i < 4; i++) {
 			var tLabel = new Image();
 			tLabel.scaleSrc = 'Menu/P' + (i + 1) + '_';
@@ -325,16 +505,42 @@ BabelView = {
 			tLabel.opacity = FADEBUTTON_OPACITY;
 			this.playersMenuFrame.appendChild(tLabel);
 			
+			this.scoreLabels[i] = new Image();
+			this.scoreLabels[i].scaleSrc = 'Menu/P' + (i + 1) + '_';
+			this.scoreLabels[i].hAlign = 'center';
+			this.scoreLabels[i].scaleWidth = 4;
+			this.scoreLabels[i].scaleHeight = 0.5;
+			this.scoreLabels[i].scaleHOffset = 4.5;
+			this.scoreLabels[i].scaleVOffset = 6.5 + i;
+			this.scoreLabels[i].opacity = FADEBUTTON_OPACITY;
+			this.scoresFrame.appendChild(this.scoreLabels[i]);
+			
 			var tButton = makeFadeButton();
 			tButton.hAlign = 'center';
+			tButton.player = i;
 			tButton.scaleWidth = 4;
 			tButton.scaleHeight = 0.5;
 			tButton.scaleHOffset = 4;
 			tButton.scaleVOffset = 6.5 + i;
+			tButton.scaleSrc = this.getControllerSrc(i);
+			tButton.onClick = function() {
+				BabelView.cyclePlayerController(this.player);
+			};
 			this.playersMenuFrame.appendChild(tButton);
 			
 		}
 		
+		this.startButton = makeFadeButton();
+		this.startButton.hAlign = 'center';
+		this.startButton.scaleWidth = 4;
+		this.startButton.scaleHeight = 0.453125;
+		this.startButton.scaleHOffset = 4;
+		this.startButton.scaleVOffset = 10.75;
+		this.startButton.scaleSrc = 'Menu/Start';
+		this.startButton.onClick = function() {
+			BabelController.newGame();
+		}
+		this.playersMenuFrame.appendChild(this.startButton);
 		
 		var help = makeFadeButton();
 		help.scaleSrc = 'Menu/Help';
@@ -346,16 +552,114 @@ BabelView = {
 		help.onClick = function() { BabelView.playersMenuFrame.visible = false; BabelView.showHelp(); };
 		this.mainMenuFrame.appendChild(help);
 		
+		this.updatePlayerControllers();
+		
+		
+		this.curPlayerLabel = new Image();
+		this.curPlayerLabel.scaleSrc = 'Menu/PArrow';
+		this.curPlayerLabel.scaleWidth = 0.25;
+		this.curPlayerLabel.scaleHeight = 0.5;
+		this.curPlayerLabel.scaleHOffset = 2.25;
+		this.curPlayerLabel.scaleVOffset = 6.5;
+		this.curPlayerLabel.opacity = FADEBUTTON_OPACITY;
+		this.scoresFrame.appendChild(this.curPlayerLabel);
+		
+		
+		this.challengeButton = makeFadeButton({
+			scaleSrc: 'Menu/Challenge',
+			hAlign: 'center',
+			scaleHOffset: 4,
+			scaleVOffset: 11.5,
+			scaleWidth: 4,
+			scaleHeight: 0.390625,
+			onClick: function() {
+				if (1 == alert('Would you like to challenge the last play?', 'Yes', 'No')) {
+					BabelController.challenge();
+				}
+			}
+		}, this.scoresFrame);
+		
+		this.exchangeButton = makeFadeButton({
+			scaleSrc: 'Menu/Exchange',
+			hAlign: 'center',
+			scaleHOffset: 4,
+			scaleVOffset: 12.5,
+			scaleWidth: 4,
+			scaleHeight: 0.453125,
+			onClick: function() {
+				if (1 == alert('Would you like to exchange your 7 letters for 7 letters in the bag?', 'Yes', 'No')) {
+					BabelController.challenge();
+				}
+			}
+		}, this.scoresFrame);
+		
+		this.passButton = makeFadeButton({
+			scaleSrc: 'Menu/Pass',
+			hAlign: 'center',
+			scaleHOffset: 4,
+			scaleVOffset: 13.5,
+			scaleWidth: 4,
+			scaleHeight: 0.453125,
+			onClick: function() {
+				if (1 == alert('Are you sure you want to pass?', 'Yes', 'No')) {
+					BabelController.pass();
+				}
+			}
+		}, this.scoresFrame);
+		
+		this.endTurnButton = makeFadeButton();
+		this.endTurnButton.scaleSrc = 'Menu/EndTurn';
+		this.endTurnButton.hAlign = 'center';
+		this.endTurnButton.scaleHOffset = 4;
+		this.endTurnButton.scaleVOffset = 15.5;
+		this.endTurnButton.scaleWidth = 4;
+		this.endTurnButton.scaleHeight = 1.328125;
+		this.endTurnButton.onClick = function() { BabelController.endTurn(); };
+		this.endTurnButton.disabled = true;
+		this.scoresFrame.appendChild(this.endTurnButton);
+		
+		
+		this.showMenu();
+		
 	},
 	
 	/**
 	 * cyclePlayerController(player)
 	 * Cycles through the possible controllers for a player while in the menu.
 	 */
-	cyclePlayerController: function(player, img) {
-		var newController = BabelController.setup.cycleController(player);
-		img.scaleSrc = BabelView.getControllerSrc(player);
-		BabelView.drawScaledRecursive(img);
+	cyclePlayerController: function(player) {
+		BabelController.setup.cycleController(player);
+		this.updatePlayerControllers();
+	},
+	
+	updatePlayerControllers: function() {
+		var disableLater = false;
+		for (var i = this.playersMenuFrame.firstChild; i != null; i = i.nextSibling) {
+			if (typeof(i.player) != 'undefined') {
+				if (disableLater) {
+					i.disabled = true;
+				} else {
+					i.scaleSrc = BabelView.getControllerSrc(i.player);
+					i.disabled = false;
+					if (i.scaleSrc == 'Menu/Out') {
+						disableLater = true;
+					}
+				}
+			}
+		}
+		this.drawScaledRecursive(this.playersMenuFrame);
+		var startDisabled = true;
+		for (var i = 0; i < 4; i++) {
+			if (BabelController.setup.getController(i)) {
+				startDisabled = false;
+				break;
+			}
+		}
+		if (startDisabled) {
+			this.startButton.disabled = true;
+		} else {
+			this.startButton.disabled = false;
+		}
 	},
 	
 	
@@ -367,7 +671,7 @@ BabelView = {
 			case 'human':
 				return 'Menu/Human';
 				break;
-			case 'cpu':
+			case 'simple':
 				return 'Menu/CPU';
 				break;
 			case null:
@@ -379,7 +683,7 @@ BabelView = {
 	
 	/**
 	 * initTrays()
-	 * Sets up the trayFrames and moveFrames. Initial opacity of all trayFrames is 0.
+	 * Sets up the trayFrames and playFrames. Initial opacity of all trayFrames is 0.
 	 */
 	initTrays: function() {
 		for (var i in this.trayFrames) {
@@ -440,8 +744,8 @@ BabelView = {
 			this.trayFrames[i].appendChild(sortRandomButton);
 			
 			
-			this.moveFrames[i] = new Frame;
-			this.trayFrames[i].appendChild(this.moveFrames[i]);
+			this.playFrames[i] = new Frame;
+			this.trayFrames[i].appendChild(this.playFrames[i]);
 		}
 	},
 	
@@ -512,21 +816,22 @@ BabelView = {
 		var board = BabelController.state.board;
 		var letter;
 		
-		for (var row = 0; i < BOARD_HEIGHT; i++) {
-			for (var col = 0; j < BOARD_WIDTH; j++) {
+		for (var row = 0; row < BOARD_HEIGHT; row++) {
+			for (var col = 0; col < BOARD_WIDTH; col++) {
 				letter = board.get(row, col);
 				if (letter) {
 					this.initLetter(letter);
-					var attribs = alignLetterOnBoard(letter, row, col);
+					this.gridFrame.appendChild(letter.image);
+					var attribs = this.alignLetterOnBoard(letter, row, col);
 					for (var a in attribs) {
 						letter.image[a] = attribs[a];
 					}
-					gridFrame.appendChild(letter.image);
+					letter.image.onMouseUp = letter.image.onMouseDown = letter.image.onMouseDrag = null;
 				}
 			}
 		}
 		
-		this.drawScaledRecursive(gridFrame);
+		this.drawScaledRecursive(this.gridFrame);
 		
 		/*
 		
@@ -535,6 +840,21 @@ BabelView = {
 		}
 		
 		*/
+	},
+	
+	/**
+	 * Called to initialize view info for a new game
+	 */
+	newGame: function() {
+		this.showScores();
+		this.drawBoard();
+	},
+	
+	newPlay: function() {
+		this.endTurnButton.disabled = true;
+		this.drawTray();
+		this.fadeTrayFrames(this.trayFrames[BabelController.state.currentPlayer]);
+		this.updateScores();
 	},
 	
 	
@@ -552,7 +872,7 @@ BabelView = {
 		var tray = BabelController.state.players[id].tray;
 		
 		if (tray) {
-			emptyFrame(this.moveFrames[id]);
+			emptyFrame(this.playFrames[id]);
 			
 			for (var j in tray.arr) {
 				var letter = tray.arr[j];
@@ -568,7 +888,7 @@ BabelView = {
 					letter.image[k] = this.trayLetterImagePrototype[k];
 				}
 				
-				this.moveFrames[id].appendChild(letter.image);
+				this.playFrames[id].appendChild(letter.image);
 			}
 			
 			this.drawScaledRecursive(this.trayFrames[id]);
@@ -659,14 +979,20 @@ BabelView = {
 			var returnLetter = true;
 			
 			if (gridPoint.within(0, 0, BabelView.gridFrame.width, BabelView.gridFrame.height, true)) {
-				BabelController.addToMove(this.letterObject, Math.floor(gridPoint.y / BabelView.scale), Math.floor(gridPoint.x / BabelView.scale));
+				BabelController.addToPlay(this.letterObject, Math.floor(gridPoint.y / BabelView.scale), Math.floor(gridPoint.x / BabelView.scale));
 			} else {
-				BabelController.removeFromMove(this.letterObject);
+				BabelController.removeFromPlay(this.letterObject);
 				BabelController.state.players[BabelController.state.currentPlayer].tray.sort('hOffset', false);
 			}
 			
+			if (BabelController.isValidPlay(true)) {
+				BabelView.endTurnButton.disabled = false;
+			} else {
+				BabelView.endTurnButton.disabled = true;
+			}
+			
 			// animate the transitions
-			AnimationQueue.queue([BabelView.animateTray(), BabelView.animateMove(null, true)]);
+			AnimationQueue.queue([BabelView.animateTray(), BabelView.animatePlay(null, true)]);
 		}
 	},
 	
@@ -717,16 +1043,16 @@ BabelView = {
 	
 	
 	/**
-	 * animateMove(move, noDone)
-	 * animateMove(move)
-	 * animateMove()
-	 * Returns an animation object for a Move, suitable for use 
+	 * animatePlay(play, noDone)
+	 * animatePlay(play)
+	 * animatePlay()
+	 * Returns an animation object for a Play, suitable for use 
 	 * with AnimationQueue. Set noDone to true or an alternate doneFunc
 	 * if you would not like AnimationQueue.done() set as the doneFunc.
 	 */
-	animateMove: function(move, noDone) {
-		if (typeof(move) == 'undefined' || move == null) {
-			move = BabelController.move;
+	animatePlay: function(play, noDone) {
+		if (typeof(play) == 'undefined' || play == null) {
+			play = BabelController.play;
 		}
 		
 		if (noDone == true) {
@@ -736,28 +1062,24 @@ BabelView = {
 		}
 		
 		anm.objs = [];
-		for (var row = 0; row < BOARD_HEIGHT; row++) {
-			for (var col = 0; col < BOARD_WIDTH; col++) {
-				var letter = move.get(row, col);
-				if (!letter) {
-					continue;
+		var playLetters = play.getAll();
+		for (var i in playLetters) {
+			var letter = playLetters[i].obj;
+			var itMoves = false;
+			var t = {
+				obj: letter.image,
+				start: {},
+				finish: {}
+			};
+			t.finish = this.alignLetterOnBoard(letter, playLetters[i].row, playLetters[i].col);
+			for (var a in t.finish) {
+				if (letter.image[a] != t.finish[a]) {
+					itMoves = true;
+					t.start[a] = letter.image[a];
 				}
-				var itMoves = false;
-				var t = {
-					obj: letter.image,
-					start: {},
-					finish: {}
-				};
-				t.finish = this.alignLetterOnBoard(letter, row, col);
-				for (var a in t.finish) {
-					if (letter.image[a] != t.finish[a]) {
-						itMoves = true;
-						t.start[a] = letter.image[a];
-					}
-				}
-				if (itMoves) {
-					anm.objs.push(t);
-				}
+			}
+			if (itMoves) {
+				anm.objs.push(t);
 			}
 		}
 		
@@ -892,6 +1214,12 @@ widget.onKeyDown = function() {
 widget.onPreferencesChanged = function() {
 	BabelController.updateFromPreferences();
 	BabelView.refresh();
+}
+
+widget.onUnload = function() {
+	// save settings for next time
+	preferences.lastGameSetup.value = BabelController.setup.toString();
+	savePreferences();
 }
 
 

@@ -3,11 +3,24 @@ const BOARD_HEIGHT = 15;
 
 const TRAY_SIZE = 7;
 
+const STATS_FADE_DURATION = 225;
+const TRAY_FADE_DURATION = 700;
+
 const PIECE_MOVE_DURATION = 225;
 
 const PIECE_MOVE_EASETYPE = animator.kEaseOut;
 
 const CUSTOM_ANIMATION_INTERVAL = 5;
+
+const PLAY_DIRECTION_VERTICAL = 1;
+const PLAY_DIRECTION_HORIZONTAL = 2;
+const PLAY_DIRECTION_BOTH = 3;
+
+const MULTIPLIER_DOUBLE_LETTER = 1;
+const MULTIPLIER_DOUBLE_WORD = 2;
+const MULTIPLIER_TRIPLE_LETTER = 3;
+const MULTIPLIER_TRIPLE_WORD = 4;
+
 
 const LETTER_SETUP = {
 	_:   { qty:  2, points:  0 },
@@ -39,7 +52,7 @@ const LETTER_SETUP = {
 	Z:   { qty:  1, points: 10 }
 }
 
-const STICKERS = {
+const MULTIPLIERS = {
 	tripleWord: [
 		1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
