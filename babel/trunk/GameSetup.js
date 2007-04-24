@@ -10,8 +10,8 @@ function GameSetup() {
 
 GameSetup.controllers = [
 	null,
-	'human',
-	'simple'
+//	'simple',
+	'human'
 ];
 
 GameSetup.prototype = {

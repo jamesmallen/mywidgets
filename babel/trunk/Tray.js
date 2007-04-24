@@ -77,6 +77,14 @@ Tray.prototype = {
 	
 	
 	/**
+	 * pop()
+	 */
+	pop: function() {
+		return this.arr.pop();
+	},
+	
+	
+	/**
 	 * sort(criteria, autoReverse)
 	 * Sorts the tray by the given criteria (will be eval'd if).
 	 * Valid criteria are 'points', 'alpha', 'random', and 'hOffset'

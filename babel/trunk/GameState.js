@@ -3,23 +3,16 @@
  */
 
 // CONSTRUCTOR
-// GameState(numPlayers)
-function GameState(numPlayers) {
-	if (typeof(numPlayers) == 'object' && numPlayers instanceof GameState) {
-		// COPY CONSTRUCTOR
-		var src = numPlayers;
-		numPlayers = src.players.length;
-	}
+// GameState(board)
+function GameState(board) {
 	
-	this.board = new Board();
+	if (board instanceof Board) {
+		this.board = board.copy();
+	}
 	
 	this.players = [];
-	for (var i = 0; i < numPlayers; i++) {
-		this.players[i] = new Player();
-	}
 	
 	this.bag = new Bag();
-	
 }
 
 
@@ -28,6 +21,7 @@ GameState.prototype = {
 	board: null,
 	players: null,
 	bag: null,
+	lastPlay: null,
 	previousState: null,
 	nextState: null,
 	currentPlayer: 0,
@@ -36,14 +30,15 @@ GameState.prototype = {
 	
 	// PUBLIC METHODS
 	copy: function() {
-		var ret = new GameState();
-		ret.board = this.board.copy();
+		var ret = new GameState(this.board);
 		for (var i in this.players) {
 			ret.players[i] = this.players[i].copy();
 		}
 		ret.bag = this.bag.copy();
 		ret.currentPlayer = this.currentPlayer;
 		ret.firstPasser = this.firstPasser;
+		
+		// don't copy over "lastPlay"
 		
 		return ret;
 	},

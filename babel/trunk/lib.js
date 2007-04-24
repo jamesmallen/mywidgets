@@ -38,6 +38,24 @@ arrayCopy = function(arr) {
 	return ret;
 }
 
+/*
+objectCopy = function(obj, depth) {
+	var ret;
+	if (obj.prototype) {
+		ret = new obj.prototype();
+	} else {
+		ret = {};
+	}
+	for (var i in obj) {
+		if (depth > 0 && typeof(obj[i]) == 'object') {
+			ret[i] = objectCopy(obj[i], depth - 1);
+		} else {
+			ret[i] = obj[i];
+		}
+	}
+	return ret;
+}
+*/
 
 // Array.prototype.shuffle = function() {
 arrayShuffle = function(arr) {

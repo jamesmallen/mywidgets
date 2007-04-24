@@ -20,6 +20,12 @@ Bag.prototype = {
 		return ret;
 	},
 	
+	
+	getAll: function() {
+		return this.arr.slice(0);
+	},
+	
+	
 	/**
 	 * fill()
 	 * Fills the Bag with letters according to the LETTER_SETUP constant
@@ -45,6 +51,14 @@ Bag.prototype = {
 	 */
 	pull: function() {
 		return this.arr.pop();
+	},
+	
+	/**
+	 * put(letter)
+	 * Puts a letter back in the bag. Bag needs to be manually mixed afterward.
+	 */
+	put: function(letter) {
+		this.arr.push(letter);
 	},
 	
 	/**

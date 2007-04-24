@@ -32,11 +32,11 @@ include('BabelPlay.js');
 
 BabelController = {
 	// PROPERTIES
-	setup: null, // GameSetup object
-	state: null, // GameState object
+	setup: null,      // GameSetup object
+	state: null,      // GameState object
 	
-	stickers: null, // Board object
-	play: null,  // Board object
+	play: null,       // Play object
+	blankBoard: null, // Board object
 	
 	// METHODS
 	/**
@@ -46,7 +46,8 @@ BabelController = {
 		this.setup = new GameSetup();
 		this.setup.fromString(preferences.lastGameSetup.value);
 		
-		this.initStickers();
+		this.blankBoard = new Board(BOARD_HEIGHT, BOARD_WIDTH);
+		this.initMultipliers();
 		
 		this.updateFromPreferences();
 		
@@ -57,29 +58,17 @@ BabelController = {
 	
 	
 	/**
-	 * initStickers()
+	 * initMultipliers()
+	 * Adds the multipliers to the current GameState's Board object
 	 */
-	initStickers: function() {
-		this.stickers = new Board();
-		
-		if (!this.initStickers.typeMap) {
-			this.initStickers.typeMap = {
-				doubleLetter: 'l',
-				tripleLetter: 'L',
-				doubleWord:   'w',
-				tripleWord:   'W',
-				homeSquare:   '*'
-			};
-		}
-		
-		for (var type in STICKERS) {
-			for (var i in STICKERS[type]) {
-				if (STICKERS[type][i]) {
-					this.stickers.put(Math.floor(i / BOARD_HEIGHT), (i % BOARD_WIDTH), this.initStickers.typeMap[type]);
+	initMultipliers: function() {
+		for (var type in MULTIPLIERS) {
+			for (var i in MULTIPLIERS[type]) {
+				if (MULTIPLIERS[type][i]) {
+					this.blankBoard.putMultiplier(Math.floor(i / this.blankBoard.height), (i % this.blankBoard.width), type);
 				}
 			}
 		}
-		
 	},
 	
 	
@@ -93,7 +82,9 @@ BabelController = {
 	 * Initializes values to defaults, creates important stuff
 	 */
 	newGame: function() {
-		this.state = new GameState();
+		preferences.lastGameSetup.value = this.setup.toString();
+		
+		this.state = new GameState(this.blankBoard);
 		
 		for (var i in this.setup.players) {
 			if (this.setup.getController(i)) {
@@ -121,9 +112,26 @@ BabelController = {
 		return (p + 1) % this.state.players.length;
 	},
 	
+	getPreviousPlayer: function(p) {
+		if (typeof(p) == 'undefined') {
+			p = this.state.currentPlayer;
+		}
+		return (p + this.state.players.length - 1) % this.state.players.length;
+	},
+	
 	
 	pickStartingPlayer: function() {
 		return random(0, this.state.players.length);
+	},
+	
+	countHumanPlayers: function() {
+		ret = 0;
+		for (var i in this.setup.players) {
+			if (this.setup.getController(i) == 'human') {
+				ret++;
+			}
+		}
+		return ret;
 	},
 	
 	
@@ -158,6 +166,157 @@ BabelController = {
 		return false;
 	},
 	
+	assignBlanks: function() {
+		var playAll = this.play.getAll();
+		var blanks = [], t, filledBlank;
+		
+		for (var i in playAll) {
+			if (playAll[i].obj.letter == '_' || playAll[i].obj.letter != playAll[i].obj.letter.toUpperCase()) {
+				blanks.push(playAll[i].obj);
+			}
+		}
+		
+		if (blanks.length > 1) {
+			for (var i in blanks) {
+				filledBlank = false;
+				while (true) {
+					t = prompt('What letter is blank #' + (parseInt(i) + 1) + ' supposed to be?', '', 'Fill in the Blank');
+					if (t && /^[a-z]$/i.test(t)) {
+						blanks[i].letter = t.toLowerCase();
+						blanks[i].image.tooltip = t.toUpperCase() + ' - 0 points';
+						filledBlank = true;
+						break;
+					} else {
+						alert('You must enter a valid letter!');
+					}
+				}
+			}
+		} else if (blanks.length == 1) {
+			filledBlank = false;
+			while (true) {
+				t = prompt('What letter is the blank supposed to be?', '', 'Fill in the Blank', 'OK', '');
+				if (t && /^[a-z]$/i.test(t)) {
+					blanks[0].letter = t.toLowerCase();
+					blanks[0].image.tooltip = t.toUpperCase() + ' - 0 points';
+					filledBlank = true;
+					break;
+				} else {
+					alert('You must enter a valid letter!');
+				}
+			}
+		}
+		
+	},
+	
+	
+	/**
+	 * challenge()
+	 * Challenges the previous play.
+	 */
+	challenge: function() {
+		var invalidWords = BabelRules.getInvalidWords(this.state.lastPlay.getInfo().words);
+		
+		if (invalidWords.length > 0) {
+			// challenge is acceptable!
+			log('The word(s) ' + invalidWords.join(', ') + ' were not found.');
+			alert('The challenge was acceptable. The word' + (invalidWords.length > 1 ? ('s below were not found in the word list:\n' + invalidWords.join("\n")) : (' ' + invalidWords[0] + ' was not found in the word list.')));
+			
+			// remove play from board, put it back in player's tray
+			var letters = this.state.lastPlay.getAll();
+			for (var i in letters) {
+				this.state.board.remove(letters[i].row, letters[i].col);
+			}
+			// put pulled letters back in bag
+			for (var i in letters) {
+				this.state.bag.put(this.state.players[this.getPreviousPlayer()].tray.pop());
+			}
+			// put old letters back in tray
+			for (var i in letters) {
+				this.state.players[this.getPreviousPlayer()].tray.put(letters[i].obj);
+			}
+			
+			// roll back score
+			this.state.players[this.getPreviousPlayer()].score = this.state.previousState.players[this.getPreviousPlayer()].score;
+			
+			return true;
+		} else {
+			// challenge is unacceptable - act like a pass
+			alert('The challenge was unacceptable. It is now Player ' + (parseInt(this.getNextPlayer()) + 1) + "'s turn.");
+			this.pass();
+			return false;
+		}
+	},
+	
+	
+	/**
+	 * playerIsOut(id)
+	 * playerIsOut()
+	 * Returns true if the current player is out.
+	 */
+	isEndGame: function(id) {
+		if (typeof(id) == 'undefined') {
+			id = this.state.currentPlayer;
+		}
+		// looks to see if a player is out and the bag is out
+		if (this.state.bag.arr.length == 0 && this.state.players[this.state.currentPlayer].tray.arr.length == 0) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+	
+	
+	/**
+	 * endGame()
+	 * Ends the game, calculating deduction/bonus points
+	 */
+	endGame: function(outPlayer) {
+		var finalScores = [], outPlayers = [], leftOverPoints = 0;
+		for (var i in this.state.players) {
+			finalScores[i] = parseInt(this.state.players[i].score);
+			var tray = this.state.players[i].tray;
+			if (tray.arr.length == 0) {
+				outPlayers.push(i);
+			} else {
+				for (var j in tray.arr) {
+					leftOverPoints += parseInt(tray.arr[j].points);
+					finalScores[i] -= parseInt(tray.arr[j].points);
+				}
+			}
+		}
+		
+		pdump(finalScores);
+		pdump(outPlayers);
+		
+		for (var i in outPlayers) {
+			finalScores[outPlayers[i]] += leftOverPoints;
+		}
+		
+		var bestScores = {score: 0, players: []};
+		for (var i in finalScores) {
+			if (finalScores[i] > bestScores.score) {
+				bestScores.score = finalScores[i];
+				bestScores.players = [i];
+			} else if (finalScores[i] == bestScores.score) {
+				bestScores.players.push(i);
+			}
+		}
+		
+		pdump(finalScores);
+		
+		log('Final Score:');
+		var scoreStr = '';
+		for (var i in finalScores) {
+			scoreStr += 'Player ' + (parseInt(i) + 1) + ': ' + finalScores[i] + '\n';
+		}
+		log(scoreStr);
+		
+		// alert('Final Score:\n' + scoreStr + 'Thank you for playing Babel!');
+		
+		// TODO - handle ties appropriately
+		
+	},
+	
 	
 	/**
 	 * endTurn()
@@ -167,27 +326,49 @@ BabelController = {
 		if (this.isValidPlay(true)) {
 			log('play is valid!');
 			
+			this.assignBlanks();
+			
 			var playInfo = this.play.getInfo();
+			
+			if (preferences.challengeMode.value != 1) {
+				var invalidWords = BabelRules.getInvalidWords(playInfo.words);
+				
+				if (invalidWords.length > 0) {
+					log('The word(s) ' + invalidWords.join(', ') + ' were not found in the word list.');
+					alert('The word' + (invalidWords.length > 1 ? ('s below were not found in the word list:\n' + invalidWords.join("\n")) : (' ' + invalidWords[0] + ' was not found in the word list.')));
+					return false;
+				}
+			}
 			
 			// move to the next state
 			this.state = this.state.stepForward();
+			this.state.lastPlay = this.play.copy();
 			
-			log('Playing ' + this.play);
+			log(this.play);
+			// adjust score
+			this.state.players[this.state.currentPlayer].score += this.play.score();
+			
+			// TODO allow challenges after final move?
+			
+			
 			// modify board
 			this.state.board.merge(this.play);
 			BabelView.drawBoard();
 			
 			
-			// adjust score
-			// TODO
-			this.state.players[this.state.currentPlayer].score += 20;
+			if (this.isEndGame()) {
+				this.endGame();
+			} else {
 			
-			// fill tray
-			this.state.players[this.state.currentPlayer].tray.fill(this.state.bag);
-			
-			// end the turn
-			this.state.firstPasser = null;
-			this.nextPlayer();
+				
+				
+				// fill tray
+				this.state.players[this.state.currentPlayer].tray.fill(this.state.bag);
+				
+				// end the turn
+				this.state.firstPasser = null;
+				this.nextPlayer();
+			}
 		}
 	},
 	
@@ -199,10 +380,17 @@ BabelController = {
 	
 	
 	pass: function() {
-		log('player[' + this.state.currentPlayer + '] passing - last passer = ' + this.state.firstPasser);
+		// return letters to the tray
+		var playLetters = this.play.getAll();
+		for (var i in playLetters) {
+			log('removing ' + playLetters[i]);
+			print(this.removeFromPlay(playLetters[i].obj));
+		}
+		
 		this.state = this.state.stepForward();
-		if (this.state.firstPasser == this.state.currentPlayer || this.state.players.length == 1) {
-			if (this.state.board.getAll.length == 0) {
+		this.state.lastPlay = null;
+		if (this.state.firstPasser == this.getNextPlayer() || this.state.players.length == 1) {
+			if (this.state.board.getAll().length == 0) {
 				alert('All players have passed on the first turn - restarting game.');
 				this.newGame();
 			} else {
@@ -210,6 +398,7 @@ BabelController = {
 				this.endGame();
 			}
 		} else if (this.state.firstPasser == null) {
+			log('setting firstPasser to ' + this.state.currentPlayer);
 			this.state.firstPasser = this.state.currentPlayer;
 		}
 		
@@ -275,15 +464,16 @@ BabelController = {
 	
 	
 	/**
+	 * removeFromPlay(row, col)
 	 * removeFromPlay(letter)
 	 * Removes the specified Letter from the current play.
 	 * Returns true if the Letter was removed, or false if the Letter 
 	 * was not in the play to begin with.
 	 */
-	removeFromPlay: function(letter) {
-		if (this.play.remove(letter)) {
+	removeFromPlay: function(row, col) {
+		if ((letter = this.play.remove(row, col)) != null) {
 			// add it back into the tray
-			this.state.players[this.state.currentPlayer].tray.put(letter);
+			this.state.players[this.state.currentPlayer].tray.put(letter.obj);
 			return true;
 		} else {
 			return false;
@@ -293,6 +483,56 @@ BabelController = {
 	
 	sortTray: function(criteria, autoReverse) {
 		this.state.players[this.state.currentPlayer].tray.sort(criteria, autoReverse);
+	},
+	
+	
+	/**
+	 * exchange()
+	 * exchange(letters)
+	 * Exchanges letters in the current tray with letters from the bag.
+	 * Will prompt for letters if letters is not supplied.
+	 */
+	exchange: function(letters) {
+		if (this.state.bag.arr.length < TRAY_SIZE) {
+			alert('The bag has too few letters to be able to exchange.');
+			return;
+		}
+		var exchangePile = [];
+		if (!letters) {
+			var t = prompt('Which letters would you like to exchange?\nEnter _ for blanks, otherwise just enter the letter, with no punctuation or spaces.', '', 'Exchange Letters', 'Exchange', 'Cancel');
+			if (!t) {
+				return;
+			} else {
+				if (!/^[a-zA-Z_]+$/.test(t)) {
+					return;
+				}
+				var letters = t.split('');
+			}
+		}
+		
+		var tray = this.state.players[this.state.currentPlayer].tray;
+		
+		for (var i in letters) {
+			var t = tray.remove(letters[i].toUpperCase());
+			if (t) {
+				exchangePile.push(t);
+			}
+		}
+		
+		// get new letters
+		tray.fill(this.state.bag);
+		
+		// put old letters into bag
+		for (var i in exchangePile) {
+			this.state.bag.put(exchangePile[i]);
+		}
+		
+		// mix up bag
+		this.state.bag.mix();
+		
+		// act like a pass
+		this.pass();
+		
 	}
 	
 	
@@ -388,7 +628,7 @@ BabelView = {
 		
 		this.gridFrame.scaleWidth = this.gridFrame.scaleHeight = grid.scaleWidth = grid.scaleHeight = 15;
 		
-		this.initStickers();
+		this.initMultipliers();
 		this.initTrays();
 	},
 	
@@ -435,8 +675,9 @@ BabelView = {
 	fadeTrayFrames: function(activeFrame) {
 		var anms = [];
 		for (var i in this.trayFrames) {
-			if (i instanceof Frame && i != activeFrame && i.opacity > 0) {
-				anms.push(new FadeAnimation(i, 0, TRAY_FADE_DURATION));
+			var t = this.trayFrames[i];
+			if (t instanceof Frame && t != activeFrame && t.opacity > 0) {
+				anms.push(new FadeAnimation(t, 0, TRAY_FADE_DURATION));
 			}
 		}
 		if (activeFrame) {
@@ -462,6 +703,11 @@ BabelView = {
 			this.curPlayerLabel.scaleVOffset = 6.5 + (1 * BabelController.state.currentPlayer);
 		}
 		this.drawScaledRecursive(this.scoresFrame);
+		if (preferences.challengeMode.value == 1 && BabelController.countHumanPlayers() > 1) {
+			this.challengeButton.visible = true;
+		} else {
+			this.challengeButton.visible = false;
+		}
 	},
 	
 	
@@ -479,15 +725,15 @@ BabelView = {
 		this.scoresFrame.appendChild(this.scoreDigitsFrame);
 		
 		
-		var newGame = new Image();
-		newGame.opacity = FADEBUTTON_OPACITY;
-		newGame.scaleSrc = 'Menu/NewGame';
-		newGame.hAlign = 'center';
-		newGame.scaleHOffset = 4;
-		newGame.scaleVOffset = 4.5;
-		newGame.scaleWidth = 4;
-		newGame.scaleHeight = 1.34375;
-		this.mainMenuFrame.appendChild(newGame);
+		var newGameButton = new Image();
+		newGameButton.opacity = FADEBUTTON_OPACITY;
+		newGameButton.scaleSrc = 'Menu/NewGame';
+		newGameButton.hAlign = 'center';
+		newGameButton.scaleHOffset = 4;
+		newGameButton.scaleVOffset = 4.5;
+		newGameButton.scaleWidth = 4;
+		newGameButton.scaleHeight = 1.34375;
+		this.mainMenuFrame.appendChild(newGameButton);
 		
 		this.playersMenuFrame = new Frame();
 		this.mainMenuFrame.appendChild(this.playersMenuFrame);
@@ -575,6 +821,10 @@ BabelView = {
 			onClick: function() {
 				if (1 == alert('Would you like to challenge the last play?', 'Yes', 'No')) {
 					BabelController.challenge();
+					for (var i in BabelController.state.players) {
+						BabelView.drawTray(i);
+					}
+					BabelView.refresh();
 				}
 			}
 		}, this.scoresFrame);
@@ -587,9 +837,9 @@ BabelView = {
 			scaleWidth: 4,
 			scaleHeight: 0.453125,
 			onClick: function() {
-				if (1 == alert('Would you like to exchange your 7 letters for 7 letters in the bag?', 'Yes', 'No')) {
-					BabelController.challenge();
-				}
+				// if (1 == alert('Would you like to exchange your 7 letters for 7 letters in the bag?', 'Yes', 'No')) {
+				BabelController.exchange();
+				// }
 			}
 		}, this.scoresFrame);
 		
@@ -686,6 +936,7 @@ BabelView = {
 	 * Sets up the trayFrames and playFrames. Initial opacity of all trayFrames is 0.
 	 */
 	initTrays: function() {
+		this.trayActivateButtons = [];
 		for (var i in this.trayFrames) {
 			this.trayFrames[i] = new Frame;
 			this.trayFrames[i].opacity = 0;
@@ -698,6 +949,18 @@ BabelView = {
 			tray.scaleHOffset = 1.5;
 			tray.scaleVOffset = 17.5;
 			this.trayFrames[i].appendChild(tray);
+			
+			this.trayActivateButtons[i] = new Text();
+			this.trayActivateButtons[i].trayID = i;
+			this.trayActivateButtons[i].style.fontFamily = "'Lucida Grande','Lucida Sans','Lucida Sans Unicode',sans-serif";
+			this.trayActivateButtons[i].scaleSize = 0.5625;
+			this.trayActivateButtons[i].data = 'Player ' + (parseInt(i) + 1) + ', click here to activate your tray.';
+			this.trayActivateButtons[i].scaleHOffset = 9.5;
+			this.trayActivateButtons[i].scaleVOffset = 19.75;
+			this.trayActivateButtons[i].hAlign = 'center';
+			this.trayActivateButtons[i].opacity = 0;
+			this.trayActivateButtons[i].onClick = function() { BabelView.activateTray(this.trayID); this.opacity = 0; BabelView.challengeButton.disabled = true; };
+			this.trayFrames[i].appendChild(this.trayActivateButtons[i]);
 			
 			var sortAlphaButton = new Image();
 			var sortPointsButton = new Image();
@@ -750,9 +1013,9 @@ BabelView = {
 	},
 	
 	/**
-	 * initStickers()
+	 * initMultipliers()
 	 */
-	initStickers: function() {
+	initMultipliers: function() {
 		if (this.stickersFrame) {
 			this.stickersFrame.removeFromSuperview();
 		}
@@ -760,39 +1023,37 @@ BabelView = {
 		this.stickersFrame.opacity = 179;
 		this.gridFrame.appendChild(this.stickersFrame);
 		
-		if (!this.initStickers.map) {
-			this.initStickers.map = {
-				'l': { scaleSrc: 'DoubleLetterScore', tooltip: 'Double Letter Score' },
-				'L': { scaleSrc: 'TripleLetterScore', tooltip: 'Triple Letter Score' },
-				'w': { scaleSrc: 'DoubleWordScore', tooltip: 'Double Word Score' },
-				'W': { scaleSrc: 'TripleWordScore', tooltip: 'Triple Word Score' },
-				'*': { scaleSrc: 'HomeSquare', tooltip: 'Home Square (Double Word)' }
+		if (!this.initMultipliers.map) {
+			this.initMultipliers.map = {
+				1: { scaleSrc: 'DoubleLetterScore', tooltip: 'Double Letter Score' },
+				2: { scaleSrc: 'TripleLetterScore', tooltip: 'Triple Letter Score' },
+				3: { scaleSrc: 'DoubleWordScore', tooltip: 'Double Word Score' },
+				4: { scaleSrc: 'TripleWordScore', tooltip: 'Triple Word Score' },
+				5: { scaleSrc: 'HomeSquare', tooltip: 'Home Square (Double Word)' }
 			};
 		}
 		
-		for (var row = 0; row < BOARD_HEIGHT; row++) {
-			for (var col = 0; col < BOARD_HEIGHT; col++) {
-				var sticker = BabelController.stickers.get(row, col);
-				if (sticker) {
-					var t = new Image();
-					t.hAlign = t.vAlign = 'center';
-					for (var i in this.initStickers.map[sticker]) {
-						t[i] = this.initStickers.map[sticker][i];
-					}
-					t.src = this.scaledSrc(t.scaleSrc);
-					var res = t.src.match(/(\d+)\.png$/i);
-					if (!res) {
-						log('Error calculating sticker\'s baseScale');
-					} else {
-						var baseScale = res[1];
-						t.scaleWidth = t.srcWidth / baseScale;
-						t.scaleHeight = t.srcHeight / baseScale;
-					}
-					t.scaleVOffset = row + 0.5;
-					t.scaleHOffset = col + 0.5;
-					this.stickersFrame.appendChild(t);
-				}
+		var multipliers = BabelController.blankBoard.getAllMultipliers();
+		
+		for (var i in multipliers) {
+			var multiplier = multipliers[i];
+			var t = new Image();
+			t.hAlign = t.vAlign = 'center';
+			for (var i in this.initMultipliers.map[multiplier.obj]) {
+				t[i] = this.initMultipliers.map[multiplier.obj][i];
 			}
+			t.src = this.scaledSrc(t.scaleSrc);
+			var res = t.src.match(/(\d+)\.png$/i);
+			if (!res) {
+				log('Error calculating sticker\'s baseScale');
+			} else {
+				var baseScale = res[1];
+				t.scaleWidth = t.srcWidth / baseScale;
+				t.scaleHeight = t.srcHeight / baseScale;
+			}
+			t.scaleVOffset = multiplier.row + 0.5;
+			t.scaleHOffset = multiplier.col + 0.5;
+			this.stickersFrame.appendChild(t);
 		}
 	},
 	
@@ -805,6 +1066,7 @@ BabelView = {
 		if (!letter.image.scaleSrc) {
 			letter.image.scaleSrc = 'Tile' + letter.letter;
 			letter.image.scaleWidth = letter.image.scaleHeight = 1;
+			letter.image.tooltip = letter.letter + ' - ' + letter.points + ' point' + (letter.points != 1 ? 's' : '');
 		}
 	},
 	
@@ -852,9 +1114,30 @@ BabelView = {
 	
 	newPlay: function() {
 		this.endTurnButton.disabled = true;
+		if (BabelController.state.bag.arr.length < TRAY_SIZE) {
+			this.exchangeButton.disabled = true;
+		} else {
+			this.exchangeButton.disabled = false;
+		}
+		if (BabelController.state.lastPlay && BabelController.state.lastPlay.getAll().length > 0) {
+			this.challengeButton.disabled = false;
+		} else {
+			this.challengeButton.disabled = true;
+		}
 		this.drawTray();
 		this.fadeTrayFrames(this.trayFrames[BabelController.state.currentPlayer]);
 		this.updateScores();
+	},
+	
+	/**
+	 * activateTray(id)
+	 */
+	activateTray: function(id) {
+		if (typeof(id) == 'undefined') {
+			id = BabelController.state.currentPlayer;
+		}
+		
+		this.playFrames[id].opacity = 255;
 	},
 	
 	
@@ -891,6 +1174,13 @@ BabelView = {
 				this.playFrames[id].appendChild(letter.image);
 			}
 			
+			if (BabelController.countHumanPlayers() == 1) {
+				this.playFrames[id].opacity = 255;
+				this.trayActivateButtons[id].opacity = 0;
+			} else {
+				this.playFrames[id].opacity = 0;
+				this.trayActivateButtons[id].opacity = 255;
+			}
 			this.drawScaledRecursive(this.trayFrames[id]);
 		}
 		
@@ -960,10 +1250,18 @@ BabelView = {
 			
 			BabelView.drawScaledRecursive(this);
 			
+			/*
 			var parentPoint = convertPoint(mainWindow, this.parentNode,
 				Math.max(0, Math.min(mainWindow.width - this.width, windowPoint.x - this.width / 2)),
 				Math.max(0, Math.min(mainWindow.height - this.height, windowPoint.y - this.height / 2))
 			);
+			*/
+			var parentPoint = convertPoint(mainWindow, this.parentNode,
+				Math.max(0, Math.min(mainWindow.width - this.width, windowPoint.x - this.width / 2)),
+				Math.max(0, Math.min(mainWindow.height - this.height, windowPoint.y - this.height / 2))
+			);
+			
+			parentPoint.x = Math.max(0, parentPoint.x);
 			
 			this.scaleHOffset = parentPoint.x / BabelView.scale;
 			this.scaleVOffset = parentPoint.y / BabelView.scale;
@@ -981,14 +1279,24 @@ BabelView = {
 			if (gridPoint.within(0, 0, BabelView.gridFrame.width, BabelView.gridFrame.height, true)) {
 				BabelController.addToPlay(this.letterObject, Math.floor(gridPoint.y / BabelView.scale), Math.floor(gridPoint.x / BabelView.scale));
 			} else {
+				if (this.letterObject.letter == this.letterObject.letter.toLowerCase()) {
+					// reset blank tooltip
+					this.tooltip = '_ - 0 points';
+				}
 				BabelController.removeFromPlay(this.letterObject);
 				BabelController.state.players[BabelController.state.currentPlayer].tray.sort('hOffset', false);
 			}
 			
-			if (BabelController.isValidPlay(true)) {
+			if (BabelController.isValidPlay()) {
 				BabelView.endTurnButton.disabled = false;
 			} else {
 				BabelView.endTurnButton.disabled = true;
+			}
+			
+			if (BabelController.state.players[BabelController.state.currentPlayer].tray.arr.length < TRAY_SIZE || BabelController.state.bag.arr.length < TRAY_SIZE) {
+				BabelView.exchangeButton.disabled = true;
+			} else {
+				BabelView.exchangeButton.disabled = false;
 			}
 			
 			// animate the transitions
@@ -1123,7 +1431,7 @@ BabelView = {
 	 */
 	drawScaledRecursive: function(container) {
 		if (!this.drawScaledRecursive.attribs) {
-			this.drawScaledRecursive.multiplyAttribs = {scaleWidth:'width', scaleHeight:'height'};
+			this.drawScaledRecursive.multiplyAttribs = {scaleWidth:'width', scaleHeight:'height', scaleSize:'size'};
 			this.drawScaledRecursive.attribs = {scaleHOffset:'hOffset', scaleVOffset:'vOffset'};
 		}
 		for (var obj = container.firstChild; obj; obj = obj.nextSibling) {

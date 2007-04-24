@@ -11,8 +11,10 @@ BabelPlay.prototype = {
 	
 	// PUBLIC METHODS
 	copy: function() {
-		var ret = new Play(this.board);
-		ret.arr = arrayCopy(this.arr);
+		var ret = new BabelPlay(this.board);
+		for (var i in this.arr) {
+			ret.put(this.arr[i].row, this.arr[i].col, this.arr[i].obj);
+		}
 		return ret;
 	},
 	
@@ -25,7 +27,7 @@ BabelPlay.prototype = {
 			throw new Error('Spot is already occupied.');
 		}
 		
-		this.arr.push({ row: row, col: col, obj: obj});
+		this.arr.push({row: row, col: col, obj: obj});
 		this.reorder();
 		this.getDirection();
 	},
@@ -53,7 +55,7 @@ BabelPlay.prototype = {
 	 * getAll()
 	 */
 	getAll: function() {
-		return this.arr;
+		return this.arr.slice(0);
 	},
 	
 	
@@ -285,6 +287,50 @@ BabelPlay.prototype = {
 		return ret;
 	},
 	
+	/**
+	 * score()
+	 * Returns the score for the current play
+	 */
+	score: function() {
+		var totalScore = 0;
+		var words = this.getWords();
+		for (var i in words) {
+			wordScore = 0;
+			wordMultiplier = 1.0;
+			for (var j in words[i].letters) {
+				var letter = words[i].letters[j];
+				var letterScore = letter.obj.points;
+				var letterMultiplier = 1.0;
+				if (!letter.existingLetter) {
+					var multiplier = parseInt(this.board.getMultiplier(letter.row, letter.col));
+					switch (multiplier) {
+						case MULTIPLIER_DOUBLE_LETTER:
+							letterMultiplier = 2.0;
+							break;
+						case MULTIPLIER_TRIPLE_LETTER:
+							letterMultiplier = 3.0;
+							break;
+						case MULTIPLIER_DOUBLE_WORD:
+						case MULTIPLIER_HOME_SQUARE:
+							wordMultiplier *= 2.0;
+							break;
+						case MULTIPLIER_TRIPLE_WORD:
+							wordMultiplier *= 3.0;
+							break;
+					}
+				}
+				letterScore *= letterMultiplier;
+				wordScore += letterScore;
+			}
+			wordScore *= wordMultiplier;
+			totalScore += wordScore;
+		}
+		if (this.arr.length == TRAY_SIZE) {
+			// bingo!
+			totalScore += BINGO_POINTS;
+		}
+		return totalScore;
+	},
 	
 	/**
 	 * getInfo()
@@ -297,7 +343,8 @@ BabelPlay.prototype = {
 		return {
 			continuous: continuous,
 			direction: this.direction,
-			words: this.getWords()
+			words: this.getWords(),
+			score: this.score()
 		};
 	},
 	
@@ -308,10 +355,11 @@ BabelPlay.prototype = {
 	 */
 	toString: function() {
 		var info = this.getInfo();
-		var ret, openParens = false, wordsInfo = [];
+		var ret, openParens, wordsInfo = [];
 		
 		for (var w in info.words) {
 			ret = '';
+			openParens = false;
 			mainWord = info.words[w];
 			for (var i in mainWord.letters) {
 				var letter = mainWord.letters[i];
@@ -337,9 +385,11 @@ BabelPlay.prototype = {
 					ret += BabelPlay.rowString(mainWord.letters[0].row) + BabelPlay.colString(mainWord.letters[0].col);
 					break;
 			}
+			
 			wordsInfo.push(ret);
 		}
-		return wordsInfo.join(' / ');
+		return wordsInfo.join(' / ') + ' ' + info.score;
+;
 	},
 	
 };
