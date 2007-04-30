@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <metadata>
 	<name>Babel</name>
-	<version>0.7</version>
+	<version>1.0</version>
 	<identifier>com.kzoowidgets.widget.babel</identifier>
 	<image usage="security" src="Resources/SecurityIcon.png" />
 	<image usage="dock" src="Resources/DockIcon.png" />
 	<author name="James M. Allen" href="http://www.kzoowidgets.com" />
 	<copyright>(c) 2007 James M. Allen</copyright>
-	<description>A word game similar to Scrabble(R)</description>
+	<description>A word game</description>
 	<platform minVersion="4.0" />
 </metadata>

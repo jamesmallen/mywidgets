@@ -76,6 +76,21 @@ GameState.prototype = {
 			ret.push(show[i] + ":\n" + this[i]);
 		}
 		return ret.join("\n");
+	},
+	
+	unserialize: function() {
+	
+	},
+	
+	/**
+	 * serialize()
+	 * Returns a string suitable for saving a gameState to a file/registry
+	 * String is in the following format:
+	 * {board}{[player][player]...}{}
+	 */
+	serialize: function() {
+		// serialize does not save lastPlay or previous/nextStates.
+		var ret = '{' + this.board.serialize() + '}{';
 	}
 	
 	

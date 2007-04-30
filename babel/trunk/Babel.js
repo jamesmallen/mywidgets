@@ -14,10 +14,11 @@ include('GameState.js');
 include('WordDB.js');
 include('BabelRules.js');
 include('AnimationQueue.js');
-include('BabelStats.js');
 include('FadeButton.js');
 include('BabelAI.js');
 include('BabelPlay.js');
+include('PopupButton.js');
+include('PopupOval.js');
 
 
 
@@ -324,8 +325,6 @@ BabelController = {
 	 */
 	endTurn: function() {
 		if (this.isValidPlay(true)) {
-			log('play is valid!');
-			
 			this.assignBlanks();
 			
 			var playInfo = this.play.getInfo();
@@ -1513,7 +1512,7 @@ BabelView = {
 
 widget.onKeyDown = function() {
 	if (system.event.isChar && system.event.keyString == 'Space') {
-		sortRandomButton.onMouseUp();
+		BabelView.sortRandomButton.onMouseUp();
 	}
 }
 
