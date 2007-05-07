@@ -1,0 +1,29 @@
+<?konfabulator xml-strict="true"?>
+<widget minimumVersion="4.0">
+	
+	<settings>
+		<setting name="allowCustomObjectAttributes" value="true" />
+	</settings>
+	
+	<window title="Jumbalaya" name="mainWindow" id="mainWindow" width="304" height="304" visible="true">
+	</window>
+	
+	<window title="popupWindow" name="popupWindow" id="popupWindow" width="445" height="245" visible="false" locked="true" style="background-image: url(Resources/PopupOval.png);">
+	</window>
+	
+	<script src="Jumbalaya.js"></script>
+	
+	<about-box>
+		<about-image>Resources/AboutBox.png</about-image>
+		<!-- <about-text hOffset="99" vOffset="158" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12" url="http://www.kzoowidgets.com">
+			<shadow hOffset="0" vOffset="2" color="#000000" opacity="127" />
+			Babel is a Kalamazoo Widget.
+		</about-text> -->
+		<about-version hOffset="345" vOffset="112" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="14" style="bold">
+			<shadow hOffset="0" vOffset="1" color="#000000" opacity="127" />
+		</about-version>
+		
+		<about-image>Resources/AboutTheAuthor.png</about-image>
+	</about-box>
+	
+</widget>
