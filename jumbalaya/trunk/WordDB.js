@@ -8,6 +8,7 @@ const WORDDB_BLOCKLENGTH = 27;
 WordDB = {
 	// PROPERTIES
 	defaultWordList: 'shortword.lst',
+	// defaultWordList: 'smallword.lst', // small list (includes word "go"), useful for debugging
 	
 	// PRIVATE PROPERTIES
 	_blocks: 0,
@@ -34,6 +35,8 @@ WordDB = {
 		if (!this._arr) {
 			this._arr = [];
 			this._blocks = 1;
+			this.sevens = [];
+			this.sixes = [];
 		}
 		
 		for (var i = 0; i < wordList.length; i++) {
@@ -41,6 +44,12 @@ WordDB = {
 				log('adding ' + wordList[i]);
 			}
 			this.add(wordList[i]);
+			// hooks go here
+			if (wordList[i].length == 6) {
+				this.sixes.push(wordList[i]);
+			} else if (wordList[i].length == 7) {
+				this.sevens.push(wordList[i]);
+			}
 		}
 		
 	},
@@ -108,23 +117,28 @@ WordDB = {
 		
 		var ret = [];
 		
+		// print("letters: " + letters);
+		
 		offset = block * WORDDB_BLOCKLENGTH;
 		
 		for (var i in letters) {
+			// print('trying "' + word + letters[i] + '"...');
 			innerOffset = this.getOffset(letters[i]);
 			if (innerOffset) {
-				log('a');
 				nextBlock = this._arr[offset + innerOffset];
+				// print("a:" + nextBlock);
 				if (nextBlock) {
-					log('b: ' + letters[i]);
-					var leftovers = letters.slice(0);
+					var leftovers = letters.slice(0).split('');
 					leftovers.splice(i, 1);
-					arrayMerge(ret, this.permute(leftovers, nextBlock), word + letters[i]);
+					leftovers = leftovers.join('');
+					// print('b: ' + leftovers);
+					arrayMerge(ret, this.permute(leftovers, nextBlock, word + letters[i]));
 				}
 			}
 		}
 		
 		if (this._arr[offset] == 0) {
+			// log('adding ' + word);
 			ret.push(word);
 		}
 		return ret;
@@ -148,13 +162,14 @@ WordDB = {
 			innerOffset = this.getOffset(word);
 			if (!innerOffset) {
 				// sanity checking to prevent infinite loops
+				log('unexpected letter');
 				return false;
 			} else {
 				// look to see if next block exists
 				nextBlock = this._arr[offset + innerOffset];
 				if (!nextBlock) {
 					// add the next block if it doesn't already exist
-					nextBlock = this._arr[offset] = this._blocks;
+					nextBlock = this._arr[offset + innerOffset] = this._blocks;
 					this._blocks++;
 				}
 				this.add(word.substr(1), nextBlock);
