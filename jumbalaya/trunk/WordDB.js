@@ -3,52 +3,41 @@ const WORDDB_BLOCKLENGTH = 27;
 
 /**
  * WordDB()
- * Singleton object for looking up words
+ * Object for storing and looking up words
  */
-WordDB = {
+WordDB = function() {
+	this._arr = [];
+	this._blocks = 1;
+}
+
+WordDB.prototype = {
 	// PROPERTIES
-	defaultWordList: 'shortword.lst',
-	// defaultWordList: 'smallword.lst', // small list (includes word "go"), useful for debugging
-	
-	// PRIVATE PROPERTIES
 	_blocks: 0,
-	
-	// PRIVATE OBJECTS
 	_arr: null,
+	addHook: null,
 	
 	
 	// METHODS
 	/**
-	 * init(wordList)
-	 * init()
-	 * Initializes _root object, and fills it with words
+	 * load(wordList, showProgress)
+	 * load(wordList)
+	 * Fills the object with words
+	 * wordList can be a file name (text file, words on separate lines)
+	 * or an array of words.
+	 * If showProgress is set, logs the latest entry every 1000 words
 	 */
-	init: function(wordList) {
-		if (!wordList) {
-			wordList = this.defaultWordList;
-		}
-		
+	load: function(wordList, showProgress) {
 		if (typeof(wordList) == 'string') {
 			wordList = filesystem.readFile(wordList, true);
 		}
 		
-		if (!this._arr) {
-			this._arr = [];
-			this._blocks = 1;
-			this.sevens = [];
-			this.sixes = [];
-		}
-		
 		for (var i = 0; i < wordList.length; i++) {
-			if (i % 1000 == 0) {
+			if (showProgress && (i % 1000 == 0)) {
 				log('adding ' + wordList[i]);
 			}
 			this.add(wordList[i]);
-			// hooks go here
-			if (wordList[i].length == 6) {
-				this.sixes.push(wordList[i]);
-			} else if (wordList[i].length == 7) {
-				this.sevens.push(wordList[i]);
+			if (this.addHook) {
+				this.addHook(wordList[i]);
 			}
 		}
 		
@@ -190,20 +179,6 @@ WordDB = {
 		print('[$]: ' + this._arr[block * WORDDB_BLOCKLENGTH]);	
 		for (var i = 1; i < WORDDB_BLOCKLENGTH; i++) {
 			print('[' + String.fromCharCode(i + 64) + ']: ' + (this._arr[block * WORDDB_BLOCKLENGTH + i] ? this._arr[block * WORDDB_BLOCKLENGTH + i] : ''));
-		}
-	},
-	
-	
-	toFile: function(path) {
-		ret = '';
-		var ct = 0;
-		for (var i in this._arr) {
-			ret += i + ':' + this._arr[i] + ',';
-			ct++;
-			if (ct % 100 == 0) {
-				filesystem.writeFile(path, ret + "\n", true);
-				ret = '';
-			}
 		}
 	},
 	
