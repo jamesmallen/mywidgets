@@ -2,7 +2,7 @@
 
 
 include('lib.js');
-include('ImageText.js');
+include('LetterHolder.js');
 
 include('WordDB.js');
 
@@ -62,17 +62,29 @@ JView = {
 		
 		this.letters = makeAndAppend(Frame, this.gameWindow);
 		
-		
 	},
 	
 	
 	newRound: function(letters) {
 		emptyFrame(this.letters);
+		
+		this.trayLetters = makeObject(LetterHolder, {
+			parentNode: this.letters,
+			hOffset: 145,
+			vOffset: 145
+		});
+		
+		this.playLetters = makeObject(LetterHolder, {
+			parentNode: this.letters,
+			hOffset: 145,
+			vOffset: 25
+		});
+		
 		for (var i in letters) {
-			makeAndAppend(JLetter, this.letters, {
-				letter: letters[i]
-			});
+			this.trayLetters.add(letters[i]);
 		}
+		
+
 		
 	}
 	

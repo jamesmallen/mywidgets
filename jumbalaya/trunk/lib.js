@@ -1,8 +1,3 @@
-/**
- * Jumbalaya
- * by James M. Allen <james.m.allen@gmail.com>
- * $Id$
-e */
 
 function assert(q, str) {
 	if (!q) { throw new Error('Assertion failed' + (str ? (': ' + str) : '')); }
@@ -159,7 +154,7 @@ arrayMerge = function(arr1, arr2, excludeDuplicates) {
 };
 
 
-makeAndAppend = function(objType, parent, params) {
+makeObject = function(objType, params) {
 	if (!params) {
 		params = {};
 	}
@@ -167,6 +162,11 @@ makeAndAppend = function(objType, parent, params) {
 	for (var i in params) {
 		ret[i] = params[i];
 	}
+	return ret;
+};
+
+makeAndAppend = function(objType, parent, params) {
+	var ret = makeObject(objType, params);
 	parent.appendChild(ret);
 	return ret;
 };

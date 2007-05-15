@@ -97,8 +97,9 @@ WordDB.prototype = {
 	permute: function(letters, block, word) {
 		var offset, innerOffset, nextBlock;
 		
-		if (!block) {
+		if (typeof(block) == 'undefined') {
 			block = 0;
+			letters = letters.split('').sort().join('');
 		}
 		if (!word) {
 			word = '';
@@ -110,7 +111,12 @@ WordDB.prototype = {
 		
 		offset = block * WORDDB_BLOCKLENGTH;
 		
-		for (var i in letters) {
+		for (var i = 0; i < letters.length; i++) {
+			if (i > 0 && letters[i] == letters[i - 1]) {
+				// prevent duplicates and cut off duplicate branches - win/win!
+				continue;
+			}
+			
 			// print('trying "' + word + letters[i] + '"...');
 			innerOffset = this.getOffset(letters[i]);
 			if (innerOffset) {
@@ -121,7 +127,7 @@ WordDB.prototype = {
 					leftovers.splice(i, 1);
 					leftovers = leftovers.join('');
 					// print('b: ' + leftovers);
-					ret = arrayMerge(ret, this.permute(leftovers, nextBlock, word + letters[i]), true);
+					ret = arrayMerge(ret, this.permute(leftovers, nextBlock, word + letters[i]));
 				}
 			}
 		}
