@@ -17,7 +17,7 @@ arrayCopy = function(arr) {
 // Array.prototype.shuffle = function() {
 arrayShuffle = function(arr) {
 	// var c = this.copy(), t, ret = [];
-	var c = arrayCopy(arr), t, ret = [];
+	var c = arr.slice(0), t, ret = [];
 	while (c.length > 0 && (t = c.splice(random(c.length), 1)[0])) {
 		ret.push(t);
 	}

@@ -2,6 +2,7 @@
 
 
 include('lib.js');
+include('AnimationQueue.js');
 include('LetterHolder.js');
 
 include('WordDB.js');
@@ -41,13 +42,18 @@ JView = {
 		this.gameWindow = widget.getElementById('gameWindow');
 		this.wordsWindow = widget.getElementById('wordsWindow');
 		
-		this.pan = makeAndAppend(Frame, this.gameWindow);
+		this.pan = makeAndAppend(Frame, this.gameWindow, {
+		});
 		this.pan.shadow = makeAndAppend(Image, this.pan, {
 			src: 'Resources/PanShadow.png',
 			vOffset: 95
 		});
 		this.pan.pan = makeAndAppend(Image, this.pan, {
-			src: 'Resources/Pan.png'
+			src: 'Resources/Pan.png',
+			hOffset: 352,
+			vOffset: 255,
+			hRegistrationPoint: 352,
+			vRegistrationPoint: 255
 		});
 		
 		
@@ -84,8 +90,50 @@ JView = {
 			this.trayLetters.add(letters[i]);
 		}
 		
-
+		this.pan.onMouseUp = function() { vw.scramble(); };
 		
+		
+	},
+	
+	
+	scramble: function() {
+		if (AnimationQueue.arr.length > 2) {
+			// Don't queue things forever
+			return;
+		}
+		var anms = [];
+		
+		var panAnm = new CustomAnimation(FLUID_ANIMATION_INTERVAL * 2, function() {
+			var now = animator.milliseconds;
+			
+			var t = Math.max(now - this.startTime, 0);
+			
+			if (!this.initialized) {
+				this.startVOffset = this.pan.pan.vOffset;
+				this.startRotation = this.pan.pan.rotation;
+				this.startOpacity = this.pan.shadow.opacity;
+				this.pan.pan.rotation = 3;
+				this.initialized = true;
+			}
+			
+			if (t >= (SCRAMBLE_DURATION * 0.5)) {
+				this.pan.pan.vOffset = this.startVOffset;
+				this.pan.pan.rotation = this.startRotation;
+				this.pan.shadow.opacity = this.startOpacity;
+				return false;
+			} else {
+				// var percent = t / (SCRAMBLE_DURATION * 0.5);
+				// this.pan.pan.vOffset = this.startVOffset - Math.sin(Math.PI * percent) * SCRAMBLE_MIN_HEIGHT / 2;
+				// this.pan.pan.rotation = this.startRotation + Math.sin(Math.PI * percent) * 3;
+				return true;
+			}
+		});
+		panAnm.pan = this.pan;
+		
+		anms.push(panAnm);
+		anms.push(this.trayLetters.scramble());
+		
+		AnimationQueue.queue(anms);
 	}
 	
 };
