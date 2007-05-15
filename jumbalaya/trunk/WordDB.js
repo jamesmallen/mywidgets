@@ -121,7 +121,7 @@ WordDB.prototype = {
 					leftovers.splice(i, 1);
 					leftovers = leftovers.join('');
 					// print('b: ' + leftovers);
-					arrayMerge(ret, this.permute(leftovers, nextBlock, word + letters[i]));
+					ret = arrayMerge(ret, this.permute(leftovers, nextBlock, word + letters[i]), true);
 				}
 			}
 		}

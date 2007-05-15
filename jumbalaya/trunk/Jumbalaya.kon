@@ -5,10 +5,10 @@
 		<setting name="allowCustomObjectAttributes" value="true" />
 	</settings>
 	
-	<window title="Jumbalaya" name="mainWindow" id="mainWindow" width="304" height="304" visible="true">
+	<window title="Jumbalaya" id="gameWindow" width="458" height="346" visible="true">
 	</window>
 	
-	<window title="popupWindow" name="popupWindow" id="popupWindow" width="445" height="245" visible="false" locked="true" style="background-image: url(Resources/PopupOval.png);">
+	<window title="Jumbalaya" id="wordsWindow" width="362" height="271" visible="false">
 	</window>
 	
 	<script src="Jumbalaya.js"></script>

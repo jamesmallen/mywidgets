@@ -1,28 +1,8 @@
-
-const BIGOBJECT_SIZE = 100000;
-
-function BigObject() {
-	this.arr = [];
-	for (var i = 0; i < BIGOBJECT_SIZE; i++) {
-		this.arr.push(i);
-	}
-	
-}
-
-BigObject.prototype = {
-	arr: null,
-	next: null,
-	previous: null,
-	push: function(q) {
-		this.next = q;
-		q.previous = this;
-	},
-	eraseToEnd: function() {
-		this.next = null;
-	}
-}
-
-
+/**
+ * Jumbalaya
+ * by James M. Allen <james.m.allen@gmail.com>
+ * $Id$
+e */
 
 function assert(q, str) {
 	if (!q) { throw new Error('Assertion failed' + (str ? (': ' + str) : '')); }
@@ -38,24 +18,6 @@ arrayCopy = function(arr) {
 	return ret;
 }
 
-/*
-objectCopy = function(obj, depth) {
-	var ret;
-	if (obj.prototype) {
-		ret = new obj.prototype();
-	} else {
-		ret = {};
-	}
-	for (var i in obj) {
-		if (depth > 0 && typeof(obj[i]) == 'object') {
-			ret[i] = objectCopy(obj[i], depth - 1);
-		} else {
-			ret[i] = obj[i];
-		}
-	}
-	return ret;
-}
-*/
 
 // Array.prototype.shuffle = function() {
 arrayShuffle = function(arr) {
@@ -97,76 +59,6 @@ function delay(duration, func) {
 }
 delay.timers = new Array();
 
-
-function getScaledImage(baseName, multiplier) {
-	if (typeof(getScaledImage.cache) == 'undefined') {
-		getScaledImage.cache = {};
-	}
-	
-	if (typeof(getScaledImage.cache[baseName]) == 'undefined') {
-		getScaledImage.cache[baseName] = {};
-	}
-	
-	if (!multiplier) {
-		multiplier = 1.0;
-	}
-	
-	if (typeof(getScaledImage.cache[baseName][globals.scale]) == 'undefined') {
-		// get all potential files for this type
-		var dh = filesystem.getDirectoryContents('Resources');
-		
-		var curSrc, bestSize = 0, curSize, idealSize = multiplier * globals.scale, matchRE;
-		
-		matchRE = new RegExp('^' + baseName + '(\\d+)\\.png$', 'i');
-		
-		for (var i in dh) {
-			var res = dh[i].match(matchRE);
-			if (res) {
-				curSize = parseInt(res[1]);
-				if (bestSize <= 0 || (bestSize < idealSize && curSize > bestSize) || (curSize >= idealSize && curSize < bestSize)) {
-					curSrc = dh[i];
-					bestSize = curSize;
-				}
-			}
-		}
-		
-		getScaledImage.cache[baseName][globals.scale] = 'Resources/' + curSrc;
-	}
-	
-	return getScaledImage.cache[baseName][globals.scale];
-}
-
-
-
-function addSlashes(str) {
-	return str.replace(/(['"\\])/g, '\\$1');
-}
-
-
-Point.prototype.within = function(left, top, right, bottom, noEdges) {
-	if (typeof(left) == 'object' && typeof(top) == 'object') {
-		// assignment order is important!
-		noEdges = right;
-		right = top.x;
-		bottom = top.y;
-		top = left.y;
-		left = left.x;
-	}
-	
-	if (noEdges) {
-		if (left < this.x && this.x < right &&
-		    top < this.y && this.y < bottom) {
-			return true;
-		}
-	} else {
-		if (left <= this.x && this.x <= right &&
-		    top <= this.y && this.y <= bottom) {
-			return true;
-		}
-	}
-	
-	return false;
-};
 
 
 
@@ -237,9 +129,44 @@ arrayCompare = function(arr1, arr2) {
 };
 
 
-arrayMerge = function(arr1, arr2) {
-	for (var i in arr2) {
-		arr1.push(arr2[i]);
+in_array = function(needle, haystack, strict) {
+	var equals;
+	if (strict) {
+		equals = function(a,b) {
+			return a === b;
+		}
+	} else {
+		equals = function(a,b) {
+			return a == b;
+		}
 	}
-	return arr1;
-}
+
+	for (var i in haystack) {
+		if (equals(haystack[i], needle)) return true;
+	}
+	return false;
+};
+
+
+arrayMerge = function(arr1, arr2, excludeDuplicates) {
+	var tArr = arr1.slice(0);
+	for (var i in arr2) {
+		if (!excludeDuplicates || !in_array(arr2[i], arr1)) {
+			tArr.push(arr2[i]);
+		}
+	}
+	return tArr;
+};
+
+
+makeAndAppend = function(objType, parent, params) {
+	if (!params) {
+		params = {};
+	}
+	var ret = new objType();
+	for (var i in params) {
+		ret[i] = params[i];
+	}
+	parent.appendChild(ret);
+	return ret;
+};
