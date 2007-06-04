@@ -123,7 +123,7 @@ JView = function() {
 		onMouseUp: function() {
 			ct.paused = true;
 			ct.updateRound();
-			if (1 == alert('Are you sure you want to quit?')) {
+			if (1 == alert('Are you sure you want to quit?', 'Yes', 'No')) {
 				ct.changeState('menu');
 			} else {
 				ct.paused = false;
@@ -179,6 +179,7 @@ JView = function() {
 		vOffset: 40
 	});
 	
+	/*
 	this.sampleWords = [
 		//new ImageText({src:'Resources/HandLetters/*.png',data:'___',hOffset:0,vOffset:0}, this.words),
 		new ImageText({src:'Resources/HandLetters/*.png',data:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',hOffset:0,vOffset:18}, this.words),
@@ -186,6 +187,7 @@ JView = function() {
 		//new ImageText({src:'Resources/HandLetters/*.png',data:'____',hOffset:0,vOffset:54}, this.words),
 		new ImageText({src:'Resources/HandLetters/*.png',data:'LIGHT',hOffset:0,vOffset:72}, this.words)
 	];
+	*/
 	
 };
 
@@ -201,7 +203,7 @@ JView.prototype = {
 		// first clean up
 		switch (this.state) {
 			case 'round':
-				this.gameWindow.onKeyDown = null;
+				widget.onKeyDown = null;
 				break;
 		}
 		
@@ -213,6 +215,7 @@ JView.prototype = {
 				break;
 			case 'round':
 				emptyFrame(this.letters);
+				emptyFrame(this.words);
 				this.pan.pan.onMouseUp = function() { ct.scramble(); };
 				this.trayLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
@@ -230,14 +233,30 @@ JView.prototype = {
 					this.trayLetters.add(params.letters[i]);
 				}
 				
+				this.updateNotecard();
 				
-				this.gameWindow.onKeyDown = function() {
-					switch (system.event.keyString) {
-						case 'Space':
+				// this.gameWindow.onKeyPress = function() {
+				// widget.onKeyDown = function() {
+				//widget.onKeyUp = function() {
+				this.gameWindow.onTextInput = function() {
+					lastdata = system.event.data;
+					switch (system.event.data) {
+						case ' ':
 							ct.scramble();
+							break;
+						case '\b': // backspace
+							ct.trayLetter();
+							break;
+						default:
+							var letter = system.event.data.toUpperCase();
+							if (/^[A-Z]$/.test(letter)) {
+								ct.playLetter(letter);
+							}
 							break;
 					}
 				};
+				
+				this.gameWindow.on
 				
 				
 			default:
@@ -269,6 +288,39 @@ JView.prototype = {
 		anms.push(this.trayLetters.scramble());
 		
 		AnimationQueue.queue(anms);
+	},
+	
+	updateNotecard: function() {
+		var hOffset = 0;
+		var vOffset = 0;
+		var t, lastLength;
+		
+		emptyFrame(this.words);
+		
+		for (var i in ct.currentWords) {
+			if (lastLength != i.length && hOffset > 0) {
+				hOffset = 0;
+				vOffset += 18;
+			}
+			lastLength = i.length;
+			
+			if (ct.currentWords[i]) {
+			// if (random(0, 2) >= 1) {
+				t = new ImageText({src:'Resources/HandLetters/*.png', data:i, hOffset: hOffset, vOffset: vOffset}, this.words);
+			} else {
+				var placeholder = '';
+				for (var j = 0; j < i.length; j++) {
+					placeholder += '_';
+				}
+				t = new ImageText({src:'Resources/HandLetters/*.png', data:placeholder, hOffset: hOffset, vOffset: vOffset}, this.words);
+			}
+			
+			hOffset = Math.ceil((hOffset + t.frame.width + 50) / 15) * 15;
+			if (hOffset > 240) {
+				hOffset = 0;
+				vOffset += 18;
+			}
+		}
 	},
 	
 	

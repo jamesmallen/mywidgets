@@ -3,6 +3,9 @@
  * Controller for Jumbalaya
  */
 
+const MIN_WORDS_PER_ROUND = 5;
+const MAX_WORDS_PER_ROUND = 26;
+
 
 JController = function() {
 	this.view = new JView();
@@ -105,7 +108,8 @@ JController.prototype = {
 	 * Returns params to pass to view state change
 	 */
 	newRound: function() {
-		var ret = {}, src;
+		var src;
+		
 		switch (parseInt(preferences.numberLetters.value)) {
 			case 6:
 				src = this.sixes;
@@ -117,19 +121,112 @@ JController.prototype = {
 				throw new Error('Unexpected numberLetters value');
 				break;
 		}
-		ret.letters = src[random(0, src.length)];
 		
-		ret.letters = arrayShuffle(ret.letters.split('')).join('');
+		this.currentWords = [];
 		
+		// ensure we get at least the minimum number of word permutations
+		while (this.currentWords.length < MIN_WORDS_PER_ROUND) {
+			// get a random six/seven-letter word
+			this.letters = src[random(0, src.length)];
+			this.letters = arrayShuffle(this.letters.split('')).join('');
+			
+			// get all the permutations of the word
+			this.currentWords = this.words.permute(this.letters);
+		}
+		
+		// sort by word length
+		this.currentWords.sort(function(a, b) {
+			return a.length - b.length;
+		});
+		
+		// pare down the word list to fit on the notecard
+		this.pareWords();
+		
+		// convert this.currentWords to object format
+		this.convertWords();
 		
 		// set up times
 		this.startTime = animator.milliseconds;
 		this.finishTime = this.startTime + parseInt(preferences.roundLength.value);
 		
 		
-		return ret;
+		return {
+			letters: this.letters
+		};
 	},
 	
+	/**
+	 * trayLetter()
+	 * trayLetter(i)
+	 * pulls off the last letter from the tray
+	 */
+	trayLetter: function(i) {
+		if (typeof(i) == 'undefined') {
+			i = this.view.playLetters.letters.length - 1;
+		}
+		
+		if (i < 0) {
+			return;
+		}
+		
+		var tLetter = this.view.playLetters.pull(i);
+		
+		if (tLetter) {
+			this.view.trayLetters.push(tLetter);
+		}
+	},
+	
+	
+	/**
+	 * playLetter(i)
+	 * Plays the letter at index i
+	 */
+	playLetter: function(i) {
+		var tLetter = this.view.trayLetters.pull(i);
+		
+		if (tLetter) {
+			this.view.playLetters.push(tLetter);
+		}
+	},
+	
+	/**
+	 * convertWords()
+	 * converts this.currentWords to object format
+	 */
+	convertWords: function() {
+		var t = {};
+		for (var i = 0; i < this.currentWords.length; i++) {
+			t[this.currentWords[i]] = false;
+		}
+		
+		this.currentWords = t;
+	},
+	
+	
+	/**
+	 * pareWords()
+	 * pares down this.currentWords to fit on a notecard
+	 */
+	pareWords: function() {
+		/*
+		var row = 0;
+		var col = 0;
+		var currentWordLength = this.currentWords[0].length;
+		
+		var newWords = [];
+		
+		for (var i = 0; i < this.currentWords.length; i++) {
+			if (
+			if (this.currentWords[i].length != currentWordLength) {
+				row++;
+				col = 0;
+			}
+		}
+		*/
+		if (this.currentWords.length > MAX_WORDS_PER_ROUND) {
+			this.currentWords.splice(MAX_WORDS_PER_ROUND - 2, this.currentWords.length - MAX_WORDS_PER_ROUND);
+		}
+	},
 	
 	
 	
@@ -145,7 +242,10 @@ JController.prototype = {
 	
 	
 	
-	
+	/**
+	 * updateRound()
+	 * function to force graphical updates of the timer elements
+	 */
 	updateRound: function() {
 		var now = animator.milliseconds;
 		
@@ -170,11 +270,12 @@ JController.prototype = {
 				menu: { visible: true },
 				timer: { visible: false },
 				answer: { visible: false },
-				letters: { visible: false },
+				letters: { visible: false }
 			}
 		},
 		
 		round: {
+			paused: false,
 			view: {
 				gameWindow: { visible: true },
 				wordsWindow: { opacity: 255 },
@@ -185,7 +286,7 @@ JController.prototype = {
 					pauseButton: { visible: true }
 				},
 				answer: { visible: true },
-				letters: { visible: true },
+				letters: { visible: true }
 			}
 		}
 	}

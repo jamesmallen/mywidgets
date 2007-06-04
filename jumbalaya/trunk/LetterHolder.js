@@ -4,6 +4,9 @@ const SCRAMBLE_MIN_HEIGHT = 15;
 const SCRAMBLE_MAX_HEIGHT = 40;
 const SCRAMBLE_ROTATION = 10;
 
+
+const REFRESH_DURATION = 120;
+
 /**
  * LetterHolder(letters)
  * LetterHolder()
@@ -82,16 +85,16 @@ LetterHolder.prototype = {
 				this.initialized = true;
 			}
 			
-			if (t >= SCRAMBLE_DURATION) {
+			if (t >= REFRESH_DURATION) {
 				this.holder.refresh();
 				return false;
 			} else {
-				var percent = t / SCRAMBLE_DURATION;
+				var percent = t / REFRESH_DURATION;
 				
 				for (var i in this.objs) {
 					var t = this.objs[i];
 					for (var j in t.finish) {
-						t.obj[j] = animator.ease(t.start[j], t.finish[j], percent, animator.kEaseIn);
+						t.obj[j] = animator.ease(t.start[j], t.finish[j], percent, animator.kEaseNone);//animator.kEaseIn);
 					}
 				}
 				return true;
@@ -110,33 +113,36 @@ LetterHolder.prototype = {
 	 * Returns a letter Image, or false if the letter is not pull-able
 	 */
 	pull: function(letter) {
+		print('pull from: ' + this.letters);
 		var foundLetter = null;
 		switch (typeof(letter)) {
 			case 'number':
-				var letterObject = this.letters.splice(letter, 1);
+				foundLetter = this.letters[letter];
+				this.letters.splice(letter, 1);
 				this.refreshAnim();
-				foundLetter = letterObject;
 				break;
 			case 'string':
 				for (var i in this.letters) {
 					if (this.letters[i].letter == letter) {
-						var letterObject = this.letters.splice(i, 1);
+						foundLetter = this.letters[i];
+						this.letters.splice(i, 1);
 						this.refreshAnim();
-						foundLetter = letterObject;
+						break;
 					}
 				}
 				break;
 			default:
 				for (var i in this.letters) {
 					if (this.letters[i] == letter) {
-						var letterObject = this.letters.splice(i, 1);
+						foundLetter = this.letters.splice(i, 1);
 						this.refreshAnim();
-						foundLetter = letterObject;
+						break;
 					}
 				}
 		}
 		if (foundLetter) {
 			foundLetter.holder = null;
+			return foundLetter;
 		} else {
 			return false;
 		}
