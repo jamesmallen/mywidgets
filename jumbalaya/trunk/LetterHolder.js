@@ -28,7 +28,7 @@ LetterHolder.prototype = {
 	hAlign: 'center',
 	letters: null,
 	parentNode: null,
-	spacing: 40,
+	spacing: 33,
 	
 	// METHODS
 	/**
@@ -48,16 +48,120 @@ LetterHolder.prototype = {
 	},
 	
 	
+	refreshAnim: function(fixRotation) {
+		if (this._refreshAnim && this._refreshAnim.kill) {
+			this._refreshAnim.kill();
+		}
+		this._refreshAnim = new CustomAnimation(FLUID_ANIMATION_INTERVAL, function() {
+			var now = animator.milliseconds;
+			
+			var t = Math.max(now - this.startTime, 0);
+			
+			if (!this.initialized) {
+				this.objs = [];
+				for (var i in this.holder.letters) {
+					this.objs.push({
+						obj: this.holder.letters[i],
+						start: {
+							hOffset: this.holder.letters[i].hOffset,
+							vOffset: this.holder.letters[i].vOffset,
+							rotation: this.holder.letters[i].rotation
+						},
+						finish: { }
+					});
+				}
+				var tHOffset = this.holder.hOffset - ((this.objs.length - 1) * this.holder.spacing) / 2;
+				for (var i in this.objs) {
+					this.objs[i].finish.hOffset = tHOffset;
+					this.objs[i].finish.vOffset = this.holder.vOffset;
+					if (fixRotation) {
+						this.objs[i].finish.rotation = 0;
+					}
+					tHOffset += this.holder.spacing;
+				}
+				this.initialized = true;
+			}
+			
+			if (t >= SCRAMBLE_DURATION) {
+				this.holder.refresh();
+				return false;
+			} else {
+				var percent = t / SCRAMBLE_DURATION;
+				
+				for (var i in this.objs) {
+					var t = this.objs[i];
+					for (var j in t.finish) {
+						t.obj[j] = animator.ease(t.start[j], t.finish[j], percent, animator.kEaseIn);
+					}
+				}
+				return true;
+			}
+		});
+		this._refreshAnim.holder = this;
+		
+		animator.start(this._refreshAnim);
+	},
+	
+	
+	/**
+	 * pull(letter)
+	 * pull(letterIndex)
+	 * pull(letterObject)
+	 * Returns a letter Image, or false if the letter is not pull-able
+	 */
+	pull: function(letter) {
+		var foundLetter = null;
+		switch (typeof(letter)) {
+			case 'number':
+				var letterObject = this.letters.splice(letter, 1);
+				this.refreshAnim();
+				foundLetter = letterObject;
+				break;
+			case 'string':
+				for (var i in this.letters) {
+					if (this.letters[i].letter == letter) {
+						var letterObject = this.letters.splice(i, 1);
+						this.refreshAnim();
+						foundLetter = letterObject;
+					}
+				}
+				break;
+			default:
+				for (var i in this.letters) {
+					if (this.letters[i] == letter) {
+						var letterObject = this.letters.splice(i, 1);
+						this.refreshAnim();
+						foundLetter = letterObject;
+					}
+				}
+		}
+		if (foundLetter) {
+			foundLetter.holder = null;
+		} else {
+			return false;
+		}
+	},
+	
+	
+	/**
+	 * push(letterObject)
+	 */
+	push: function(letterObject) {
+		letterObject.holder = this;
+		this.letters.push(letterObject);
+		this.refreshAnim();
+	},
+	
+	
+	
+	
+	
 	/**
 	 * scramble()
 	 * Returns a CustomAnimation object that, when called, will mix up the letters
 	 */
 	scramble: function() {
 		var anm = new CustomAnimation(FLUID_ANIMATION_INTERVAL, function() {
-			var now = animator.milliseconds;
-			
-			var t = Math.max(now - this.startTime, 0);
-			
 			if (!this.initialized) {
 				this.holder.letters = arrayShuffle(this.holder.letters);
 				
@@ -71,8 +175,13 @@ LetterHolder.prototype = {
 					this.rots[i] = [this.holder.letters[i].rotation, (SCRAMBLE_ROTATION * 2 * Math.random()) - SCRAMBLE_ROTATION];
 					tHOffset += this.holder.spacing;
 				}
+				this.startTime = now;
 				this.initialized = true;
 			}
+			
+			var now = animator.milliseconds;
+			
+			var t = Math.max(now - this.startTime, 0);
 			
 			if (t >= SCRAMBLE_DURATION) {
 				this.holder.refresh();
@@ -98,10 +207,11 @@ LetterHolder.prototype = {
 	
 	add: function(letter) {
 		var ret = makeAndAppend(Image, this.parentNode, {
-			src: 'Resources/Letters/' + letter.toUpperCase() + '.png',
+			src: 'Resources/BigLetters/' + letter.toUpperCase() + '.png',
 			hAlign: 'center',
+			tracking: 'rectangle',
 			letter: letter.toUpperCase(),
-			parentNode: this.parentNode
+			holder: this
 		});
 		this.letters.push(ret);
 		this.refresh();

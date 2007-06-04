@@ -5,11 +5,14 @@
 		<setting name="allowCustomObjectAttributes" value="true" />
 	</settings>
 	
-	<window title="Jumbalaya" id="gameWindow" width="458" height="346" visible="true">
+	<window title="Jumbalaya" name="gameWindow" id="gameWindow" width="458" height="346" visible="true">
 	</window>
 	
-	<window title="Jumbalaya" id="wordsWindow" width="362" height="271" visible="false">
+	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true">
 	</window>
+	
+	<preference name="numberLetters" hidden="true" defaultValue="6" value="6" />
+	<preference name="roundLength" hidden="true" defaultValue="180000" /> <!-- round length in ms -->
 	
 	<script src="Jumbalaya.js"></script>
 	

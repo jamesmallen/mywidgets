@@ -124,7 +124,7 @@ arrayCompare = function(arr1, arr2) {
 };
 
 
-in_array = function(needle, haystack, strict) {
+inArray = function(needle, haystack, strict) {
 	var equals;
 	if (strict) {
 		equals = function(a,b) {
@@ -146,7 +146,7 @@ in_array = function(needle, haystack, strict) {
 arrayMerge = function(arr1, arr2, excludeDuplicates) {
 	var tArr = arr1.slice(0);
 	for (var i in arr2) {
-		if (!excludeDuplicates || !in_array(arr2[i], arr1)) {
+		if (!excludeDuplicates || !inArray(arr2[i], arr1)) {
 			tArr.push(arr2[i]);
 		}
 	}
@@ -169,4 +169,35 @@ makeAndAppend = function(objType, parent, params) {
 	var ret = makeObject(objType, params);
 	parent.appendChild(ret);
 	return ret;
+};
+
+applyProperties = function(dst, src) {
+	for (var i in src) {
+		if (typeof(src[i]) == 'object') {
+			applyProperties(dst[i], src[i]);
+		} else {
+			dst[i] = src[i];
+		}
+	}
+};
+
+padString = function(str, len, padString, suffix) {
+	if (typeof(padString) == 'undefined' || padString.length <= 0) {
+		padString = ' ';
+	}
+	while (str.length < len) {
+		if (suffix) {
+			str += padString;
+		} else {
+			str = padString + str;
+		}
+	}
+	
+	if (suffix) {
+		str = str.substr(0, len);
+	} else {
+		str = str.substr(str.length - len);
+	}
+	
+	return str;
 };

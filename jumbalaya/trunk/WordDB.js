@@ -6,7 +6,7 @@ const WORDDB_BLOCKLENGTH = 27;
  * Object for storing and looking up words
  */
 WordDB = function() {
-	this._arr = [];
+	this._arr = {};
 	this._blocks = 1;
 }
 
