@@ -155,7 +155,7 @@ LetterHolder.prototype = {
 	push: function(letterObject) {
 		letterObject.holder = this;
 		this.letters.push(letterObject);
-		this.refreshAnim();
+		this.refreshAnim(true);
 	},
 	
 	
@@ -221,6 +221,18 @@ LetterHolder.prototype = {
 		});
 		this.letters.push(ret);
 		this.refresh();
+		return ret;
+	},
+	
+	/**
+	 * getWord()
+	 * returns the letters as a string
+	 */
+	getWord: function() {
+		var ret = '';
+		for (var i = 0; i < this.letters.length; i++) {
+			ret += this.letters[i].letter;
+		}
 		return ret;
 	}
 };

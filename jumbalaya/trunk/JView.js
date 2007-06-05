@@ -247,6 +247,10 @@ JView.prototype = {
 						case '\b': // backspace
 							ct.trayLetter();
 							break;
+						case '\r': // return
+						case '\n': // linefeed
+							ct.playWord();
+							break;
 						default:
 							var letter = system.event.data.toUpperCase();
 							if (/^[A-Z]$/.test(letter)) {
@@ -288,6 +292,12 @@ JView.prototype = {
 		anms.push(this.trayLetters.scramble());
 		
 		AnimationQueue.queue(anms);
+	},
+	
+	
+	updateScore: function() {
+		
+		this.updateNotecard();
 	},
 	
 	updateNotecard: function() {

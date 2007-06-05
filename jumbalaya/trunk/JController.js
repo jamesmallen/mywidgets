@@ -155,6 +155,39 @@ JController.prototype = {
 		};
 	},
 	
+	
+	/**
+	 * clearWord()
+	 * clears out the current play
+	 */
+	clearWord: function() {
+		while (this.trayLetter(0)) {
+			// noop
+		}
+	},
+	
+	
+	/**
+	 * playWord()
+	 */
+	playWord: function() {
+		var word = this.view.playLetters.getWord().toLowerCase();
+		if (typeof(this.currentWords[word]) != 'undefined') {
+			if (this.currentWords[word] == false) {
+				log('Found ' + word);
+				this.currentWords[word] = true;
+				// TODO: increment score
+				this.view.updateScore();
+				
+				this.clearWord();
+			} else {
+				log(word + ' was already found.');
+			}
+		} else {
+			log(word + ' is not one of the words.');
+		}
+	},
+	
 	/**
 	 * trayLetter()
 	 * trayLetter(i)
@@ -174,6 +207,8 @@ JController.prototype = {
 		if (tLetter) {
 			this.view.trayLetters.push(tLetter);
 		}
+		
+		return tLetter;
 	},
 	
 	
@@ -187,6 +222,8 @@ JController.prototype = {
 		if (tLetter) {
 			this.view.playLetters.push(tLetter);
 		}
+		
+		return tLetter;
 	},
 	
 	/**
