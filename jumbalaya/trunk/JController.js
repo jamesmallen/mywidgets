@@ -4,7 +4,9 @@
  */
 
 const MIN_WORDS_PER_ROUND = 5;
-const MAX_WORDS_PER_ROUND = 26;
+const MAX_WORDS_PER_ROUND = 36;
+const POINTS_PER_LETTER = 20;
+const POINTS_PER_MS = 1;
 
 
 JController = function() {
@@ -46,6 +48,7 @@ JController.prototype = {
 	score: null,
 	startTime: null,
 	finishTime: null,
+	ended: false,
 	paused: false,
 	updateAnimation: null,
 	
@@ -71,7 +74,6 @@ JController.prototype = {
 		// then apply simple properties changes from states object
 		applyProperties(this, this.states[state]);
 		
-		
 		// then complex logic
 		switch (state) {
 			case 'menu':
@@ -82,6 +84,7 @@ JController.prototype = {
 				this.updateAnimation = new CustomAnimation(FLUID_ANIMATION_INTERVAL, function() { this.ct.updateRound(); return true; });
 				this.updateAnimation.ct = this;
 				animator.start(this.updateAnimation);
+				this.view.showMessage(getMessage('start'));
 				break;
 			default:
 				log('Unhandled state switch: ' + state);
@@ -174,17 +177,20 @@ JController.prototype = {
 		var word = this.view.playLetters.getWord().toLowerCase();
 		if (typeof(this.currentWords[word]) != 'undefined') {
 			if (this.currentWords[word] == false) {
-				log('Found ' + word);
+				this.view.showMessage(getMessage('foundWord', word.toUpperCase()));
+				
 				this.currentWords[word] = true;
-				// TODO: increment score
+				
+				this.score += word.length * POINTS_PER_LETTER;
+				
 				this.view.updateScore();
 				
 				this.clearWord();
 			} else {
-				log(word + ' was already found.');
+				this.view.showMessage(getMessage('duplicate', word.toUpperCase()));
 			}
 		} else {
-			log(word + ' is not one of the words.');
+			this.view.showMessage(getMessage('nonWord', word.toUpperCase()));
 		}
 	},
 	
@@ -281,13 +287,32 @@ JController.prototype = {
 	
 	/**
 	 * updateRound()
-	 * function to force graphical updates of the timer elements
+	 * function to force graphical updates of the timer elements, and to check
+	 * for the end of the round
 	 */
 	updateRound: function() {
 		var now = animator.milliseconds;
 		
 		if (this.paused) {
 			this.finishTime += (now - this.updateRound.lastUpdated);
+		} else {
+			if (now >= this.finishTime) {
+				this.endRound();
+				return;
+			} else {
+				// see if all the words are found
+				var foundAll = true;
+				
+				for (var i in this.currentWords) {
+					if (!this.currentWords[i]) {
+						foundAll = false;
+					}
+				}
+				if (foundAll) {
+					this.endRound();
+					return;
+				}
+			}
 		}
 		
 		this.view.updateTimer();
@@ -295,6 +320,42 @@ JController.prototype = {
 		this.updateRound.lastUpdated = now;
 	},
 	
+	/**
+	 * endRound()
+	 * ends the round
+	 */
+	endRound: function() {
+		this.ended = true;
+		if (this.updateAnimation && this.updateAnimation.kill) {
+			this.updateAnimation.kill();
+		}
+		
+		// determine if the buzzword was gotten
+		var maxLength = 0;
+		var maxFoundLength = 0;
+		var foundAll = true;
+		
+		for (var i in this.currentWords) {
+			maxLength = Math.max(i.length, maxLength);
+			if (this.currentWords[i]) {
+				maxFoundLength = Math.max(i.length, maxFoundLength);
+			} else {
+				foundAll = false;
+			}
+		}
+		
+		if (foundAll) {
+			// bonus points!
+			this.score += (Math.floor(this.finishTime - now) * POINTS_PER_MS);
+			this.view.showMessage(getMessage('endAll'), null, getMessage('advance2'));
+		} else if (maxFoundLength == maxLength) {
+			this.view.showMessage(getMessage('advance'), null, getMessage('advance2'));
+			this.view.endRound(true);
+		} else {
+			this.view.showMessage(getMessage('noAdvance'), null, getMessage('noAdvance2'));
+			this.view.endRound(false);
+		}
+	},
 	
 	
 	
@@ -306,12 +367,14 @@ JController.prototype = {
 				wordsWindow: { opacity: 0 },
 				menu: { visible: true },
 				timer: { visible: false },
+				messageBox: { visible: false },
 				answer: { visible: false },
 				letters: { visible: false }
 			}
 		},
 		
 		round: {
+			ended: false,
 			paused: false,
 			view: {
 				gameWindow: { visible: true },
@@ -322,6 +385,7 @@ JController.prototype = {
 					startButton: { visible: false },
 					pauseButton: { visible: true }
 				},
+				messageBox: { opacity: 0, visible: true },
 				answer: { visible: true },
 				letters: { visible: true }
 			}
@@ -329,3 +393,36 @@ JController.prototype = {
 	}
 };
 
+
+/**
+ * getMessage(code)
+ * getMessage(code, str)
+ * Gets an appropriate message for a particular message type
+ */
+getMessage = function(code, str) {
+	var msg = getMessage.messages[code];
+	
+	if (msg instanceof Array) {
+		msg = msg[random(0, msg.length)];
+	}
+	
+	msg = msg.replace('%1%', str);
+	
+	return msg;
+};
+
+getMessage.messages = {
+	foundWord: '%1% is one of the words!',
+	foundBuzzword: 'Bon! %1% is the buzzword for the next round!',
+	duplicate: 'You already got %1%.',
+	nonWord: 'Desole, %1% isn\'t one of the words.',
+	start: 'Allons!',
+	noAdvance: 'You didn\'t get the buzzword. C\'est la vie.',
+	noAdvance2: 'Click on "QUIT" to go back to the Main Menu.',
+	advance: 'Laissez les bons temps rouler!',
+	advance2: 'Click "START" to continue to the next round.',
+	endAll: 'Way to go! You got all the words!'
+};
+	
+	
+	

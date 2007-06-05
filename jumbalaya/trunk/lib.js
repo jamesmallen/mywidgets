@@ -154,19 +154,28 @@ arrayMerge = function(arr1, arr2, excludeDuplicates) {
 };
 
 
-makeObject = function(objType, params) {
+/**
+ * makeObject(objType, params)
+ * makeObject(objType, params, applyMode)
+ */
+makeObject = function(objType, params, applyMode) {
 	if (!params) {
 		params = {};
 	}
 	var ret = new objType();
-	for (var i in params) {
-		ret[i] = params[i];
+	
+	if (applyMode) {
+		applyProperties(ret, params);
+	} else {
+		for (var i in params) {
+			ret[i] = params[i];
+		}
 	}
 	return ret;
 };
 
-makeAndAppend = function(objType, parent, params) {
-	var ret = makeObject(objType, params);
+makeAndAppend = function(objType, parent, params, applyMode) {
+	var ret = makeObject(objType, params, applyMode);
 	parent.appendChild(ret);
 	return ret;
 };

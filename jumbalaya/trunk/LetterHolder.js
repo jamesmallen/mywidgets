@@ -2,7 +2,7 @@
 const SCRAMBLE_DURATION = 250;
 const SCRAMBLE_MIN_HEIGHT = 15;
 const SCRAMBLE_MAX_HEIGHT = 40;
-const SCRAMBLE_ROTATION = 10;
+const SCRAMBLE_ROTATION = 6;
 
 
 const REFRESH_DURATION = 120;
@@ -43,6 +43,7 @@ LetterHolder.prototype = {
 			var totalWidth = (this.letters.length - 1) * this.spacing;
 			var hOffset = this.hOffset - (totalWidth / 2);
 			for (var i = 0; i < this.letters.length; i++) {
+				this.letters[i].index = i;
 				this.letters[i].hOffset = hOffset;
 				this.letters[i].vOffset = this.vOffset;
 				hOffset += this.spacing;
@@ -62,7 +63,8 @@ LetterHolder.prototype = {
 			
 			if (!this.initialized) {
 				this.objs = [];
-				for (var i in this.holder.letters) {
+				for (var i = 0; i < this.holder.letters.length; i++) {
+					this.holder.letters[i].index = i;
 					this.objs.push({
 						obj: this.holder.letters[i],
 						start: {
@@ -113,7 +115,6 @@ LetterHolder.prototype = {
 	 * Returns a letter Image, or false if the letter is not pull-able
 	 */
 	pull: function(letter) {
-		print('pull from: ' + this.letters);
 		var foundLetter = null;
 		switch (typeof(letter)) {
 			case 'number':
@@ -142,6 +143,7 @@ LetterHolder.prototype = {
 		}
 		if (foundLetter) {
 			foundLetter.holder = null;
+			foundLetter.index = null;
 			return foundLetter;
 		} else {
 			return false;
@@ -154,6 +156,7 @@ LetterHolder.prototype = {
 	 */
 	push: function(letterObject) {
 		letterObject.holder = this;
+		letterObject.index = this.letters.length;
 		this.letters.push(letterObject);
 		this.refreshAnim(true);
 	},
@@ -175,7 +178,8 @@ LetterHolder.prototype = {
 				this.peaks = [];
 				this.rots = [];
 				var tHOffset = this.holder.hOffset - ((this.holder.letters.length - 1) * this.holder.spacing) / 2;
-				for (var i in this.holder.letters) {
+				for (var i = 0; i < this.holder.letters.length; i++) {
+					this.holder.letters[i].index = i;
 					this.slides[i] = [this.holder.letters[i].hOffset, tHOffset];
 					this.peaks[i] = random(SCRAMBLE_MIN_HEIGHT, SCRAMBLE_MAX_HEIGHT);
 					this.rots[i] = [this.holder.letters[i].rotation, (SCRAMBLE_ROTATION * 2 * Math.random()) - SCRAMBLE_ROTATION];
@@ -196,7 +200,7 @@ LetterHolder.prototype = {
 				var percent = t / SCRAMBLE_DURATION;
 				var heightP = Math.sin(Math.PI * percent);
 				
-				for (var i in this.holder.letters) {
+				for (var i = 0; i < this.holder.letters.length; i++) {
 					var t = this.holder.letters[i];
 					t.hOffset = animator.ease(this.slides[i][0], this.slides[i][1], percent, animator.kEaseNone);
 					t.vOffset = this.holder.vOffset - (heightP * this.peaks[i]);
@@ -217,7 +221,8 @@ LetterHolder.prototype = {
 			hAlign: 'center',
 			tracking: 'rectangle',
 			letter: letter.toUpperCase(),
-			holder: this
+			holder: this,
+			index: this.letters.length
 		});
 		this.letters.push(ret);
 		this.refresh();

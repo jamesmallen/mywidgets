@@ -4,6 +4,14 @@
  */
 
 
+const MESSAGE_FADE_DURATION = 120; // in milliseconds
+const MESSAGE_SHOW_DURATION = 4; // in seconds
+
+const NOTECARD_LINE_HEIGHT = 18;
+const NOTECARD_LINE_WIDTH = 240;
+const NOTECARD_WORD_SPACING = 25;
+
+
 JView = function() {
 	this.gameWindow = gameWindow;
 	
@@ -69,7 +77,6 @@ JView = function() {
 	this.timer = makeAndAppend(Frame, this.gameWindow, {
 		hOffset: 214,
 		vOffset: 177
-		// opacity: 0
 	});
 	this.timer.timer = makeAndAppend(Image, this.timer, {
 		src: 'Resources/Timer.png',
@@ -95,41 +102,19 @@ JView = function() {
 		src: 'Resources/TimerButtonStart.png',
 		hOffset: 25,
 		vOffset: 112,
-		tracking: 'rectangle',
-		onMouseUp: function() {
-			ct.paused = false;
-			ct.updateRound();
-			ct.view.timer.startButton.visible = false;
-			ct.view.timer.pauseButton.visible = true;
-		}
+		tracking: 'rectangle'
 	});
 	this.timer.pauseButton = makeAndAppend(Image, this.timer, {
 		src: 'Resources/TimerButtonPause.png',
 		hOffset: 25,
 		vOffset: 112,
-		tracking: 'rectangle',
-		onMouseUp: function() {
-			ct.paused = true;
-			ct.updateRound();
-			ct.view.timer.startButton.visible = true;
-			ct.view.timer.pauseButton.visible = false;
-		}
+		tracking: 'rectangle'
 	});
 	this.timer.quitButton = makeAndAppend(Image, this.timer, {
 		src: 'Resources/TimerButtonQuit.png',
 		hOffset: 72,
 		vOffset: 116,
-		tracking: 'rectangle',
-		onMouseUp: function() {
-			ct.paused = true;
-			ct.updateRound();
-			if (1 == alert('Are you sure you want to quit?', 'Yes', 'No')) {
-				ct.changeState('menu');
-			} else {
-				ct.paused = false;
-				ct.updateRound();
-			}
-		}
+		tracking: 'rectangle'
 	});
 	
 	this.timer.time = makeAndAppend(Text, this.timer, {
@@ -154,6 +139,29 @@ JView = function() {
 	});
 	
 	
+	this.messageBox = makeAndAppend(Frame, this.gameWindow, {
+		hOffset: 304,
+		vOffset: 28
+	});
+	this.messageBox.bg = makeAndAppend(Image, this.messageBox, {
+		src: 'Resources/ShrimpBubble.png'
+	});
+	this.messageBox.message = makeAndAppend(TextArea, this.messageBox, {
+		data: 'This is a test message',
+		hOffset: 13,
+		vOffset: 64,
+		vAlign: 'center',
+		width: 110,
+		editable: false,
+		scrollbar: false,
+		style: {
+			color: '#000',
+			fontFamily: '"Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", sans-serif',
+			fontSize: '14px',
+			textAlign: 'center'
+		}
+	}, true);
+	
 	
 	this.answer = makeAndAppend(Frame, this.gameWindow, {
 		hOffset: 3
@@ -162,6 +170,25 @@ JView = function() {
 		src: 'Resources/AnswerBG.png'
 	});
 	
+	this.answer.buttons = makeAndAppend(Frame, this.answer, {
+		vOffset: 30,
+		visible: false
+	});
+	
+	this.answer.clearButton = makeAndAppend(Image, this.answer.buttons, {
+		src: 'Resources/AnswerButtonClear.png',
+		hAlign: 'center',
+		hOffset: 23,
+		tracking: 'rectangle',
+		onClick: this.actions.clearWord
+	});
+	this.answer.playButton = makeAndAppend(Image, this.answer.buttons, {
+		src: 'Resources/AnswerButtonEnter.png',
+		hAlign: 'center',
+		hOffset: 261,
+		tracking: 'rectangle',
+		onClick: this.actions.playWord
+	});
 	
 	
 	this.letters = makeAndAppend(Frame, this.gameWindow);
@@ -189,11 +216,20 @@ JView = function() {
 	];
 	*/
 	
+	
+	this._messageTimer = new Timer();
+	this._messageTimer.onTimerFired = function() { ct.view.hideMessage(); };
+	
 };
 
 JView.prototype = {
 	// PROPERTIES
 	state: null,
+	
+	// PRIVATE PROPERTIES
+	_messageFadeAnim: null,
+	_messageTimer: null,
+	
 	
 	/**
 	 * changeState()
@@ -216,7 +252,7 @@ JView.prototype = {
 			case 'round':
 				emptyFrame(this.letters);
 				emptyFrame(this.words);
-				this.pan.pan.onMouseUp = function() { ct.scramble(); };
+				this.pan.pan.onMouseUp = this.actions.scramble;
 				this.trayLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
 					hOffset: 145,
@@ -226,11 +262,15 @@ JView.prototype = {
 				this.playLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
 					hOffset: 145,
-					vOffset: 25
+					vOffset: 21
 				});
 				
-				for (var i in params.letters) {
+				for (var i = 0; i < params.letters.length; i++) {
 					this.trayLetters.add(params.letters[i]);
+				}
+				
+				for (var i = 0; i < this.trayLetters.letters.length; i++) {
+					this.trayLetters.letters[i].onClick = this.actions.clickLetter;
 				}
 				
 				this.updateNotecard();
@@ -238,35 +278,61 @@ JView.prototype = {
 				// this.gameWindow.onKeyPress = function() {
 				// widget.onKeyDown = function() {
 				//widget.onKeyUp = function() {
-				this.gameWindow.onTextInput = function() {
-					lastdata = system.event.data;
-					switch (system.event.data) {
-						case ' ':
-							ct.scramble();
-							break;
-						case '\b': // backspace
-							ct.trayLetter();
-							break;
-						case '\r': // return
-						case '\n': // linefeed
-							ct.playWord();
-							break;
-						default:
-							var letter = system.event.data.toUpperCase();
-							if (/^[A-Z]$/.test(letter)) {
-								ct.playLetter(letter);
-							}
-							break;
-					}
-				};
+				this.gameWindow.onTextInput = this.actions.textInput;
 				
-				this.gameWindow.on
-				
+				this.timer.pauseButton.onClick = this.actions.pause;
+				this.timer.startButton.onClick = this.actions.resume;
+				this.timer.quitButton.onClick = this.actions.quit;
 				
 			default:
 				break;
 		}
 		this.state = state;
+	},
+	
+	/**
+	 * showMessage(msg)
+	 * showMessage(msg, duration)
+	 */
+	showMessage: function(msg, duration, nextMsg) {
+		if (typeof(duration) == 'undefined' || duration == null) {
+			duration = MESSAGE_SHOW_DURATION;
+		}
+		
+		if (typeof(nextMsg) != 'undefined') {
+			this.nextMsg = nextMsg;
+		}
+		
+		this._messageTimer.ticking = false;
+		this.messageBox.message.data = msg;
+		
+		if (this._messageFadeAnim && this._messageFadeAnim.kill) {
+			this._messageFadeAnim.kill();
+		}
+		
+		this._messageFadeAnim = new FadeAnimation(this.messageBox, 255, MESSAGE_FADE_DURATION, animator.kEaseNone);
+		animator.start(this._messageFadeAnim);
+		
+		if (duration >= 0) {
+			this._messageTimer.interval = duration;
+			this._messageTimer.reset();
+			this._messageTimer.ticking = true;
+		}
+	},
+	
+	hideMessage: function() {
+		if (this.nextMsg) {
+			this.showMessage(this.nextMsg, 0);
+			this.nextMsg = null;
+		} else {
+			this._messageTimer.ticking = false;
+			if (this._messageFadeAnim && this._messageFadeAnim.kill) {
+				this._messageFadeAnim.kill();
+			}
+			
+			this._messageFadeAnim = new FadeAnimation(this.messageBox, 0, MESSAGE_FADE_DURATION, animator.kEaseNone);
+			animator.start(this._messageFadeAnim);
+		}
 	},
 	
 	
@@ -295,12 +361,18 @@ JView.prototype = {
 	},
 	
 	
+	
+	
+	
 	updateScore: function() {
-		
 		this.updateNotecard();
 	},
 	
-	updateNotecard: function() {
+	/**
+	 * updateNotecard()
+	 * updateNotecard(highlightMissing)
+	 */
+	updateNotecard: function(highlightMissing) {
 		var hOffset = 0;
 		var vOffset = 0;
 		var t, lastLength;
@@ -310,13 +382,16 @@ JView.prototype = {
 		for (var i in ct.currentWords) {
 			if (lastLength != i.length && hOffset > 0) {
 				hOffset = 0;
-				vOffset += 18;
+				vOffset += NOTECARD_LINE_HEIGHT;
 			}
 			lastLength = i.length;
 			
-			if (ct.currentWords[i]) {
+			if (ct.currentWords[i] || highlightMissing) {
 			// if (random(0, 2) >= 1) {
 				t = new ImageText({src:'Resources/HandLetters/*.png', data:i, hOffset: hOffset, vOffset: vOffset}, this.words);
+				if (!ct.currentWords[i] && highlightMissing) {
+					t.frame.style.background = 'rgba(255, 255, 0, 0.4)';
+				}
 			} else {
 				var placeholder = '';
 				for (var j = 0; j < i.length; j++) {
@@ -325,10 +400,10 @@ JView.prototype = {
 				t = new ImageText({src:'Resources/HandLetters/*.png', data:placeholder, hOffset: hOffset, vOffset: vOffset}, this.words);
 			}
 			
-			hOffset = Math.ceil((hOffset + t.frame.width + 50) / 15) * 15;
-			if (hOffset > 240) {
+			hOffset = Math.ceil((hOffset + t.frame.width + NOTECARD_WORD_SPACING) / 15) * 15;
+			if (hOffset > NOTECARD_LINE_WIDTH) {
 				hOffset = 0;
-				vOffset += 18;
+				vOffset += NOTECARD_LINE_HEIGHT;
 			}
 		}
 	},
@@ -355,12 +430,115 @@ JView.prototype = {
 			}
 		}
 		
+		if (this.playLetters.letters.length > 0) {
+			this.answer.buttons.visible = true;
+		} else {
+			this.answer.buttons.visible = false;
+		}
+		
 		this.timer.score.data = ct.score;
-	}
+	},
+	
+	/**
+	 * endRound(advance)
+	 * advance is whether or not to show a button to advance to the next round
+	 */
+	endRound: function(advance) {
+		this.timer.time.data = "0:00";
+		
+		this.timer.pauseButton.visible = false;
+		if (advance) {
+			this.timer.startButton.visible = true;
+			this.timer.startButton.onClick = this.actions.nextRound;
+		} else {
+			this.timer.startButton.visible = false;
+		}
+		
+		this.timer.quitButton.visible = true;
+		this.answer.buttons.visible = false;
+		
+		this.gameWindow.onTextInput = null;
+		this.pan.pan.onMouseUp = null;
+		
+		for (var i = 0; i < this.trayLetters.letters.length; i++) {
+			this.trayLetters.letters[i].onClick = null;
+		}
+		
+		for (var i = 0; i < this.playLetters.letters.length; i++) {
+			this.playLetters.letters[i].onClick = null;
+		}
+		
+		this.updateNotecard(true);
+	},
 	
 	
 	
 
 	
-	
+	actions: {
+		resume: function() {
+			ct.paused = false;
+			ct.updateRound();
+			ct.view.timer.startButton.visible = false;
+			ct.view.timer.pauseButton.visible = true;
+		},
+		pause: function() {
+			ct.paused = true;
+			ct.updateRound();
+			ct.view.timer.startButton.visible = true;
+			ct.view.timer.pauseButton.visible = false;
+		},
+		quit: function() {
+			if (!ct.ended) {
+				var oldPaused = ct.paused;
+				ct.paused = true;
+				ct.updateRound();
+				if (1 == alert('Are you sure you want to quit?', 'Yes', 'No')) {
+					ct.changeState('menu');
+				} else {
+					ct.paused = oldPaused;
+					ct.updateRound();
+				}
+			} else {
+				ct.changeState('menu');
+			}
+		},
+		nextRound: function() {
+			ct.changeState('round');
+		},
+		textInput: function() {
+			lastdata = system.event.data;
+			switch (system.event.data) {
+				case ' ':
+					ct.scramble();
+					break;
+				case '\b': // backspace
+					ct.trayLetter();
+					break;
+				case '\r': // return
+				case '\n': // linefeed
+					ct.playWord();
+					break;
+				default:
+					var letter = system.event.data.toUpperCase();
+					if (/^[A-Z]$/.test(letter)) {
+						ct.playLetter(letter);
+					}
+					break;
+			}
+		},
+		playWord: function() {
+			ct.playWord();
+		},
+		clearWord: function() {
+			ct.clearWord();
+		},
+		clickLetter: function() {
+			if (this.holder == ct.view.playLetters) {
+				ct.trayLetter(this.index);
+			} else {
+				ct.playLetter(this.index);
+			}
+		}
+	}
 };
