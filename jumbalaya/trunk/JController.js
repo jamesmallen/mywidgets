@@ -6,7 +6,7 @@
 const MIN_WORDS_PER_ROUND = 5;
 const MAX_WORDS_PER_ROUND = 36;
 const POINTS_PER_LETTER = 20;
-const POINTS_PER_MS = 1;
+const POINTS_PER_MS = .01;
 
 
 JController = function() {
@@ -184,14 +184,13 @@ JController.prototype = {
 				this.score += word.length * POINTS_PER_LETTER;
 				
 				this.view.updateScore();
-				
-				this.clearWord();
 			} else {
 				this.view.showMessage(getMessage('duplicate', word.toUpperCase()));
 			}
 		} else {
 			this.view.showMessage(getMessage('nonWord', word.toUpperCase()));
 		}
+		this.clearWord();
 	},
 	
 	/**
@@ -346,8 +345,10 @@ JController.prototype = {
 		
 		if (foundAll) {
 			// bonus points!
-			this.score += (Math.floor(this.finishTime - now) * POINTS_PER_MS);
+			this.score += Math.floor((this.finishTime - animator.milliseconds) * POINTS_PER_MS);
+			this.view.updateScore();
 			this.view.showMessage(getMessage('endAll'), null, getMessage('advance2'));
+			this.view.endRound(true);
 		} else if (maxFoundLength == maxLength) {
 			this.view.showMessage(getMessage('advance'), null, getMessage('advance2'));
 			this.view.endRound(true);

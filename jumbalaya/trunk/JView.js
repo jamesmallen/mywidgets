@@ -366,6 +366,7 @@ JView.prototype = {
 	
 	updateScore: function() {
 		this.updateNotecard();
+		this.timer.score.data = ct.score;
 	},
 	
 	/**
@@ -444,7 +445,7 @@ JView.prototype = {
 	 * advance is whether or not to show a button to advance to the next round
 	 */
 	endRound: function(advance) {
-		this.timer.time.data = "0:00";
+		// this.timer.time.data = "0:00";
 		
 		this.timer.pauseButton.visible = false;
 		if (advance) {
@@ -476,6 +477,9 @@ JView.prototype = {
 
 	
 	actions: {
+		scramble: function() {
+			ct.scramble();
+		},
 		resume: function() {
 			ct.paused = false;
 			ct.updateRound();
