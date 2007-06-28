@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <metadata>
 	<name>Jumbalaya</name>
-	<version>1.0</version>
+	<version>0.8</version>
 	<identifier>33da9bc0-0256-11dc-822a-005056C00008</identifier>
 	<image usage="security" src="Resources/SecurityIcon.png" />
 	<image usage="dock" src="Resources/DockIcon.png" />
