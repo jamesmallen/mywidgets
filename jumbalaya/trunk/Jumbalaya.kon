@@ -37,8 +37,12 @@
 			<shadow hOffset="0" vOffset="2" color="#000000" opacity="127" />
 			Babel is a Kalamazoo Widget.
 		</about-text> -->
-		<about-version hOffset="345" vOffset="112" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="14" style="bold">
-			<shadow hOffset="0" vOffset="1" color="#000000" opacity="127" />
+		<about-text hOffset="99" vOffset="158" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12" url="http://www.kzoowidgets.com">
+			<shadow hOffset="0" vOffset="2" color="#000000"/>
+			Jumbalaya is a Kalamazoo Widget.
+		</about-text>
+		<about-version hOffset="159" vOffset="109" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
+			<shadow hOffset="0" vOffset="2" color="#000000"/>
 		</about-version>
 		
 		<about-image>Resources/AboutTheAuthor.png</about-image>

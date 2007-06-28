@@ -140,9 +140,7 @@ JController.prototype = {
 		}
 		
 		// sort by word length
-		this.currentWords.sort(function(a, b) {
-			return a.length - b.length;
-		});
+		this.sortWords();
 		
 		// pare down the word list to fit on the notecard
 		this.pareWords();
@@ -252,6 +250,8 @@ JController.prototype = {
 	 * pares down this.currentWords to fit on a notecard
 	 */
 	pareWords: function() {
+		var newWords = [];
+		
 		/*
 		var row = 0;
 		var col = 0;
@@ -268,8 +268,26 @@ JController.prototype = {
 		}
 		*/
 		if (this.currentWords.length > MAX_WORDS_PER_ROUND) {
-			this.currentWords.splice(MAX_WORDS_PER_ROUND - 2, this.currentWords.length - MAX_WORDS_PER_ROUND);
+			log('Paring words');
+			
+			for (var i = 0; i < MAX_WORDS_PER_ROUND - 1; i++) {
+				newWords.push(this.currentWords.splice(random(0, this.currentWords.length - 1), 1)[0]);
+			}
+			newWords.push(this.currentWords.splice(this.currentWords.length - 1, 1)[0]);
+			
+			this.currentWords = newWords;
+			this.sortWords();
+			// this.currentWords.splice(MAX_WORDS_PER_ROUND - 2, this.currentWords.length - MAX_WORDS_PER_ROUND);
 		}
+	},
+	
+	/**
+	 * sortWords()
+	 */
+	sortWords: function() {
+		this.currentWords.sort(function(a, b) {
+			return a.length - b.length;
+		});
 	},
 	
 	
@@ -364,6 +382,7 @@ JController.prototype = {
 	 * onPreferencesChanged()
 	 */
 	onPreferencesChanged: function() {
+		log('preferences changed');
 		this.loadWords();
 	},
 	
