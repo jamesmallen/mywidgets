@@ -26,8 +26,9 @@ JController = function() {
 		}
 	}
 	
-	this.words.load('words0.txt');
+	this.loadWords();
 	
+	widget.onPreferencesChanged = this.onPreferencesChanged;
 	
 	/*
 	gameWindow.onKeyDown = function() {
@@ -51,6 +52,7 @@ JController.prototype = {
 	ended: false,
 	paused: false,
 	updateAnimation: null,
+	lastDifficulty: null,
 	
 	
 	
@@ -358,8 +360,30 @@ JController.prototype = {
 		}
 	},
 	
+	/**
+	 * onPreferencesChanged()
+	 */
+	onPreferencesChanged: function() {
+		this.loadWords();
+	},
 	
-	
+	/**
+	 * loadWords()
+	 * Loads the appropriate wordlists into this.words from preferences
+	 */
+	loadWords: function() {
+		var curDifficulty = parseInt(preferences.difficulty.value);
+		if (curDifficulty != this.lastDifficulty) {
+			this.words.reset();
+			
+			for (var i = 0; i < curDifficulty; i++) {
+				log('Loading wordlist ' + i + '...');
+				this.words.load('words' + i + '.txt');
+			}
+			
+			this.lastDifficulty = curDifficulty;
+		}
+	},
 	
 	states: {
 		menu: {

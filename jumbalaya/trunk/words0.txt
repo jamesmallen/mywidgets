@@ -429,7 +429,6 @@ assent
 assert
 assess
 asset
-asshole
 assign
 assist
 assume
@@ -781,8 +780,6 @@ bisect
 bishop
 bison
 bit
-bitch
-bitchy
 bite
 biting
 bitten
@@ -1595,7 +1592,6 @@ cobbler
 cobra
 cobweb
 cocaine
-cock
 cockpit
 cocky
 cocoa
@@ -2829,8 +2825,6 @@ factual
 faculty
 fad
 fade
-fag
-faggot
 fail
 failing
 failure
@@ -3296,9 +3290,6 @@ fruits
 fruity
 frumpy
 fry
-fuck
-fucker
-fucking
 fudge
 fuel
 fulcrum
@@ -3552,7 +3543,6 @@ goblet
 goblin
 gobs
 god
-goddamn
 goddess
 godless
 godlike
@@ -4055,7 +4045,6 @@ horizon
 hormone
 horn
 hornet
-horny
 horrid
 horrify
 horror
@@ -5480,7 +5469,6 @@ nick
 nickel
 niece
 nifty
-nigger
 night
 nightie
 nightly
@@ -5699,8 +5687,6 @@ ordinal
 ore
 organ
 organic
-orgasm
-orgy
 orient
 origin
 oriole
@@ -6082,8 +6068,6 @@ pique
 piracy
 piranha
 pirate
-piss
-pissed
 pistol
 piston
 pit
@@ -6231,7 +6215,6 @@ popular
 porch
 pore
 pork
-porn
 porous
 port
 portal
@@ -6473,7 +6456,6 @@ pus
 push
 pusher
 pushy
-pussy
 put
 putrid
 putt
@@ -7420,8 +7402,6 @@ shiny
 ship
 shirk
 shirt
-shit
-shitty
 shiver
 shoal
 shock
@@ -7660,7 +7640,6 @@ slur
 slurp
 slush
 slushy
-slut
 sly
 slyly
 smack
@@ -7693,8 +7672,6 @@ smudge
 smug
 smuggle
 smugly
-smut
-smutty
 snack
 snafu
 snag

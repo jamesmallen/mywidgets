@@ -445,7 +445,7 @@ JView.prototype = {
 	 * advance is whether or not to show a button to advance to the next round
 	 */
 	endRound: function(advance) {
-		// this.timer.time.data = "0:00";
+		this.timer.time.data = "";
 		
 		this.timer.pauseButton.visible = false;
 		if (advance) {

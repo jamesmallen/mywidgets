@@ -6,8 +6,7 @@ const WORDDB_BLOCKLENGTH = 27;
  * Object for storing and looking up words
  */
 WordDB = function() {
-	this._arr = {};
-	this._blocks = 1;
+	this.reset();
 }
 
 WordDB.prototype = {
@@ -18,6 +17,15 @@ WordDB.prototype = {
 	
 	
 	// METHODS
+	/**
+	 * reset()
+	 * Resets _arr and _blocks.
+	 */
+	reset: function() {
+		this._blocks = 1;
+		this._arr = {};
+	},
+	
 	/**
 	 * load(wordList, showProgress)
 	 * load(wordList)
