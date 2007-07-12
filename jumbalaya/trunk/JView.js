@@ -197,8 +197,15 @@ JView = function() {
 	
 	
 	// wordsWindow
+	/*
 	makeAndAppend(Image, this.wordsWindow, {
 		src: 'Resources/Notecards.png'
+	});
+	*/
+	
+	this.notecard = makeAndAppend(Canvas, this.wordsWindow, {
+		width: 362,
+		height: 271
 	});
 	
 	this.words = makeAndAppend(Frame, this.wordsWindow, {
@@ -369,6 +376,70 @@ JView.prototype = {
 		this.timer.score.data = ct.score;
 	},
 	
+	
+	/**
+	 * drawNotecardStack()
+	 */
+	drawNotecardStack: function() {
+		var ctx = this.notecard.getContext('2d');
+		
+		ctx.clearRect(0, 0, this.notecard.width, this.notecard.height);
+		
+		var width = this.notecard.width - 33;
+		var height = this.notecard.height - 39;
+		
+		ctx.save();
+		ctx.translate(20, 11);
+		ctx.rotate(1.4 * Math.PI / 180);
+		this.drawNotecard(ctx, width, height, true);
+		ctx.restore();
+		
+		ctx.save();
+		ctx.translate(19, 9.5);
+		ctx.rotate(0.7 * Math.PI / 180);
+		this.drawNotecard(ctx, width, height, true);
+		ctx.restore();
+		
+		ctx.save();
+		ctx.translate(18, 8);
+		this.drawNotecard(ctx, width, height, false);
+		ctx.restore();
+		
+	},
+	
+	/**
+	 * drawNotecard(ctx, simple)
+	 * drawNotecard(ctx)
+	 */
+	drawNotecard: function(ctx, width, height, simple) {
+		if (typeof(simple) == 'undefined') {
+			simple = false;
+		}
+		
+		ctx.save();
+		
+		// drop shadow
+		rectangleShadow(ctx, 0, 6, width, height, 15, 0.33);
+		
+		// notecard fill
+		ctx.save();
+		ctx.rect(0, 0, width, height);
+		ctx.clip();
+		ctx.translate(-0.25 * width, 0);
+		ctx.scale(1.5, 1);
+		// ctx.fillStyle = 'rgb(241, 241, 241)';
+		var grad = ctx.createRadialGradient(0.5 * width, 0.095 * height, 0.017 * height, 0.5 * width, -0.095 * height, 1.293 * height);
+		grad.addColorStop(0, 'rgb(241,241,241)');
+		grad.addColorStop(1, 'rgb(198,198,198)');
+		ctx.fillStyle = grad;
+		ctx.fillRect(0, 0, width, height);
+		
+		ctx.restore();
+		
+		ctx.restore();
+	},
+	
+	
 	/**
 	 * updateNotecard()
 	 * updateNotecard(highlightMissing)
@@ -377,6 +448,8 @@ JView.prototype = {
 		var hOffset = 0;
 		var vOffset = 0;
 		var t, lastLength;
+		
+		this.drawNotecardStack();
 		
 		emptyFrame(this.words);
 		

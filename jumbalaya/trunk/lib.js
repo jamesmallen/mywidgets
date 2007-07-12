@@ -210,3 +210,115 @@ padString = function(str, len, padString, suffix) {
 	
 	return str;
 };
+
+
+
+/**
+ * rectangleShadow(ctx, x, y, width, height, r, opacity)
+ */
+rectangleShadow = function(ctx, x, y, width, height, r, opacity) {
+	ctx.save();
+	
+	x += r / 2;
+	y += r / 2;
+	width -= r;
+	height -= r;
+	
+	ctx.fillStyle = 'rgba(0,0,0,' + opacity + ')';
+	
+	// top left
+	cornerShadow(ctx, x, y, r, opacity, 2);
+	
+	// top center
+	sideShadow(ctx, x, y - r, width, r, opacity, 1);
+	
+	// top right
+	cornerShadow(ctx, x + width, y, r, opacity, 1);
+	
+	// middle left
+	sideShadow(ctx, x - r, y, r, height, opacity, 4);
+	
+	// middle center
+	ctx.fillRect(x, y, width, height);
+	
+	// middle right
+	sideShadow(ctx, x + width, y, r, height, opacity, 2);
+	
+	// bottom left
+	cornerShadow(ctx, x, y + height, r, opacity, 3);
+	
+	// bottom center
+	sideShadow(ctx, x, y + height, width, r, opacity, 3);
+	
+	// bottom right
+	cornerShadow(ctx, x + width, y + height, r, opacity, 4);
+	
+	ctx.restore();
+};
+
+sideShadow = function(ctx, x, y, width, height, opacity, side) {
+	var grad;
+	
+	ctx.save();
+	
+	switch (side) {
+		case 1:
+			// top
+			grad = ctx.createLinearGradient(x, y + height, x, y);
+			break;
+		case 2:
+			// right
+			grad = ctx.createLinearGradient(x, y, x + width, y);
+			break;
+		case 3:
+			// bottom
+			grad = ctx.createLinearGradient(x, y, x, y + height);
+			break;
+		case 4:
+			// left
+			grad = ctx.createLinearGradient(x + width, y, x, y);
+			break;
+	}
+	grad.addColorStop(0, 'rgba(0,0,0,' + opacity + ')');
+	grad.addColorStop(1, 'rgba(0,0,0,0)');
+	
+	ctx.fillStyle = grad;
+	ctx.fillRect(x, y, width, height);
+	
+	ctx.restore();
+};
+
+cornerShadow = function(ctx, x, y, r, opacity, quadrant) {
+	ctx.save();
+	
+	var grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+	grad.addColorStop(0, 'rgba(0,0,0,' + opacity + ')');
+	grad.addColorStop(1, 'rgba(0,0,0,0)');
+	
+	ctx.fillStyle = grad;
+	switch (quadrant) {
+		case 1:
+			// top right
+			ctx.fillRect(x, y - r, r, r);
+			break;
+		case 2:
+			// top left
+			ctx.fillRect(x - r, y - r, r, r);
+			break;
+		case 3:
+			// bottom left
+			ctx.fillRect(x - r, y, r, r);
+			break;
+		case 4:
+			// bottom right
+			ctx.fillRect(x, y, r, r);
+			break;
+		default:
+			ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+			break;
+	}
+	ctx.restore();
+};
+	
+
+
