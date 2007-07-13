@@ -143,7 +143,8 @@ JController.prototype = {
 		this.sortWords();
 		
 		// pare down the word list to fit on the notecard
-		this.pareWords();
+		// this.pareWords();
+		this.sortWords();
 		
 		// convert this.currentWords to object format
 		this.convertWords();
@@ -422,7 +423,7 @@ JController.prototype = {
 			paused: false,
 			view: {
 				gameWindow: { visible: true },
-				wordsWindow: { opacity: 255 },
+				// wordsWindow: { opacity: 255 },
 				menu: { visible: false },
 				timer: {
 					visible: true,

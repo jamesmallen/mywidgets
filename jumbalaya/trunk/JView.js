@@ -8,8 +8,14 @@ const MESSAGE_FADE_DURATION = 120; // in milliseconds
 const MESSAGE_SHOW_DURATION = 4; // in seconds
 
 const NOTECARD_LINE_HEIGHT = 18;
-const NOTECARD_LINE_WIDTH = 240;
-const NOTECARD_WORD_SPACING = 25;
+const NOTECARD_LINE_WIDTH = 150;
+const NOTECARD_WORD_SPACING = {
+	3: 75,
+	4: 75,
+	5: 100,
+	6: 100,
+	7: 175
+};
 
 
 JView = function() {
@@ -164,7 +170,8 @@ JView = function() {
 	
 	
 	this.answer = makeAndAppend(Frame, this.gameWindow, {
-		hOffset: 3
+		hOffset: 3,
+		vOffset: 30
 	});
 	this.answer.bg = makeAndAppend(Image, this.answer, {
 		src: 'Resources/AnswerBG.png'
@@ -269,7 +276,7 @@ JView.prototype = {
 				this.playLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
 					hOffset: 145,
-					vOffset: 21
+					vOffset: 51
 				});
 				
 				for (var i = 0; i < params.letters.length; i++) {
@@ -280,7 +287,8 @@ JView.prototype = {
 					this.trayLetters.letters[i].onClick = this.actions.clickLetter;
 				}
 				
-				this.updateNotecard();
+				this.initNotecard();
+				// this.updateNotecard();
 				
 				// this.gameWindow.onKeyPress = function() {
 				// widget.onKeyDown = function() {
@@ -383,6 +391,9 @@ JView.prototype = {
 	drawNotecardStack: function() {
 		var ctx = this.notecard.getContext('2d');
 		
+		var oldCompositeOperation = ctx.globalCompositeOperation;
+		ctx.globalCompositeOperation = 'source-over';
+		
 		ctx.clearRect(0, 0, this.notecard.width, this.notecard.height);
 		
 		var width = this.notecard.width - 33;
@@ -405,6 +416,7 @@ JView.prototype = {
 		this.drawNotecard(ctx, width, height, false);
 		ctx.restore();
 		
+		ctx.globalCompositeOperation = oldCompositeOperation;
 	},
 	
 	/**
@@ -434,11 +446,46 @@ JView.prototype = {
 		ctx.fillStyle = grad;
 		ctx.fillRect(0, 0, width, height);
 		
+		if (!simple) {
+			// lines
+			ctx.lineWidth = 1.5;
+			
+			// red line
+			ctx.strokeStyle = 'rgba(255,0,0,0.15)';
+			ctx.beginPath();
+			ctx.moveTo(0, 29);
+			ctx.lineTo(width, 29);
+			ctx.stroke();
+			
+			// blue lines
+			ctx.strokeStyle = 'rgba(0,0,255,0.15)';
+			for (var vOffset = 47; vOffset < height; vOffset += 18) {
+				ctx.beginPath();
+				ctx.moveTo(0, vOffset);
+				ctx.lineTo(width, vOffset);
+				ctx.stroke();
+			}
+		}
+		
 		ctx.restore();
+		
 		
 		ctx.restore();
 	},
 	
+	/**
+	 * initNotecard()
+	 */
+	initNotecard: function() {
+		// draws the notecard stack
+		var vOffset = this.updateNotecard(false);
+		
+		this.notecard.height = Math.max(vOffset + 90, 31);
+		this.drawNotecardStack();
+		
+		this.wordsWindow.height = this.notecard.height;
+		this.wordsWindow.opacity = 255;
+	},
 	
 	/**
 	 * updateNotecard()
@@ -448,8 +495,6 @@ JView.prototype = {
 		var hOffset = 0;
 		var vOffset = 0;
 		var t, lastLength;
-		
-		this.drawNotecardStack();
 		
 		emptyFrame(this.words);
 		
@@ -461,7 +506,6 @@ JView.prototype = {
 			lastLength = i.length;
 			
 			if (ct.currentWords[i] || highlightMissing) {
-			// if (random(0, 2) >= 1) {
 				t = new ImageText({src:'Resources/HandLetters/*.png', data:i, hOffset: hOffset, vOffset: vOffset}, this.words);
 				if (!ct.currentWords[i] && highlightMissing) {
 					t.frame.style.background = 'rgba(255, 255, 0, 0.4)';
@@ -474,12 +518,14 @@ JView.prototype = {
 				t = new ImageText({src:'Resources/HandLetters/*.png', data:placeholder, hOffset: hOffset, vOffset: vOffset}, this.words);
 			}
 			
-			hOffset = Math.ceil((hOffset + t.frame.width + NOTECARD_WORD_SPACING) / 15) * 15;
+			hOffset += NOTECARD_WORD_SPACING[lastLength];
 			if (hOffset > NOTECARD_LINE_WIDTH) {
 				hOffset = 0;
 				vOffset += NOTECARD_LINE_HEIGHT;
 			}
 		}
+		
+		return vOffset;
 	},
 	
 	
