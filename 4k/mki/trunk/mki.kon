@@ -1,0 +1,7 @@
+<widget minimumVersion="4.0">
+	<preference name="size" title="Size" defaultValue="128"></preference>
+	<preference name="blurMax" hidden="true" defaultValue=".1"></preference>
+	<preference name="focusLength" hidden="true" defaultValue="5000"></preference>
+	<preference name="subj" type="selector" title="Image" defaultValue="clouds.jpg"></preference>
+	<script src="mki.js"></script>
+</widget>
