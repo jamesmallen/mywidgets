@@ -40,8 +40,10 @@ function opImage(i,o,w,h) {
 		c.fillRect(0,0,w,h);
 		c.globalCompositeOperation='source-over';
 		opImage._O=null;
+		log('saving '+f2);
 		t.saveImageToFile(f2,'png');
 		opImage._O=make(Image,{src:f2});
+		opImage._o=o;
 	}
 	return opImage._O;
 }
@@ -69,6 +71,7 @@ function pdump(o) {
 function updP(t) {
 	var q,z;
 	for (q in p) {
+		if (q=='o') continue;
 		z=p[q];
 		z.i=z.a*Math.cos(z.b*t+z.c)+z.d;
 	}
@@ -83,10 +86,14 @@ function anmUpd() {
 }
 
 function updPrf() {
-	sz=parseInt(preferences.size.value,10);
-	p.o.a=parseInt(preferences.o.value,10)/100;
-	p.o.d=p.o.a*1.2;
-	subjImg=make(Image,{src:preferences.subj.value});
+	sz=parseInt(preferences.sz.value,10);
+	//p.o.a=parseInt(preferences.o.value,10)/100;
+	//p.o.d=p.o.a*1.2;
+	p.o.i=parseInt(preferences.cn.value,10)/100;
+	subj=preferences.subj.value;
+	subj=='SAMPLE'?subj=system.widgetDataFolder+'/sample':subj;
+	subjTmr.interval=parseInt(preferences.subjDur.value,10);
+	// subjImg=make(Image,{src:preferences.subj.value});
 }
 
 function refresh() {
@@ -95,13 +102,15 @@ function refresh() {
 	bg.src=null;
 	$.clearRect(-2,-2,3,3);
 	rndrBall();
-	var bgSrc=system.widgetDataFolder + '/ball.png';
+	var bgSrc=system.widgetDataFolder+'/cache/ball.png';
+	log('saving ball.png');
 	cv.saveImageToFile(bgSrc,'png');
 	$.clearRect(-1,-1,2,2);
 	bg.src=bgSrc;
 	if (anm&&anm.kill) {
 		anm.kill();
 	}
+	rotateSubj();
 	anm=new CustomAnimation(100,anmUpd);
 	animator.start(anm);
 	updP(0);
@@ -121,20 +130,7 @@ function rsz() {
 	$.translate(1,-1);
 }
 
-function gearTest() {
-	$.save();
-	$.fillStyle='#f0f';
-	$.globalCompositeOperation='source-over';
-	gear(.55,.6,17,.5,.2);
-	$.lineWidth=0.02;
-	$.lineJoin='round';
-	$.stroke();
-	// $.fillRect(0,0,0,0);
-	$.restore();
-}
-
-
-function gear(r1,r2,t,rr,s) {
+function gear($,r1,r2,t,rr,s) {
 	var i,a=0,d=2*Math.PI/t,sd,ad,ad1,ad2;
 	typeof(rr)=='undefined'?rr=.5:rr;
 	typeof(s)=='undefined'?s=.5:s;
@@ -242,20 +238,99 @@ function rndrBall() {
 	$.restore();
 }
 
+function rotateSubj() {
+	var i,glob,imgs=[];
+	if (filesystem.isDirectory(subj)) {
+		glob=filesystem.getDirectoryContents(subj,true);
+		for (i=0;i<glob.length;i++) {
+			if (/\.(png|jpe?g|gif)$/i.test(glob[i])) {
+				imgs.push(subj+'/'+glob[i]);
+			}
+		}
+		if (imgs.length) {
+			i=random(0,imgs.length);
+			if (i==rotateSubj._i) {
+				i=(i+1)%imgs.length;
+			}
+			rotateSubj._i=i;
+			subjImg=make(Image,{src:imgs[i]});
+		} else {
+			subjImg=make(Image);
+		}
+	} else {
+		subjImg=make(Image);
+	}
+}
+
+
+function firstRun() {
+	filesystem.createDirectory(cache);
+	makeSamples();
+}
+
+function makeSamples() {
+	var c,$,path=system.widgetDataFolder+'/sample',atts={width:256,height:256};
+	if (!filesystem.itemExists(path)) {
+		filesystem.createDirectory(path);
+	}
+	log('making gear1');
+	// gear1
+	c=make(Canvas,atts);
+	$=c.getContext('2d');
+	$.scale(128,-128);
+	$.translate(.9,-.8);
+	gear($,.35,.42,11,.6,.1);
+	$.globalCompositeOperation='source-over';
+	$.fillStyle='#ccc';
+	$.fill();
+	$.lineWidth=0.02;
+	$.lineJoin='round';
+	$.strokeStyle='#111';
+	$.stroke();
+	// $.fillRect(0,0,0,0);
+	c.saveImageToFile(path+'/gear1.png','png');
+	
+	
+	log('making gear2');
+	// gear1
+	c=make(Canvas,atts);
+	$=c.getContext('2d');
+	$.scale(128,-128);
+	$.translate(1.3,-1.2);
+	gear($,.24,.31,7,.5,.05);
+	$.globalCompositeOperation='source-over';
+	$.fillStyle='#999';
+	$.fill();
+	$.lineWidth=0.021;
+	$.lineJoin='round';
+	$.strokeStyle='#111';
+	$.stroke();
+	// $.fillRect(0,0,0,0);
+	c.saveImageToFile(path+'/gear2.png','png');
+	
+	
+}
 
 
 
-var anm,sz,$,wn,cv,bg;
-var p={
+var anm,sz,$,wn,cv,bg,subj,subjTmr,cache=system.widgetDataFolder+'/cache',p;
+p={
 	tX:{a:.4,b:.0003,c:2,d:0},
 	ty:{a:.4,b:.0003,c:1,d:0},
 	sX:{a:.4,b:.0002,c:2,d:1.6},
 	sY:{a:.4,b:.0002,c:1,d:1.6},
-	o:{a:.08,b:.0001,c:1.5,d:.09},
+	// o:{a:.08,b:.0001,c:1.5,d:.09},
+	o:{i:.09},
 	c:{a:.05,b:.0002,c:0,d:.06}
 };
+subjTmr=new Timer();
+subjTmr.onTimerFired=rotateSubj;
+
+firstRun();
 
 updPrf();
 wn=make(Window,{width:sz,height:sz});
 widget.onPreferencesChanged=refresh;
+
+subjTmr.ticking=true;
 refresh();
