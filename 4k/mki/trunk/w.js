@@ -14,31 +14,28 @@ function mkapp(o,r,p,m) {
 }
 
 function opi(i,o,w,h) {
-	var t,c,r=false,f=wdf+'/opi',f1=f+'.png',f2=f+'o.png';
-	typeof(w)=='undefined'?w=i.srcWidth:w;
-	typeof(h)=='undefined'?h=i.srcHeight:h;
+	var t,c,r=0,f=wdf+'/opi',f1=f+'.png',f2=f+'o.png';
 	opi._cv?t=opi._cv:opi._cv=t=mk(Canvas);
 	c=t.getContext('2d');
 	if (w!=opi._w||h!=opi._h||i.src!=opi._src) {
 		t.width=w;t.height=h;
-		c.clearRect(0,0,w,h);
+		// c.clearRect(0,0,w,h);
+		c.globalCompositeOperation='copy';
 		c.drawImage(i,0,0,w,h);
-		opi._I=null;
-		t.saveImageToFile(f+'.png','png');
-		opi._I=mk(Image,{src:f1});
+		opi._I=mk(Image);
+		toim(t,f1,opi._I);
 		opi._w=w;opi._h=h;opi._src=i.src;
-		r=true;
+		r=1;
 	}
 	if (o!=opi._o||r) {
-		c.clearRect(0,0,w,h);
-		c.drawImage(opi._I,0,0,w,h);
-		c.globalCompositeOperation='destination-in';
-		c.fillStyle='rgba(0,0,0,'+o+')';
+		//c.clearRect(0,0,w,h);
+		c.globalCompositeOperation='copy';
+		c.fillStyle='rgba(255,255,255,'+o+')';
 		c.fillRect(0,0,w,h);
-		c.globalCompositeOperation='source-over';
-		opi._O=null;
-		t.saveImageToFile(f2,'png');
-		opi._O=mk(Image,{src:f2});
+		c.globalCompositeOperation='source-in';
+		c.drawImage(opi._I,0,0,w,h);
+		opi._O=mk(Image);
+		toim(t,f2,opi._O);
 		opi._o=o;
 	}
 	return opi._O;
@@ -92,15 +89,20 @@ function refresh() {
 	bg.src=null;
 	$.clearRect(-1,-1,2,2);
 	ball($);
-	var bgSrc=wdf+'/ball.png';
-	cv.saveImageToFile(bgSrc,'png');
+	toim(cv,wdf+'/ball.png',bg);
 	$.clearRect(-1,-1,2,2);
-	bg.src=bgSrc;
 	anm&&anm.kill?anm.kill():anm;
 	rotatesubj();
 	anm=new CustomAnimation(100,anmupd);
 	animator.start(anm);
 	updp(0);
+}
+
+function toim(c,f,i) {
+	i=i?i:{};
+	i.src=null;
+	c.saveImageToFile(f,'png');
+	i.src=f;
 }
 
 function rsz() {
@@ -132,12 +134,12 @@ function paint() {
 	$.save();
 	
 	$.globalCompositeOperation='destination-out';
-	$.fillStyle='rgba(0,0,0,'+p.c.i+')';
+	$.fillStyle='rgba(127,127,127,'+p.c.i+')';
 	$.fillRect(-1,-1,2,2);
 	$.globalCompositeOperation='source-over';
 	
 	// mask
-	$.arc(0,0,.83,0,2*pi,true);
+	$.arc(0,0,.83,0,2*pi,1);
 	$.clip();
 	/*
 	var maskGrad,old=$.globalCompositeOperation;
@@ -149,6 +151,7 @@ function paint() {
 	$.globalCompositeOperation=old;
 	*/
 	t=opi(subjimg,p.o.i,lw,lh);
+	// t=opi(subjimg,.1,lw,lh);
 	$.translate(p.tX.i,p.ty.i);
 	$.scale(p.sX.i,p.sY.i);
 	$.drawImage(t,-w/2,h/2,w,-h);
@@ -182,7 +185,7 @@ function ball($) {
 	// crystal
 	$.save();
 	//$.beginPath();
-	$.arc(0,0,.83,0,2*pi,true);
+	$.arc(0,0,.83,0,2*pi,1);
 	$.clip();
 	$.fillStyle='rgba(255,255,255,.33)';
 	$.fillRect(-1,-1,2,2);
@@ -195,7 +198,7 @@ function ball($) {
 	// reflection
 	$.save();
 	$.scale(1.9,1);
-	$.arc(0,.544,.256,0,2*pi,true);
+	$.arc(0,.544,.256,0,2*pi,1);
 	grad=$.createLinearGradient(0,.8,0,.288);
 	addops(grad,255,255,255,0,.32,1,.08);
 	$.fillStyle=grad;
@@ -206,7 +209,7 @@ function ball($) {
 function rotatesubj() {
 	var i,glob,imgs=[];
 	if (filesystem.isDirectory(subj)) {
-		glob=filesystem.getDirectoryContents(subj,true);
+		glob=filesystem.getDirectoryContents(subj,1);
 		for (i=0;i<glob.length;i++)
 			/\.(png|jpe?g)$/i.test(glob[i])?imgs.push(subj+'/'+glob[i]):imgs;
 		if (imgs.length) {
@@ -230,8 +233,8 @@ function firstrun() {
 	$.scale(37.5,-37.5);
 	$.translate(1,-.95);
 	ball($);
-	c.saveImageToFile(wdf+'/dock.png','png');
-	j=XMLDOM.parse(filesystem.readFile('d.xml'));
+	toim(c,wdf+'/dock.png');
+	j=XMLDOM.parse('<dock-item version="1.0"><image id="i"/></dock-item>');
 	i=j.getElementById('i');
 	i.setAttribute('src',wdf+'/dock.png');
 	widget.setDockItem(j);
@@ -272,8 +275,7 @@ function firstrun() {
 	*/
 	$.fill();
 	$.stroke();
-	c.saveImageToFile(path+'/gears.png','png');
-	
+	toim(c,path+'/gears.png');
 	
 	// waves1
 	c=mk(Canvas,atts);
@@ -293,18 +295,17 @@ function firstrun() {
 		wave($,-i*8,i*12,8,8,32+i);
 		$.stroke();
 	}
-	c.saveImageToFile(path+'/waves.png','png');
-	
+	toim(c,path+'/waves.png');
 	
 	for (i=0;i<2;i++) {
 		// fog
 		c=mk(Canvas,{width:64,height:64});
 		$=c.getContext('2d');
-		j=plasma(64,.1,1,32,true);
+		j=plasma(64,.1,1,32,1);
 		k=plasma(64,10,191,32);
 		k=chops(k,64,'+');
 		rastarr($,64,k,k,k,j);
-		c.saveImageToFile(path+'/fog'+i+'.png','png');
+		toim(c,path+'/fog'+i+'.png');
 	}
 	
 	
@@ -382,7 +383,7 @@ function arrize(a,sz) {
 }
 
 function rastarr($,sz,r,g,b,a) {
-	var i,j,v,op=false;
+	var i,v;
 	a=a?a:1;
 	r=arrize(r,sz*sz);g=arrize(g,sz*sz);b=arrize(b,sz*sz);a=arrize(a,sz*sz);
 	for (y=0;y<sz;y++)
@@ -407,9 +408,9 @@ function gear($,r1,r2,t,rr,s) {
 	$.moveTo(r1,a);
 	for (i=0;i<t;i++) {
 		a-=sd;
-		$.arc(0,0,r2,a,a-ad2,true);
+		$.arc(0,0,r2,a,a-ad2,1);
 		a-=ad2+sd;
-		$.arc(0,0,r1,a,a-ad1,true);
+		$.arc(0,0,r1,a,a-ad1,1);
 		a-=ad1;
 	}
 }
@@ -451,5 +452,5 @@ updprf();
 wn=mk(Window,{width:sz,height:sz});
 widget.onPreferencesChanged=refresh;
 
-subjtmr.ticking=true;
+subjtmr.ticking=1;
 refresh();
