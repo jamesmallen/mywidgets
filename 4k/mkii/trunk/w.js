@@ -1,3 +1,11 @@
+Math.mean = function() {
+	var i, r;
+	for (i = 0; i < arguments.length; i++) {
+		r += arguments[i];
+	}
+	return r / arguments.length;
+}
+
 function mk(O,p,m) {
 	var r=new O();
 	p=p?p:{};
@@ -106,103 +114,118 @@ QFace.prototype = {
 
 deg=Math.PI/180;
 
-ddd={
-	pts:[],
-	fcs:[],
-	mtrls:['#000'],
-	mat:matident()
+function ddd(ctx) {
+	with (this) {
+		$ = ctx;
+		pts = [];
+		fcs = [];
+		mtrls = ['#000'];
+		mat = matident();
+	}
 }
+ddd.prototype = {
+	$:0,
+	pts:0,
+	ptst:0,
+	fcs:0,
+	mtrls:0,
+	mat:0,
+	
+	// methods
+	mkpt: function(x, y, z) {
+		var i;
+		for (i = 0; i < this.pts.length; i++) {
+			if (this.pts[i].x == x && this.pts[i].y == y && this.pts[i].z == z) {
+				return i;
+			}
+		}
+		// didn't find the point in pts already
+		this.pts.push({x:x, y:y, z:z});
+		return this.pts.length - 1;
+	},
+	
+	mkmtrl: function(color) {
+		for (i = 0; i < this.mtrls.length; i++) {
+			if (this.mtrls[i] == color) {
+				return i;
+			}
+		}
+		this.mtrls.push(color);
+		return this.mtrls.length - 1;
+	},
+	
+	mkface: function(material) {
+		var i, a, m=this.mkmtrl(material), t=[];
+		for (i = 1; i < arguments.length; i+=3) {
+			t.push(this.mkpt(arguments[i], arguments[i + 1], arguments[i + 2]));
+		}
+		this.fcs.push({p: t, m: m, z: 0});
+	},
 
-ddd.mkpt = function(x, y, z) {
-	var i;
-	for (i = 0; i < ddd.pts.length; i++) {
-		if (ddd.pts[i].x == x && ddd.pts[i].y == y && ddd.pts[i].z == z) {
-			return i;
+
+	precalc: function() {
+		var i, j, a, b;
+		
+		with (this) {
+			// transform points
+			ptst = [];
+			for (i = 0; i < pts.length; i++) {
+				t = matapp(mat, pts[i]);
+				ptst.push({x:t[0], y:t[1], z:t[2]});
+			}
+			
+			// calc z-order
+			for (i = 0; i < fcs.length; i++) {
+				a = fcs[i].p;
+				fcs[i].z = 0;
+				for (j = 0; j < a.length; j++) {
+					fcs[i].z += this.ptst[a[j]].z;
+				}
+				fcs[i].z /= a.length;
+			}
+			
+			// order faces
+			fcs.sort(function(a, b) { return a.z - b.z; });
+		}
+		
+
+	},
+	
+	render: function() {
+		var i, j, f, p;
+		
+		with (this) {
+			$.clearRect(-1,-1,2,2);
+			/*
+			$.fillStyle = '#f0f';
+			$.fillRect(-1,-1,2,2);
+			*/
+			precalc();
+			
+			for (i = 0; i < fcs.length; i++) {
+				// print('face ' + i);
+				f = fcs[i].p;
+				p = ptst[f[0]];
+				$.beginPath();
+				$.moveTo(p.x, p.y);
+				// print('\t'+p.x+', '+p.y);
+				for (j = 1; j < f.length; j++) {
+					p = ptst[f[j]];
+					$.lineTo(p.x, p.y);
+					// print('\t'+p.x+', '+p.y);
+				}
+				$.closePath();
+				$.fillStyle = mtrls[fcs[i].m];
+				$.fill();
+				$.stroke();
+			}
 		}
 	}
-	// didn't find the point in pts already
-	ddd.pts.push({x:x, y:y, z:z});
-	return ddd.pts.length - 1;
+
 };
 
-ddd.mkmtrl = function(color) {
-	for (i = 0; i < ddd.mtrls.length; i++) {
-		if (ddd.mtrls[i] == color) {
-			return i;
-		}
-	}
-	ddd.mtrls.push(color);
-	return ddd.mtrls.length - 1;
-}
 
-ddd.mkface = function(material) {
-	var i, a, m=ddd.mkmtrl(material), t=[];
-	for (i = 1; i < arguments.length; i+=3) {
-		t.push(ddd.mkpt(arguments[i], arguments[i + 1], arguments[i + 2]));
-	}
-	ddd.fcs.push({
-		p: t,
-		m: m
-	});
-};
-
-
-ddd.apply = function() {
-	var i, a, b;
-	ddd.ptst = [];
-	for (i = 0; i < ddd.pts.length; i++) {
-		t = matapp(ddd.mat, ddd.pts[i]);
-		ddd.ptst.push({x:t[0], y:t[1], z:t[2]});
-	}
-}
-
-ddd.render = function() {
-	var i, j, f, p;
-	$.clearRect(-1,-1,2,2);
-	/*
-	$.fillStyle = '#f0f';
-	$.fillRect(-1,-1,2,2);
-	*/
-	ddd.apply();
-	ddd.sort();
-	for (i = 0; i < ddd.fcs.length; i++) {
-		// print('face ' + i);
-		f = ddd.fcs[i].p;
-		p = ddd.ptst[f[0]];
-		$.beginPath();
-		$.moveTo(p.x, p.y);
-		// print('\t'+p.x+', '+p.y);
-		for (j = 1; j < f.length; j++) {
-			p = ddd.ptst[f[j]];
-			$.lineTo(p.x, p.y);
-			// print('\t'+p.x+', '+p.y);
-		}
-		$.closePath();
-		$.fillStyle = ddd.mtrls[ddd.fcs[i].m];
-		$.fill();
-		$.stroke();
-	}
-}
-
-// returns the midpt of a given set of points
-ddd.midpt = function(p, transformed) {
-	var i, sum={x:0,y:0,z:0}, src=transformed?ddd.ptst:ddd.pts;
-	for (i = 0; i < p.length; i++) {
-		sum.x += src[p[i]].x;
-		sum.y += src[p[i]].y;
-		sum.z += src[p[i]].z;
-	}
-	sum.x /= p.length;
-	sum.y /= p.length;
-	sum.z /= p.length;
-	return sum;
-}
-
-ddd.sort = function() {
-	ddd.fcs.sort(function(a, b) { return ddd.midpt(a.p, true).z - ddd.midpt(b.p, true).z});
-}
-
-function makecube() {
+function makecube(d) {
 	/*
 	var i, t, n, m=[{z:0},{x:1,y:0,z:1},{x:0,y:1,z:1}];
 	for (i = 0; i < m.length; i++) {
@@ -214,42 +237,42 @@ function makecube() {
 	*/
 	
 	
-	ddd.mkface('#00f',
+	d.mkface('#00f',
 		-1,-1,-1,
 		-1, 1,-1,
 		 1, 1,-1,
 		 1,-1,-1
 	);
 	
-	ddd.mkface('#f00',
+	d.mkface('#f00',
 		-1,-1, 1,
 		-1, 1, 1,
 		 1, 1, 1,
 		 1,-1, 1
 	);
 	
-	ddd.mkface('#0f0',
+	d.mkface('#0f0',
 		-1,-1,-1,
 		-1,-1, 1,
 		-1, 1, 1,
 		-1, 1,-1
 	);
 
-	ddd.mkface('#aa0',
+	d.mkface('#aa0',
 		 1,-1,-1,
 		 1,-1, 1,
 		 1, 1, 1,
 		 1, 1,-1
 	);
 	
-	ddd.mkface('#a0a',
+	d.mkface('#a0a',
 		-1,-1,-1,
 		-1,-1, 1,
 		 1,-1, 1,
 		 1,-1,-1
 	);
 	
-	ddd.mkface('#0aa',
+	d.mkface('#0aa',
 		-1, 1,-1,
 		-1, 1, 1,
 		 1, 1, 1,
@@ -257,42 +280,42 @@ function makecube() {
 	);
 	
 	
-	ddd.mkface('#00f',
+	d.mkface('#00f',
 		-.5,-.5,-.5,
 		-.5, .5,-.5,
 		 .5, .5,-.5,
 		 .5,-.5,-.5
 	);
 	
-	ddd.mkface('#f00',
+	d.mkface('#f00',
 		-.5,-.5, .5,
 		-.5, .5, .5,
 		 .5, .5, .5,
 		 .5,-.5, .5
 	);
 	
-	ddd.mkface('#0f0',
+	d.mkface('#0f0',
 		-.5,-.5,-.5,
 		-.5,-.5, .5,
 		-.5, .5, .5,
 		-.5, .5,-.5
 	);
 
-	ddd.mkface('#aa0',
+	d.mkface('#aa0',
 		 .5,-.5,-.5,
 		 .5,-.5, .5,
 		 .5, .5, .5,
 		 .5, .5,-.5
 	);
 	
-	ddd.mkface('#a0a',
+	d.mkface('#a0a',
 		-.5,-.5,-.5,
 		-.5,-.5, .5,
 		 .5,-.5, .5,
 		 .5,-.5,-.5
 	);
 	
-	ddd.mkface('#0aa',
+	d.mkface('#0aa',
 		-.5, .5,-.5,
 		-.5, .5, .5,
 		 .5, .5, .5,
@@ -390,33 +413,31 @@ function matapp(a, v) {
 }
 
 
-function test() {
-	ddd.mat = matscale(.6, .6, .6);
-	ddd.render();
-}
-
 function anmupd() {
 	var t = animator.milliseconds - this.startTime;
-	ddd.mat = matcomp(matscale(.6,.6,.6), matrot('x', this.x), matrot('y', 1.3 + t/10*deg));
+	ds[0].mat = matcomp(matscale(.6,.6,.6), matrot('x', this.x), matrot('y', 1.3 + t/45*deg));
 	
-	ddd.render()
+	ds[0].render();
 	
 	return true;
 }
 
-makecube();
-
-anm = new CustomAnimation(50, anmupd);
+anm = new CustomAnimation(40, anmupd);
 anm.x = 15*deg;
 animator.start(anm);
 
-var wn,$,wdf=system.widgetDataFolder;
+var wn,$,wdf=system.widgetDataFolder,ds;
 
 wn=mk(Window,{width:256,height:256});
 cv=mkapp(Canvas,wn,{width:256,height:256});
+
 $=cv.getContext('2d');
+ds=[new ddd($)];
+
+makecube(ds[0]);
+
 $.scale(128, -128);
 $.translate(1, -1);
 $.lineWidth=.02;
 $.lineJoin='round';
-$.globalAlpha=.7;
+$.globalAlpha=.6;
