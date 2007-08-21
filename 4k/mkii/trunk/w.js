@@ -67,18 +67,25 @@ function qcube() {
 	var i;
 	with (this) {
 		fcs = {};
-		fcs[0] = new qface('r');
+		fcs[0] = new qface('r', '+z');
 		fcs[0].tx(mattrans(-1.5, -1.5, 1.5));
-		fcs[1] = new qface('g');
+		fcs[1] = new qface('g', '-y');
 		fcs[1].tx(matcomp(mattrans(-1.5, -1.5, 1.5), matrot('x', 90*deg)));
-		fcs[2] = new qface('o');
+		fcs[2] = new qface('o', '-z');
 		fcs[2].tx(matcomp(mattrans(-1.5, -1.5, 1.5), matrot('x', 180*deg)));
-		fcs[3] = new qface('b');
+		fcs[3] = new qface('b', '+y');
 		fcs[3].tx(matcomp(mattrans(-1.5, -1.5, 1.5), matrot('x', 270*deg)));
-		fcs[4] = new qface('y');
+		fcs[4] = new qface('y', '+x');
 		fcs[4].tx(matcomp(mattrans(-1.5, -1.5, 1.5), matrot('y', 90*deg)));
-		fcs[5] = new qface('w');
+		fcs[5] = new qface('w', '-x');
 		fcs[5].tx(matcomp(mattrans(-1.5, -1.5, 1.5), matrot('y', 270*deg)));
+		
+		fcs[0].setadj(fcs[3], 5, fcs[4], 7, fcs[1], 1, fcs[5], 3);
+		fcs[1].setadj(fcs[0], 5, fcs[4], 5, fcs[2], 1, fcs[5], 5);
+		fcs[2].setadj(fcs[1], 5, fcs[4], 3, fcs[3], 1, fcs[5], 7);
+		fcs[3].setadj(fcs[2], 5, fcs[4], 1, fcs[0], 1, fcs[5], 1);
+		fcs[4].setadj(fcs[3], 3, fcs[2], 3, fcs[1], 3, fcs[0], 3);
+		fcs[5].setadj(fcs[3], 7, fcs[0], 7, fcs[1], 7, fcs[2], 7);
 		
 		
 		for (i = 0; i < 6; i++) {
@@ -89,12 +96,32 @@ function qcube() {
 }
 
 qcube.prototype = {
-	fcs: 0
+	fcs: 0,
+	
+	toString: function() {
+		var i, f, x, y, s=[], r='';
+		for (i = 0; i < 36; i++) {
+			s[i]='   ';
+		}
+		for (i = 0; i < 6; i++) {
+			f = this.fcs[i].facelets;
+			x = (i == 5 ? 0 : (i == 4 ? 2 : 1));
+			y = (i == 3 ? 0 : (i == 1 ? 6 : (i == 2 ? 9 : 3)));
+			s[y*3 + x] = f[0].c + f[1].c + f[2].c;
+			s[y*3 + 3 + x] = f[7].c + f[8].c + f[3].c;
+			s[y*3 + 6 + x] = f[6].c + f[5].c + f[4].c;
+		}
+		
+		for (i = 0; i < 12; i++) {
+			r += s[i*3] + s[i*3 + 1] + s[i*3 + 2] + '\n';
+		}
+		return r;
+	}
 };
 
 
 
-function qface(color) {
+function qface(color, axis) {
 	var i,p;
 	color = color ? color : 'w';
 	with (this) {
@@ -102,30 +129,51 @@ function qface(color) {
 		facelets = {};
 		for (i = 0; i < 9; i++) {
 			p = qface.placement[i];
-			facelets[i] = {c: color, f: ds[0].mkface({dynamic: 1, color: qface.colorhex[color]}, p[0], p[1], 0, p[0]+1, p[1], 0, p[0]+1, p[1]+1, 0, p[0], p[1]+1, 0)};
+			// facelets[i] = {c: color, f: ds[0].mkface({dynamic: 1, color: qface.colorhex[color]}, p[0], p[1], 0, p[0]+1, p[1], 0, p[0]+1, p[1]+1, 0, p[0], p[1]+1, 0)};
+			facelets[i] = {c: color, f: ds[0].mkface({dynamic: 1, color: 'rgba(' + qface.rgb[color].r + ',' + qface.rgb[color].g + ',' + qface.rgb[color].b + ',' + i / 8 + ')'}, p[0], p[1], 0, p[0]+1, p[1], 0, p[0]+1, p[1]+1, 0, p[0], p[1]+1, 0)};
 		}
+		ax = axis;
 	}
 }
 
 qface.prototype = {
 	adj: 0,
 	facelets: 0,
+	ax: 0,
 	
 	// methods
-	rotate: function(ccw) {
-		var i, t, a={};
+	rotate: function(ccw, hide) {
+		var i, j, t, a={}, adjfacelets=[];
 		if (ccw) {
 			for (i = 0; i < 3; i++) {
-				this.rotate();
+				this.rotate(0, 1);
 			}
 		} else {
 			t = this.adj[3].q.swap(this.adj[3].l);
 			t2 = this.adj[0];
 			for (i = 0; i < 4; i++) {
-				t = this.adj[i].q.swap(t);
-				a[i + 3 % 4] = this.adj[i];
+				t = adjfacelets.push(this.adj[i].q.swap(this.adj[3].l, t));
+				a[(i + 3) % 4] = this.adj[i];
 			}
 			this.adj = a;
+		}
+		if (!hide) {
+			this.anm = new CustomAnimation(20, qface.rotanm);
+			this.anm.target = (ccw?-90:90)*deg;
+			this.anm.theta = 0;
+			this.anm.axis = this.ax;
+			this.anm.faces = [];
+			for (i = 0; i < 9; i++) {
+				this.anm.faces.push(this.facelets[i].f);
+			}
+			for (i = 0; i < 4; i++) {
+				// t = this.adj[i].q.swap(this.adj[i].l);
+				t = adjfacelets[i];
+				for (j = 0; j < 3; j++) {
+					this.anm.faces.push(t[j].f);
+				}
+			}
+			animator.start(this.anm);
 		}
 	},
 	
@@ -146,11 +194,44 @@ qface.prototype = {
 				this.facelets[j] = newvalues[i];
 			}
 		}
+		return t;
 	},
-	setadj: function(side, qface, link) {
-		this.adj[side] = {q: qface, l: link};
+	setadj: function() {
+		var i;
+		for (i = 0; i < 4; i++) {
+			this.adj[i] = {q: arguments[i*2], l: arguments[i*2 + 1]};
+		}
 	}
 };
+
+qface.rotanm = function() {
+	var i, mat, t = animator.milliseconds - this.startTime, pct = t / 6000, dst, dt;
+	
+	dst = (pct < 1) ? animator.ease(0, this.target, pct, animator.kEaseInOut) : this.target;
+	
+	dt = dst - this.theta;
+	
+	mat = matrot(this.axis.substr(1), (/^-/.test(this.axis) ? -1 : 1) * dt);
+	this.theta += dt;
+	
+	for (i = 0; i < this.faces.length; i++) {
+		ds[0].txface(this.faces[i], mat);
+	}
+	
+	ds[0].render();
+	
+	return pct <= 1;
+}
+
+
+qface.rgb = {
+	r: {r: 255, g: 0, b: 0},
+	o: {r: 255, g: 127, b: 63},
+	y: {r: 255, g: 255, b: 0},
+	w: {r: 255, g: 255, b: 255},
+	g: {r: 0, g: 255, b: 255},
+	b: {r:0, g: 0, b: 255}
+}
 
 qface.colorhex = {
 	r: '#e33',
@@ -308,105 +389,6 @@ ddd.prototype = {
 
 };
 
-
-function makecube(d) {
-	/*
-	var i, t, n, m=[{z:0},{x:1,y:0,z:1},{x:0,y:1,z:1}];
-	for (i = 0; i < m.length; i++) {
-		t=matrot
-		ddd.mkface(
-			ddd.mkpt(-m[i].x, -m[i].y, -m[i].z)
-		);
-	}
-	*/
-	
-	
-	d.mkface('#00f',
-		-1,-1,-1,
-		-1, 1,-1,
-		 1, 1,-1,
-		 1,-1,-1
-	);
-	
-	d.mkface('#f00',
-		-1,-1, 1,
-		-1, 1, 1,
-		 1, 1, 1,
-		 1,-1, 1
-	);
-	
-	d.mkface('#0f0',
-		-1,-1,-1,
-		-1,-1, 1,
-		-1, 1, 1,
-		-1, 1,-1
-	);
-
-	d.mkface('#aa0',
-		 1,-1,-1,
-		 1,-1, 1,
-		 1, 1, 1,
-		 1, 1,-1
-	);
-	
-	d.mkface('#a0a',
-		-1,-1,-1,
-		-1,-1, 1,
-		 1,-1, 1,
-		 1,-1,-1
-	);
-	
-	d.mkface('#0aa',
-		-1, 1,-1,
-		-1, 1, 1,
-		 1, 1, 1,
-		 1, 1,-1
-	);
-	
-	
-	d.mkface('#00f',
-		-.5,-.5,-.5,
-		-.5, .5,-.5,
-		 .5, .5,-.5,
-		 .5,-.5,-.5
-	);
-	
-	d.mkface('#f00',
-		-.5,-.5, .5,
-		-.5, .5, .5,
-		 .5, .5, .5,
-		 .5,-.5, .5
-	);
-	
-	d.mkface('#0f0',
-		-.5,-.5,-.5,
-		-.5,-.5, .5,
-		-.5, .5, .5,
-		-.5, .5,-.5
-	);
-
-	d.mkface('#aa0',
-		 .5,-.5,-.5,
-		 .5,-.5, .5,
-		 .5, .5, .5,
-		 .5, .5,-.5
-	);
-	
-	d.mkface('#a0a',
-		-.5,-.5,-.5,
-		-.5,-.5, .5,
-		 .5,-.5, .5,
-		 .5,-.5,-.5
-	);
-	
-	d.mkface('#0aa',
-		-.5, .5,-.5,
-		-.5, .5, .5,
-		 .5, .5, .5,
-		 .5, .5,-.5
-	);
-	
-}
 
 function matrot(axis, t) {
 	var c = Math.cos(t), s = Math.sin(t);
