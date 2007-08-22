@@ -1,10 +1,10 @@
-Math.mean = function() {
-	var i, r;
-	for (i = 0; i < arguments.length; i++) {
-		r += arguments[i];
+function pdump(o) {
+	print('PDUMP');
+	for (var i in o) {
+		print(i + ':' + o[i]);
 	}
-	return r / arguments.length;
-};
+}
+
 
 function mk(O,p,m) {
 	var r=new O();
@@ -64,7 +64,7 @@ function toim(c,f,i) {
 
 
 function qcube() {
-	var i;
+	var i, j;
 	with (this) {
 		fcs = {};
 		fcs[0] = new qface('r', '+z');
@@ -82,6 +82,9 @@ function qcube() {
 		
 		for (i = 0; i < 6; i++) {
 			fcs[i].tx(matscale(.6, .6, .6));
+			for (j = 0; j < 9; j++) {
+				ds[0].mkbrd(0, 0, 0, 0);
+			}
 		}
 		
 	}
@@ -122,6 +125,15 @@ qcube.prototype = {
 			}
 		}
 		return t;
+	},
+	
+	restick: function() {
+		var i, j;
+		for (i = 0; i < 6; i++) {
+			for (j = 0; j < 9; j++) {
+				ds[0].stick(i*9 + j, i*9 + j);
+			}
+		}
 	},
 	
 	// methods
@@ -195,7 +207,6 @@ qcube.prototype = {
 	}
 };
 
-
 qcube.rotanm = function() {
 	var i, mat, t = animator.milliseconds - this.startTime, pct = t / 600, dst, dt;
 	
@@ -225,12 +236,10 @@ function qface(color) {
 	with (this) {
 		// adj = {};
 		facelets = {};
-		hotspots = {};
 		for (i = 0; i < 9; i++) {
 			p = qface.placement[i];
 			// facelets[i] = {c: color, f: ds[0].mkface({dynamic: 1, color: qface.colorhex[color]}, p[0], p[1], 0, p[0]+1, p[1], 0, p[0]+1, p[1]+1, 0, p[0], p[1]+1, 0)};
 			facelets[i] = {c: color, f: ds[0].mkface({dynamic: 1, color: 'rgb(' + qface.rgb[color].r + ',' + qface.rgb[color].g + ',' + qface.rgb[color].b + ')'}, p[0], p[1], 0, p[0]+1, p[1], 0, p[0]+1, p[1]+1, 0, p[0], p[1]+1, 0)};
-			hotspots[i] = ds[0].mkbrd(p[0]+.5, p[1]+.5, 0);
 		}
 	}
 }
@@ -238,36 +247,13 @@ function qface(color) {
 qface.prototype = {
 	// adj: 0,
 	facelets: 0,
-	hotspots: 0,
 	
 	tx: function(mat) {
 		var i;
 		for (i = 0; i < 9; i++) {
 			ds[0].txface(this.facelets[i].f, mat);
-			ds[0].txpt(ds[0].brds[this.hotspots[i]].p, mat);
 		}
 	}
-	
-	// internal method for swapping out a side
-	/*
-	swap: function(center, newvalues) {
-		var i, j, t={};
-		for (i = 0; i < 3; i++) {
-			j = (center - 1 + i) % 8;
-			t[i] = this.facelets[j];
-			if (newvalues) {
-				this.facelets[j] = newvalues[i];
-			}
-		}
-		return t;
-	},
-	setadj: function() {
-		var i;
-		for (i = 0; i < 4; i++) {
-			this.adj[i] = {q: arguments[i*2], l: arguments[i*2 + 1]};
-		}
-	}
-	*/
 };
 
 
@@ -433,6 +419,28 @@ ddd.prototype = {
 
 	},
 	
+	// calcs the midpt of a face
+	midpt: function(f) {
+		var i, j, p, m={x:0,y:0,z:0};
+		with (this) {
+			p = fcs[f].p;
+			for (var i in m) {
+				for (j = 0; j < p.length; j++) {
+					m[i] += pts[p[j]][i];
+				}
+				m[i] /= p.length;
+			}
+		}
+		return m;
+	},
+	
+	// sticks a billboard in the middle of a face
+	stick: function(b, f) {
+		with (this) {
+			pts[brds[b].p] = midpt(f);
+		}
+	},
+	
 	render: function() {
 		var i, j, f, p;
 		
@@ -478,14 +486,14 @@ ddd.prototype = {
 		cutoff ? cutoff : cutoff = 1e308;
 		bd = cutoff;
 		with (this) {
-			for (i = 0; i < brdst.length; i++) {
-				p = ptst[brdst[i].p];
+			for (i = 0; i < brds.length; i++) {
+				p = ptst[brds[i].p];
 				dx = x - p.x;
 				dy = y - p.y;
 				dz = z - p.z;
 				d = Math.sqrt(dx*dx + dy*dy + dz*dz);
 				if (d <= bd) {
-					b = brdst[i];
+					b = i;
 					bd = d;
 				}
 			}
@@ -584,6 +592,7 @@ function matapp(a, v) {
 	return t;
 }
 
+/*
 function rot_mousedown() {
 	var t={};
 	with (rotr) {
@@ -651,9 +660,194 @@ function rot_mouseup() {
 		}
 	}
 }
+*/
 
 
-var i,wn,$,wdf=system.widgetDataFolder,cvs=[],ds=[],rotr={a:0,f:0,t:0,x:0,y:0,dx:0,dy:0};
+function rot_mousedown() {
+	var i, j, a, b, c, dx, dy, m={x:0,y:0};
+	if (system.event.shiftKey || system.event.altKey) {
+		rote = 1;
+		with (rotr) {
+			if (a && a.kill) {
+				a.kill();
+			}
+			f = 1;
+			x = system.event.x;
+			y = system.event.y;
+		}
+	} else {
+		rote = 0;
+		with (rotf) {
+			d = 1;
+			t = 0;
+			f = -1;
+			// log((system.event.x - 128) / 64, (system.event.y - 128) / 64);
+			c = ds[0].getclosestbrd((system.event.x - 128) / 64, (system.event.y - 128) / 64, 1);
+			// f = Math.floor(c / 9);
+			for (i = 0; i < 6; i++) {
+				for (j = 0; j < 9; j++) {
+					if (cube.fcs[i].facelets[j].f == c) {
+						f = i;
+					}
+				}
+			}
+			fcs = cube.getfacelets(f);
+			
+			i = f * 9 + 8; // get the center facelet
+			// log(c, i, f);
+			
+			a = ds[0].fcs[i].p;
+			for (j = 0; j < 4; j++) {
+				m.x += ds[0].ptst[a[j]].x / 4;
+				m.y += ds[0].ptst[a[j]].y / 4;
+			}
+			xi = m.x;
+			yi = m.y;
+			dx = (system.event.x - 128) / 64 - xi;
+			dy = (system.event.y - 128) / 64 - yi;
+			tf = tc = ti = Math.atan2(dy, dx);
+		}
+	}
+}
+
+function rot_mousedrag() {
+	var dx, dy, t;
+	if (rote) {
+		with (rotr) {
+			if (f) {
+				dx = system.event.x - x;
+				dy = system.event.y - y;
+				x = system.event.x;
+				y = system.event.y;
+				t = animator.milliseconds;
+				rot_rndr();
+			}
+		}
+	} else {
+		with (rotf) {
+			if (d) {
+				dx = (system.event.x - 128) / 64 - xi;
+				dy = (system.event.y - 128) / 64 - yi;
+				
+				tf = Math.atan2(dy, dx);
+				
+				rot_rndr();
+			}
+		}
+	}
+}
+
+
+function rot_rndr() {
+	var i, mat;
+	if (rote) {
+		with (rotr) {
+			ds[0].mat = matcomp(ds[0].mat, matrot('y', dx*deg), matrot('x', -dy*deg));
+		}
+	} else {
+		with (rotf) {
+			mat = matrot(qcube.axes[f].substr(1), (/^-/.test(qcube.axes[f]) ? -1 : 1) * (tf - tc));
+			tc = tf;
+			for (i = 0; i < fcs.length; i++) {
+				ds[0].txface(fcs[i].f, mat);
+			}
+		}
+	}
+	ds[0].render();
+}
+
+
+function rot_mouseup() {
+	var i, td, rots;
+	if (rote) {
+		with (rotr) {
+			f = 0;
+			td = Math.max(Math.abs(dx), Math.abs(dy));
+			if (animator.milliseconds - t < 100 && td > 1) {
+				a = new CustomAnimation(20, rotr_anm, ready);
+				a.dx = dx > 0 ? Math.min(dx, 16) : Math.max(dx, -16);
+				a.dy = dy > 0 ? Math.min(dy, 16) : Math.max(dy, -16);
+				a.dur = Math.max(Math.abs(a.dx), Math.abs(a.dy)) * 35;
+				animator.start(a);
+			} else {
+				ready();
+			}
+		}
+	} else {
+		with (rotf) {
+			d = 0;
+			
+			if (ti != tf) {
+				rots = Math.floor((((tf - ti + 405*deg) % (360*deg)) ) / (90*deg));
+				
+				for (i = 0; i < rots; i++) {
+					cube.rotate(f, 0, 1);
+				}
+				
+				tc = tf;
+				tf = ti + rots * 90*deg;
+				a = new CustomAnimation(20, rotf_anm, ready);
+				a.theta = 0;
+				a.target = tf - tc;
+				if (a.target > 180*deg) {
+					a.target -= 360*deg;
+				}
+				a.dur = 250;
+				a.axis = qcube.axes[f];
+				a.fcs = fcs;
+				animator.start(a);
+			} else {
+				ready();
+			}
+		}
+	}
+}
+
+
+function rotf_anm() {
+	var i, mat, t = animator.milliseconds - this.startTime, pct = t / 500, dst, dt;
+	
+	dst = (pct < 1) ? animator.ease(0, this.target, pct, animator.kEaseOut) : this.target;
+	
+	dt = dst - this.theta;
+	
+	mat = matrot(this.axis.substr(1), (/^-/.test(this.axis) ? -1 : 1) * dt);
+	this.theta += dt;
+	
+	for (i = 0; i < this.fcs.length; i++) {
+		ds[0].txface(this.fcs[i].f, mat);
+	}
+	
+	ds[0].render();
+	
+	return pct <= 1;
+}
+
+
+function rotr_anm() {
+	var pct = (animator.milliseconds - this.startTime) / this.dur, m = animator.ease(.8, 0, pct, animator.kEaseOut);
+	
+	with (rotr) {
+		if (f || pct > 1) {
+			return false;
+		} else {
+			dx = m * this.dx;
+			dy = m * this.dy;
+			rot_rndr();
+			return true;
+		}
+	}
+}
+
+
+
+function ready() {
+	cube.restick();
+	ds[0].render();
+}
+
+
+var i, wn, $, wdf = system.widgetDataFolder, cvs = [], ds = [], rote, rotf = {d:0, f:0, fcs:0, ti:0, tc:0, tf:0, xi:0, yi:0}, rotr = { a:0, f:0, t:0, x:0, y:0, dx:0, dy:0 };
 
 wn=mk(Window,{width:256,height:256});
 cv3d=mkapp(Canvas,wn,{width:256,height:256,onMouseDown:rot_mousedown,onMouseDrag:rot_mousedrag,onMouseUp:rot_mouseup,});
@@ -687,7 +881,8 @@ with (cvs[0]) {
 cube = new qcube();
 
 // initial, pretty rotation
-// ds[0].mat = matcomp(matrot('y', -30*deg), matrot('x', -15*deg));
-ds[0].render();
+ds[0].mat = matcomp(matrot('y', -30*deg), matrot('x', -15*deg));
 
+
+ready();
 
