@@ -94,7 +94,8 @@ BabelController = {
 		}
 		
 		this.state.currentPlayer = this.pickStartingPlayer();
-		alert('Player ' + parseInt(this.state.currentPlayer + 1) + ' will go first.');
+		// alert('Player ' + parseInt(this.state.currentPlayer + 1) + ' will go first.');
+		alertPopupOval('Player ' + parseInt(this.state.currentPlayer + 1) + ' will go first.');
 		
 		for (var i = 0; i < this.state.players.length; i++) {
 			this.state.players[(i + this.state.currentPlayer) % this.state.players.length].tray.fill(this.state.bag);
@@ -188,7 +189,7 @@ BabelController = {
 						filledBlank = true;
 						break;
 					} else {
-						alert('You must enter a valid letter!');
+						alertPopupOval('You must enter a valid letter!');
 					}
 				}
 			}
@@ -202,7 +203,7 @@ BabelController = {
 					filledBlank = true;
 					break;
 				} else {
-					alert('You must enter a valid letter!');
+					alertPopupOval('You must enter a valid letter!');
 				}
 			}
 		}
@@ -220,7 +221,7 @@ BabelController = {
 		if (invalidWords.length > 0) {
 			// challenge is acceptable!
 			log('The word(s) ' + invalidWords.join(', ') + ' were not found.');
-			alert('The challenge was acceptable. The word' + (invalidWords.length > 1 ? ('s below were not found in the word list:\n' + invalidWords.join("\n")) : (' ' + invalidWords[0] + ' was not found in the word list.')));
+			alertPopupOval('The challenge was acceptable.', 'The word ' + invalidWords[0] + ' was not found in the word list.');
 			
 			// remove play from board, put it back in player's tray
 			var letters = this.state.lastPlay.getAll();
@@ -242,7 +243,7 @@ BabelController = {
 			return true;
 		} else {
 			// challenge is unacceptable - act like a pass
-			alert('The challenge was unacceptable. It is now Player ' + (parseInt(this.getNextPlayer()) + 1) + "'s turn.");
+			alertPopupOval('The challenge was unacceptable.', 'It is now Player ' + (parseInt(this.getNextPlayer()) + 1) + "'s turn.");
 			this.pass();
 			return false;
 		}
@@ -312,7 +313,7 @@ BabelController = {
 		}
 		log(scoreStr);
 		
-		// alert('Final Score:\n' + scoreStr + 'Thank you for playing Babel!');
+		alert('Final Score:\n' + scoreStr + 'Thank you for playing Babel!');
 		
 		// TODO - handle ties appropriately
 		
@@ -334,7 +335,7 @@ BabelController = {
 				
 				if (invalidWords.length > 0) {
 					log('The word(s) ' + invalidWords.join(', ') + ' were not found in the word list.');
-					alert('The word' + (invalidWords.length > 1 ? ('s below were not found in the word list:\n' + invalidWords.join("\n")) : (' ' + invalidWords[0] + ' was not found in the word list.')));
+					alertPopupOval('The word ' + invalidWords[0] + ' was not found in the word list.');
 					return false;
 				}
 			}
@@ -390,10 +391,10 @@ BabelController = {
 		this.state.lastPlay = null;
 		if (this.state.firstPasser == this.getNextPlayer() || this.state.players.length == 1) {
 			if (this.state.board.getAll().length == 0) {
-				alert('All players have passed on the first turn - restarting game.');
+				alertPopupOval('All players have passed on the first turn.', 'The game will be restarted.');
 				this.newGame();
 			} else {
-				alert('All players have passed - ending game.');
+				alert('All players have passed.');
 				this.endGame();
 			}
 		} else if (this.state.firstPasser == null) {
@@ -493,7 +494,7 @@ BabelController = {
 	 */
 	exchange: function(letters) {
 		if (this.state.bag.arr.length < TRAY_SIZE) {
-			alert('The bag has too few letters to be able to exchange.');
+			alertPopupOval('The bag has too few letters to be able to exchange.');
 			return;
 		}
 		var exchangePile = [];
@@ -1504,7 +1505,7 @@ BabelView = {
 	 * Shows playing help/rules to the user
 	 */
 	showHelp: function() {
-		alert('Help is on the way!');
+		alertPopupOval('Help is on the way!');
 	}
 };
 

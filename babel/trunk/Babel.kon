@@ -5,7 +5,7 @@
 		<setting name="allowCustomObjectAttributes" value="true" />
 	</settings>
 	
-	<window title="Babel" name="mainWindow" id="mainWindow" width="304" height="304" visible="false">
+	<window title="Babel" name="mainWindow" id="mainWindow" width="304" height="304" visible="true">
 	</window>
 	
 	<window title="popupWindow" name="popupWindow" id="popupWindow" width="445" height="245" visible="false" locked="true" style="background-image: url(Resources/PopupOval.png);">
