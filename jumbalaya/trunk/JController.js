@@ -115,6 +115,8 @@ JController.prototype = {
 	newRound: function() {
 		var src;
 		
+		this.roundScore = 0;
+		
 		switch (parseInt(preferences.numberLetters.value)) {
 			case 6:
 				src = this.sixes;
@@ -140,10 +142,6 @@ JController.prototype = {
 		}
 		
 		// sort by word length
-		this.sortWords();
-		
-		// pare down the word list to fit on the notecard
-		// this.pareWords();
 		this.sortWords();
 		
 		// convert this.currentWords to object format
@@ -182,7 +180,10 @@ JController.prototype = {
 				
 				this.currentWords[word] = true;
 				
-				this.score += word.length * POINTS_PER_LETTER;
+				var playScore = word.length * POINTS_PER_LETTER;
+				
+				this.roundScore += playScore;
+				this.score += playScore;
 				
 				this.view.updateScore();
 			} else {
@@ -245,42 +246,6 @@ JController.prototype = {
 		this.currentWords = t;
 	},
 	
-	
-	/**
-	 * pareWords()
-	 * pares down this.currentWords to fit on a notecard
-	 */
-	pareWords: function() {
-		var newWords = [];
-		
-		/*
-		var row = 0;
-		var col = 0;
-		var currentWordLength = this.currentWords[0].length;
-		
-		var newWords = [];
-		
-		for (var i = 0; i < this.currentWords.length; i++) {
-			if (
-			if (this.currentWords[i].length != currentWordLength) {
-				row++;
-				col = 0;
-			}
-		}
-		*/
-		if (this.currentWords.length > MAX_WORDS_PER_ROUND) {
-			log('Paring words');
-			
-			for (var i = 0; i < MAX_WORDS_PER_ROUND - 1; i++) {
-				newWords.push(this.currentWords.splice(random(0, this.currentWords.length - 1), 1)[0]);
-			}
-			newWords.push(this.currentWords.splice(this.currentWords.length - 1, 1)[0]);
-			
-			this.currentWords = newWords;
-			this.sortWords();
-			// this.currentWords.splice(MAX_WORDS_PER_ROUND - 2, this.currentWords.length - MAX_WORDS_PER_ROUND);
-		}
-	},
 	
 	/**
 	 * sortWords()
@@ -354,24 +319,41 @@ JController.prototype = {
 		var maxLength = 0;
 		var maxFoundLength = 0;
 		var foundAll = true;
+		var wordCount = 0;
+		var foundCount = 0;
+		
 		
 		for (var i in this.currentWords) {
 			maxLength = Math.max(i.length, maxLength);
+			wordCount++;
 			if (this.currentWords[i]) {
 				maxFoundLength = Math.max(i.length, maxFoundLength);
+				foundCount++;
 			} else {
 				foundAll = false;
 			}
 		}
 		
+		var normalAdvance = false;
+		
+		if ( // advance conditions
+			(maxFoundLength == maxLength) || // found the 6/7 letter word
+			((foundCount / wordCount) >= 0.75) || // found 75% of the words
+			(this.roundScore >= 750) // got 750 points (approx. 10-15 words)
+		) {
+			normalAdvance = true;
+		}
+		
 		if (foundAll) {
 			// bonus points!
-			this.score += Math.floor((this.finishTime - animator.milliseconds) * POINTS_PER_MS);
+			var bonusPoints = Math.floor((this.finishTime - animator.milliseconds) * POINTS_PER_MS);
+			this.roundScore += bonusPoints;
+			this.score += bonusPoints;
 			this.view.updateScore();
-			this.view.showMessage(getMessage('endAll'), null, getMessage('advance2'));
+			this.view.showMessage(getMessage('endAll'), null, getMessage('advance'));
 			this.view.endRound(true);
-		} else if (maxFoundLength == maxLength) {
-			this.view.showMessage(getMessage('advance'), null, getMessage('advance2'));
+		} else if (normalAdvance) {
+			this.view.showMessage(getMessage('advance'));
 			this.view.endRound(true);
 		} else {
 			this.view.showMessage(getMessage('noAdvance'), null, getMessage('noAdvance2'));
@@ -457,16 +439,15 @@ getMessage = function(code, str) {
 };
 
 getMessage.messages = {
-	foundWord: '%1% is one of the words!',
-	foundBuzzword: 'Bon! %1% is the buzzword for the next round!',
-	duplicate: 'You already got %1%.',
-	nonWord: 'Desole, %1% isn\'t one of the words.',
-	start: 'Allons!',
-	noAdvance: 'You didn\'t get the buzzword. C\'est la vie.',
+	foundWord: 'You got %1%.',
+	foundBuzzword: 'You got a %2%-letter word!',
+	duplicate: 'You already found %1%.',
+	nonWord: '%1% isn\'t one of the words.',
+	start: 'Let\'s make some Jumbalaya!',
+	noAdvance: 'Sorry, you didn\'t get enough points.',
 	noAdvance2: 'Click on "QUIT" to go back to the Main Menu.',
-	advance: 'Laissez les bons temps rouler!',
-	advance2: 'Click "START" to continue to the next round.',
-	endAll: 'Way to go! You got all the words!'
+	advance: 'Click "START" to continue to the next round.',
+	endAll: 'You guessed all the words!'
 };
 	
 	

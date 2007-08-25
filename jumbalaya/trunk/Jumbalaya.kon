@@ -5,7 +5,7 @@
 		<setting name="allowCustomObjectAttributes" value="true" />
 	</settings>
 	
-	<window title="Jumbalaya" name="gameWindow" id="gameWindow" width="458" height="346" visible="true">
+	<window title="Jumbalaya" name="gameWindow" id="gameWindow" width="458" height="316" visible="true">
 	</window>
 	
 	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true">

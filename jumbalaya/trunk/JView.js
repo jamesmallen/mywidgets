@@ -8,13 +8,13 @@ const MESSAGE_FADE_DURATION = 120; // in milliseconds
 const MESSAGE_SHOW_DURATION = 4; // in seconds
 
 const NOTECARD_LINE_HEIGHT = 18;
-const NOTECARD_LINE_WIDTH = 150;
+const NOTECARD_LINE_WIDTH = 225;
 const NOTECARD_WORD_SPACING = {
 	3: 75,
 	4: 75,
-	5: 100,
-	6: 100,
-	7: 175
+	5: 75,
+	6: 150,
+	7: 150
 };
 
 
@@ -27,14 +27,10 @@ JView = function() {
 	});
 	this.pan.shadow = makeAndAppend(Image, this.pan, {
 		src: 'Resources/PanShadow.png',
-		vOffset: 95
+		vOffset: 65
 	});
 	this.pan.pan = makeAndAppend(Image, this.pan, {
-		src: 'Resources/Pan.png'/*,
-		hOffset: 352,
-		vOffset: 255,
-		hRegistrationPoint: 352,
-		vRegistrationPoint: 255*/
+		src: 'Resources/Pan.png'
 	});
 	this.pan.panTilted = makeAndAppend(Image, this.pan, {
 		src: 'Resources/PanTilted.png',
@@ -44,7 +40,7 @@ JView = function() {
 	
 	this.menu = makeAndAppend(Frame, this.gameWindow, {
 		hOffset: 6,
-		vOffset: 61
+		vOffset: 31
 	});
 	this.menu.newGame = makeAndAppend(Image, this.menu, {
 		src: 'Resources/MenuNewGame.png',
@@ -81,8 +77,8 @@ JView = function() {
 	
 	
 	this.timer = makeAndAppend(Frame, this.gameWindow, {
-		hOffset: 214,
-		vOffset: 177
+		hOffset: 230,
+		vOffset: 147
 	});
 	this.timer.timer = makeAndAppend(Image, this.timer, {
 		src: 'Resources/Timer.png',
@@ -146,18 +142,18 @@ JView = function() {
 	
 	
 	this.messageBox = makeAndAppend(Frame, this.gameWindow, {
-		hOffset: 304,
-		vOffset: 28
+		hOffset: 71,
+		vOffset: 190
 	});
 	this.messageBox.bg = makeAndAppend(Image, this.messageBox, {
-		src: 'Resources/ShrimpBubble.png'
+		src: 'Resources/MessageBubble.png'
 	});
 	this.messageBox.message = makeAndAppend(TextArea, this.messageBox, {
 		data: 'This is a test message',
-		hOffset: 13,
-		vOffset: 64,
+		hOffset: 15,
+		vOffset: 44,
 		vAlign: 'center',
-		width: 110,
+		width: 125,
 		editable: false,
 		scrollbar: false,
 		style: {
@@ -171,7 +167,7 @@ JView = function() {
 	
 	this.answer = makeAndAppend(Frame, this.gameWindow, {
 		hOffset: 3,
-		vOffset: 30
+		vOffset: 0
 	});
 	this.answer.bg = makeAndAppend(Image, this.answer, {
 		src: 'Resources/AnswerBG.png'
@@ -211,13 +207,19 @@ JView = function() {
 	*/
 	
 	this.notecard = makeAndAppend(Canvas, this.wordsWindow, {
-		width: 362,
+		width: 342,
 		height: 271
 	});
 	
 	this.words = makeAndAppend(Frame, this.wordsWindow, {
 		hOffset: 35,
 		vOffset: 40
+	});
+	
+	makeAndAppend(Image, this.wordsWindow, {
+		src: 'Resources/NotecardTitle.png',
+		hOffset: 30,
+		vOffset: 14
 	});
 	
 	/*
@@ -270,13 +272,13 @@ JView.prototype = {
 				this.trayLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
 					hOffset: 145,
-					vOffset: 145
+					vOffset: 115
 				});
 				
 				this.playLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
 					hOffset: 145,
-					vOffset: 51
+					vOffset: 21
 				});
 				
 				for (var i = 0; i < params.letters.length; i++) {
@@ -480,7 +482,7 @@ JView.prototype = {
 		// draws the notecard stack
 		var vOffset = this.updateNotecard(false);
 		
-		this.notecard.height = Math.max(vOffset + 90, 31);
+		this.notecard.height = Math.max(vOffset + 90, 216);
 		this.drawNotecardStack();
 		
 		this.wordsWindow.height = this.notecard.height;
