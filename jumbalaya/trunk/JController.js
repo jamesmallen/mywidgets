@@ -4,13 +4,25 @@
  */
 
 const MIN_WORDS_PER_ROUND = 5;
-const MAX_WORDS_PER_ROUND = 36;
 const POINTS_PER_LETTER = 20;
 const POINTS_PER_MS = .01;
 
 
 JController = function() {
 	this.view = new JView();
+	
+	if (!filesystem.itemExists(system.widgetDataFolder + '/words0.txt')) {
+		// first run - extract words
+		log('extracting words');
+		try {
+			if (!filesystem.unzip('words.zip', system.widgetDataFolder)) {
+				throw(new Error());
+			}
+		} catch (e) {
+			alert('There was an error extracting the word lists. The Widget will now close.');
+			closeWidget();
+		}
+	}
 	
 	this.words = new WordDB();
 	
@@ -29,6 +41,7 @@ JController = function() {
 	this.loadWords();
 	
 	widget.onPreferencesChanged = this.onPreferencesChanged;
+	
 	
 	/*
 	gameWindow.onKeyDown = function() {
@@ -278,7 +291,7 @@ JController.prototype = {
 	updateRound: function() {
 		var now = animator.milliseconds;
 		
-		if (this.paused) {
+		if (this.paused || !widget.visible) {
 			this.finishTime += (now - this.updateRound.lastUpdated);
 		} else {
 			if (now >= this.finishTime) {
@@ -315,6 +328,29 @@ JController.prototype = {
 			this.updateAnimation.kill();
 		}
 		
+		switch (this.roundAdvance()) {
+			case 2:
+				// bonus points!
+				var bonusPoints = Math.floor((this.finishTime - animator.milliseconds) * POINTS_PER_MS);
+				this.roundScore += bonusPoints;
+				this.score += bonusPoints;
+				this.view.updateScore();
+				this.view.showMessage(getMessage('endAll'), null, getMessage('advance'));
+				this.view.endRound(true);
+				break;
+			case 1:
+				this.view.showMessage(getMessage('advance'), 0);
+				this.view.endRound(true);
+				break;
+			default:
+			case 0:
+				this.view.showMessage(getMessage('noAdvance'), null, getMessage('noAdvance2'));
+				this.view.endRound(false);
+				break;
+		}
+	},
+	
+	roundAdvance: function() {
 		// determine if the buzzword was gotten
 		var maxLength = 0;
 		var maxFoundLength = 0;
@@ -341,23 +377,13 @@ JController.prototype = {
 			((foundCount / wordCount) >= 0.75) || // found 75% of the words
 			(this.roundScore >= 750) // got 750 points (approx. 10-15 words)
 		) {
-			normalAdvance = true;
-		}
-		
-		if (foundAll) {
-			// bonus points!
-			var bonusPoints = Math.floor((this.finishTime - animator.milliseconds) * POINTS_PER_MS);
-			this.roundScore += bonusPoints;
-			this.score += bonusPoints;
-			this.view.updateScore();
-			this.view.showMessage(getMessage('endAll'), null, getMessage('advance'));
-			this.view.endRound(true);
-		} else if (normalAdvance) {
-			this.view.showMessage(getMessage('advance'));
-			this.view.endRound(true);
+			if (foundAll) {
+				return 2;
+			} else {
+				return 1;
+			}
 		} else {
-			this.view.showMessage(getMessage('noAdvance'), null, getMessage('noAdvance2'));
-			this.view.endRound(false);
+			return 0;
 		}
 	},
 	
@@ -365,8 +391,7 @@ JController.prototype = {
 	 * onPreferencesChanged()
 	 */
 	onPreferencesChanged: function() {
-		log('preferences changed');
-		this.loadWords();
+		ct.loadWords();
 	},
 	
 	/**
@@ -380,7 +405,7 @@ JController.prototype = {
 			
 			for (var i = 0; i < curDifficulty; i++) {
 				log('Loading wordlist ' + i + '...');
-				this.words.load('words' + i + '.txt');
+				this.words.load(system.widgetDataFolder + '/words' + i + '.txt');
 			}
 			
 			this.lastDifficulty = curDifficulty;

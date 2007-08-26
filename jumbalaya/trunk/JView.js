@@ -23,6 +23,17 @@ JView = function() {
 	
 	this.wordsWindow = wordsWindow;
 	
+	this.gameWindow.onFirstDisplay = function() {
+		
+		var center = {x: screen.availLeft + screen.availWidth / 2, y: screen.availTop + screen.availHeight / 2};
+		
+		ct.view.gameWindow.hOffset = center.x - ct.view.gameWindow.width + 100;
+		ct.view.wordsWindow.hOffset = center.x;
+		
+		ct.view.gameWindow.vOffset = ct.view.wordsWindow.vOffset = center.y - ct.view.gameWindow.height / 2;
+	};
+	
+	
 	this.pan = makeAndAppend(Frame, this.gameWindow, {
 	});
 	this.pan.shadow = makeAndAppend(Image, this.pan, {
@@ -72,7 +83,7 @@ JView = function() {
 		vOffset: 162,
 		hAlign: 'center',
 		tracking: 'rectangle',
-		onMouseUp: function() { alert('Help is not quite done yet...'); }
+		onMouseUp: function() { filesystem.open(widget.extractFile('Jumbalaya Manual.pdf')); }
 	});
 	
 	
@@ -330,7 +341,7 @@ JView.prototype = {
 		this._messageFadeAnim = new FadeAnimation(this.messageBox, 255, MESSAGE_FADE_DURATION, animator.kEaseNone);
 		animator.start(this._messageFadeAnim);
 		
-		if (duration >= 0) {
+		if (duration > 0) {
 			this._messageTimer.interval = duration;
 			this._messageTimer.reset();
 			this._messageTimer.ticking = true;
@@ -537,7 +548,7 @@ JView.prototype = {
 		var timeSeparator = ((Math.floor((ct.finishTime - now) / 500) % 2 == 0) ? " " : ":");
 		this.timer.time.data = Math.floor(secondsLeft / 60) + timeSeparator + padString(('' + secondsLeft % 60), 2, '0');
 		
-		if (ct.paused) {
+		if (ct.paused || !widget.visible) {
 			if (this.letters.visible) {
 				this.letters.visible = false;
 				this.answer.visible = false;
@@ -606,12 +617,14 @@ JView.prototype = {
 			ct.updateRound();
 			ct.view.timer.startButton.visible = false;
 			ct.view.timer.pauseButton.visible = true;
+			ct.view.wordsWindow.opacity = 255;
 		},
 		pause: function() {
 			ct.paused = true;
 			ct.updateRound();
 			ct.view.timer.startButton.visible = true;
 			ct.view.timer.pauseButton.visible = false;
+			ct.view.wordsWindow.opacity = 0;
 		},
 		quit: function() {
 			if (!ct.ended) {
@@ -632,6 +645,9 @@ JView.prototype = {
 			ct.changeState('round');
 		},
 		textInput: function() {
+			if (ct.paused || !widget.visible) {
+				return;
+			}
 			lastdata = system.event.data;
 			switch (system.event.data) {
 				case ' ':

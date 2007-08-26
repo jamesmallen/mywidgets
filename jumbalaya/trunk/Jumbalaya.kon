@@ -8,7 +8,7 @@
 	<window title="Jumbalaya" name="gameWindow" id="gameWindow" width="458" height="316" visible="true">
 	</window>
 	
-	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true">
+	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true" opacity="0">
 	</window>
 	
 	<preference name="numberLetters" title="Number of Letters:" type="popup" defaultValue="6">
@@ -33,19 +33,9 @@
 	
 	<about-box>
 		<about-image>Resources/AboutBox.png</about-image>
-		<!-- <about-text hOffset="99" vOffset="158" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12" url="http://www.kzoowidgets.com">
-			<shadow hOffset="0" vOffset="2" color="#000000" opacity="127" />
-			Babel is a Kalamazoo Widget.
-		</about-text> -->
-		<about-text hOffset="99" vOffset="158" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12" url="http://www.kzoowidgets.com">
-			<shadow hOffset="0" vOffset="2" color="#000000"/>
-			Jumbalaya is a Kalamazoo Widget.
-		</about-text>
-		<about-version hOffset="159" vOffset="109" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
+		<about-version hOffset="282" vOffset="115" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
 			<shadow hOffset="0" vOffset="2" color="#000000"/>
 		</about-version>
-		
-		<about-image>Resources/AboutTheAuthor.png</about-image>
 	</about-box>
 	
 </widget>
