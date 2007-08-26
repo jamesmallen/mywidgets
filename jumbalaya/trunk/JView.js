@@ -306,7 +306,8 @@ JView.prototype = {
 				// this.gameWindow.onKeyPress = function() {
 				// widget.onKeyDown = function() {
 				//widget.onKeyUp = function() {
-				this.gameWindow.onTextInput = this.actions.textInput;
+				// this.gameWindow.onTextInput = this.actions.textInput;
+				this.gameWindow.onKeyDown = this.wordsWindow.onKeyDown = this.actions.textInput;
 				
 				this.timer.pauseButton.onClick = this.actions.pause;
 				this.timer.startButton.onClick = this.actions.resume;
@@ -648,22 +649,26 @@ JView.prototype = {
 			if (ct.paused || !widget.visible) {
 				return;
 			}
-			lastdata = system.event.data;
-			switch (system.event.data) {
-				case ' ':
-					ct.scramble();
-					break;
-				case '\b': // backspace
+			switch (system.event.keyCode) {
+				case 8: // backspace
+				case 27: // escape
+				case 37: // left arrow
+				case 46: // delete
 					ct.trayLetter();
 					break;
-				case '\r': // return
-				case '\n': // linefeed
+				case 13: // enter
 					ct.playWord();
 					break;
+				case 32: // space
+					ct.scramble();
+					break;
 				default:
-					var letter = system.event.data.toUpperCase();
+					// letter?
+					var letter = String.fromCharCode(system.event.keyCode).toUpperCase();
 					if (/^[A-Z]$/.test(letter)) {
 						ct.playLetter(letter);
+					} else {
+						log('unrecognized keycode', system.event.keyCode);
 					}
 					break;
 			}

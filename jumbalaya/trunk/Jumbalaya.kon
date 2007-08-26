@@ -1,4 +1,11 @@
 <?konfabulator xml-strict="true"?>
+<!--
+	Jumbalaya
+	by James M. Allen (james.m.allen@gmail.com)
+	
+	All images and code are copyright James M. Allen, unless otherwise noted,
+	and may not be used without permission.
+-->
 <widget minimumVersion="4.0">
 	
 	<settings>

@@ -15,7 +15,7 @@ JController = function() {
 		// first run - extract words
 		log('extracting words');
 		try {
-			if (!filesystem.unzip('words.zip', system.widgetDataFolder)) {
+			if (!filesystem.unzip(widget.extractFile('words.zip'), system.widgetDataFolder)) {
 				throw(new Error());
 			}
 		} catch (e) {
@@ -416,7 +416,7 @@ JController.prototype = {
 		menu: {
 			view: {
 				gameWindow: { visible: true },
-				wordsWindow: { opacity: 0 },
+				wordsWindow: { visible: false, opacity: 0 },
 				menu: { visible: true },
 				timer: { visible: false },
 				messageBox: { visible: false },
@@ -430,6 +430,7 @@ JController.prototype = {
 			paused: false,
 			view: {
 				gameWindow: { visible: true },
+				wordsWindow: { visible: true },
 				// wordsWindow: { opacity: 255 },
 				menu: { visible: false },
 				timer: {
