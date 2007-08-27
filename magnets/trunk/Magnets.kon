@@ -1,0 +1,27 @@
+<?konfabulator xml-strict="true"?>
+<!--
+	Magnets
+	by James M. Allen (james.m.allen@gmail.com)
+	
+	All images and code are copyright James M. Allen, unless otherwise noted,
+	and may not be used without permission.
+-->
+<widget minimumVersion="4.0">
+	
+	<settings>
+		<setting name="allowCustomObjectAttributes" value="true" />
+	</settings>
+	
+	<window title="Magnets" name="mainWindow" id="mainWindow" width="200" height="200" visible="true">
+	</window>
+	
+	<script src="Magnets.js"></script>
+	
+	<about-box>
+		<about-image>Resources/AboutBox.png</about-image>
+		<about-version hOffset="282" vOffset="115" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
+			<shadow hOffset="0" vOffset="2" color="#000000"/>
+		</about-version>
+	</about-box>
+	
+</widget>

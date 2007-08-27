@@ -1,0 +1,30 @@
+<widget minimumVersion="4.0">
+<script><![CDATA[
+var wn,cv,$,im,path;
+
+wn = new Window();
+with (wn) {
+    width = 256;
+    height = 256;
+    visible = true;
+}
+
+cv = new Canvas();
+with (cv) {
+    width = 128;
+    height = 128;
+}
+wn.appendChild(cv);
+
+$ = cv.getContext('2d');
+$.save();
+
+for (var i = 0; i < 3; i++) {
+	$.restore();
+	$.save();
+	$.translate(64, 64);
+	$.fillStyle = 'rgba(255,0,0,.5)';
+	$.fillRect(0, 0, 128, 128);
+}
+]]></script>
+</widget>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<name>Magnets</name>
+	<version>0.8</version>
+	<identifier>17450b40-542b-11dc-b66f-00301BADED15</identifier>
+	<image usage="security" src="Resources/SecurityIcon.png" />
+	<image usage="dock" src="Resources/DockIcon.png" />
+	<author name="James M. Allen" />
+	<copyright>(c) 2007 James M. Allen</copyright>
+	<description>A decorative tool for sticking up magnets on a desktop.</description>
+	<platform minVersion="4.0" />
+</metadata>
