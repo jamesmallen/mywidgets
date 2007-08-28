@@ -42,12 +42,4 @@ resizeToScreen(wn);
 filesystem.createDirectory(system.widgetDataFolder + '/tmp');
 
 
-foo = new WordMagnet(wn);
-foo.width = 100;
-foo.height = 25;
-foo.scale = 1;
-foo.rotation = 0;
-foo.hOffset += 100;
-foo.vOffset += 100;
-foo.text = 'hello';
-foo.update();
+Magnet.fromXML(filesystem.readFile('DefaultMagnets.xml'));

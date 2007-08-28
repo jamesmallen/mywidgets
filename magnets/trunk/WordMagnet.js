@@ -53,19 +53,12 @@ apply(WordMagnet.prototype, {
 				
 				$.fillStyle = '#fff';
 				$.fillRect(-width / 2, -height / 2, width, height);
-				$.drawImage(_textImg, -width / 2 + padding[3], -height / 2 + padding[0], _textImg.srcWidth / scale, _textImg.srcHeight / scale);
+				$.drawImage(_textImg, -width / 2 + padding[3], -height / 2 + padding[0], _textImg.srcWidth, _textImg.srcHeight);
 				
 				_draw.rotation = rotation;
 			}
 		}
 	},
-	
-	_scaleSize: function() {
-		with (this) {
-			return (parseInt(size) * scale) + 'px';
-		}
-	},
-	
 	
 	_updateText: function(force) {
 		var tmp;
@@ -74,15 +67,15 @@ apply(WordMagnet.prototype, {
 			_updateText.font = _updateText.font || '';
 			_updateText.size = _updateText.size || 0/0;
 			
-			if (force || _updateText.text != text || _updateText.font != font || _updateText.size != _scaleSize()) {
+			if (force || _updateText.text != text || _updateText.font != font || _updateText.size != size) {
 				_textImg = WordMagnet.doCache(this);
 				
-				width = _textImg.srcWidth / scale + padding[1] + padding[3];
-				height = _textImg.srcHeight / scale + padding[0] + padding[2];
+				width = _textImg.srcWidth + padding[1] + padding[3];
+				height = _textImg.srcHeight + padding[0] + padding[2];
 				// update local cache vars
 				_updateText.text = text;
 				_updateText.font = font;
-				_updateText.size = _scaleSize();
+				_updateText.size = size;
 				
 				return true;
 			} else {
@@ -103,10 +96,10 @@ WordMagnet.cache = {};
 
 WordMagnet.doCache = function(wmgnt) {
 	var tmp, filename, ptr;
-	if (!WordMagnet.cache[wmgnt._scaleSize()]) {
-		WordMagnet.cache[wmgnt._scaleSize()] = {};
+	if (!WordMagnet.cache[wmgnt.size]) {
+		WordMagnet.cache[wmgnt.size] = {};
 	}
-	ptr = WordMagnet.cache[wmgnt._scaleSize()];
+	ptr = WordMagnet.cache[wmgnt.size];
 	
 	if (!ptr[wmgnt.font]) {
 		ptr[wmgnt.font] = {};
@@ -117,7 +110,7 @@ WordMagnet.doCache = function(wmgnt) {
 		tmp = new Text();
 		wmgnt._updateText.text = tmp.data = wmgnt.text;
 		wmgnt._updateText.font = tmp.style.fontFamily = wmgnt.font;
-		wmgnt._updateText.size = tmp.style.fontSize = wmgnt._scaleSize();
+		wmgnt._updateText.size = tmp.style.fontSize = wmgnt.size;
 		
 		do {
 			filename = system.widgetDataFolder + '/tmp/' + randString(8) + '.png';

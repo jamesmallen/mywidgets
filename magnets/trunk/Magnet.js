@@ -3,7 +3,6 @@ magnets = [];
 function Magnet(wn) {
 	with (this) {
 		cv = new Canvas();
-		log('made ' + cv.name);
 		cv.mag = this;
 		with (cv) {
 			hAlign = 'center';
@@ -24,8 +23,7 @@ function Magnet(wn) {
 			x: 0/0,
 			y: 0/0,
 			initX: 0/0,
-			initY: 0/0,
-			ratio: 0/0
+			initY: 0/0
 		};
 		id = magnets.length;
 	}
@@ -47,11 +45,6 @@ Magnet.prototype = {
 	
 	
 	// methods
-	
-	setScale: function(scale) {
-		this.scale = scale;
-	},
-	
 	
 	update: function(force) {
 		with (this) {
@@ -118,31 +111,51 @@ Magnet.prototype = {
 // event handler - comes from context of Canvas object
 // this.mag = Magnet object
 Magnet.onMouseDown = function() {
+	var p;
 	with (this.mag) {
 		_drag.clicked = true;
 		_drag.initX = _drag.x = system.event.screenX;
 		_drag.initY = _drag.y = system.event.screenY;
-		_drag.ratio = 1 - Math.sqrt(Math.pow(system.event.x - cv.width / 2, 2) + Math.pow(system.event.y - cv.height / 2, 2)) / Math.sqrt(.25*width*width + .25*height*height);
+		p = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
+		
+		ptheta = Math.atan2(p.y, p.x);
+		
+		_drag.ratio = Math.min(1, Math.sqrt(p.x*p.x + p.y*p.y) * Math.cos(ptheta - rotation) / (width / 2));
+		
 		cv.orderAbove();
 	}
 };
 
 Magnet.onMouseDrag = function() {
-	var dx, dy, p, pp, q, qq, r, ppqqtheta;
+	var dx, dy, p, pp, q, ratio, ptheta, dtheta;
 	with (this.mag) {
 		if (_drag.clicked) {
 			p = { x: _drag.x - hOffset, y: _drag.y - vOffset };
-			pp = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
+			p = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
 			
-			q = { x: -p.x, y: -p.y };
+			ptheta = Math.atan2(p.y, p.x);
 			
+			dtheta = Math.atan2(pp.y, pp.x) - ptheta;
+			
+			rotation += .1 * dtheta;
+			
+			/*
+			ratio = Math.min(1, Math.sqrt(p.x*p.x + p.y*p.y) * Math.cos(ptheta - rotation) / (width / 2));
+			log(ratio);
+			*/
+			
+			
+			
+			hOffset += Math.abs(1 - _drag.ratio) * p.x;
+			vOffset += Math.abs(1 - _drag.ratio) * p.y;
+			
+			
+			/*
 			r = Math.sqrt(p.x*p.x + p.y*p.y);
-			
 			pqtheta = Math.atan(q.y - p.y, q.x - p.x);
 			
 			ppqqtheta = Math.atan(q.y - pp.y, q.x - pp.x);
 			
-			/*
 			if (pp.x == q.x) {
 				if (pp.y > q.y) {
 					// qq = { x: q.x, y: pp.y - 2*r };
@@ -156,21 +169,21 @@ Magnet.onMouseDrag = function() {
 				ppqqtheta = Math.atan(q.y - pp.y, q.x - pp.x);
 				// qq = { x: pp.x + 2*r * Math.sin(ppqqtheta), y: pp.y + 2*r * Math.cos(ppqqtheta) };
 			}
-			*/
 			
-			rotation += .2 * (ppqqtheta - pqtheta);
+			rotation += 1 * (ppqqtheta - pqtheta);
 			
 			//hOffset += pp.x + r * Math.sin(ppqqtheta);
 			//vOffset += pp.y + r * Math.cos(ppqqtheta);
 			
 			hOffset += pp.x + r * Math.sin(ppqqtheta);
-			vOffset += pp.y + r * Math.cos(ppqqtheta);
+			vOffset += pp.y - r * Math.cos(ppqqtheta);
 			
 			log(ppqqtheta - pqtheta);
 			
 			qq = { x: pp.x + 2*r * Math.sin(ppqqtheta), y: pp.y + 2*r * Math.cos(ppqqtheta) };
 			log(qq.x, qq.y);
 			// log(p.x, p.y, q.x, q.y, pp.x, pp.y);
+			*/
 			
 			/*
 			dx = system.event.screenX - _drag.x;
@@ -258,16 +271,34 @@ Magnet.clear = function() {
 }
 
 Magnet.fromXML = function(xml, append) {
-	var doc, settings, mags;
+	var doc, settings, mags, mag, node, i, j, attr;
 	if (!append) {
 		Magnet.clear();
 	}
 	
 	doc = XMLDOM.parse(xml);
-	settings = doc.evaluate('magnets/settings');
+	// settings = doc.evaluate('magnets/settings');
 	
+	mags = doc.evaluate('magnets/*');
 	
+	for (i = 0; i < mags.length; i++) {
+		node = mags.item(i);
+		switch (node.nodeName) {
+			case 'wordmagnet':
+				mag = new WordMagnet(wn);
+				for (j = 0; j < node.attributes.length; j++) {
+					attr = node.attributes.item(j);
+					if (Number(attr.value) == attr.value) {
+						mag[attr.name] = Number(attr.value);
+					} else {
+						mag[attr.name] = attr.value;
+					}
+				}
+				break;
+		}
+	}
 	
+	Magnet.refresh();
 }
 
 Magnet.refresh = function() {
