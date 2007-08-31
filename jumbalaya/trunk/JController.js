@@ -11,7 +11,7 @@ const POINTS_PER_MS = .01;
 JController = function() {
 	this.view = new JView();
 	
-	if (!filesystem.itemExists(system.widgetDataFolder + '/words0.txt')) {
+	if (!filesystem.itemExists(system.widgetDataFolder + '/words.txt')) {
 		// first run - extract words
 		log('extracting words');
 		try {
@@ -65,7 +65,6 @@ JController.prototype = {
 	ended: false,
 	paused: false,
 	updateAnimation: null,
-	lastDifficulty: null,
 	
 	
 	
@@ -391,7 +390,7 @@ JController.prototype = {
 	 * onPreferencesChanged()
 	 */
 	onPreferencesChanged: function() {
-		ct.loadWords();
+		// ct.loadWords();
 	},
 	
 	/**
@@ -399,17 +398,11 @@ JController.prototype = {
 	 * Loads the appropriate wordlists into this.words from preferences
 	 */
 	loadWords: function() {
-		var curDifficulty = parseInt(preferences.difficulty.value);
-		if (curDifficulty != this.lastDifficulty) {
-			this.words.reset();
-			
-			for (var i = 0; i < curDifficulty; i++) {
-				log('Loading wordlist ' + i + '...');
-				this.words.load(system.widgetDataFolder + '/words' + i + '.txt');
-			}
-			
-			this.lastDifficulty = curDifficulty;
-		}
+		this.words.reset();
+		
+		log('Loading wordlist ' + i + '...');
+		this.words.load(system.widgetDataFolder + '/words.txt');
+		
 	},
 	
 	states: {
