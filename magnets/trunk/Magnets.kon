@@ -13,6 +13,7 @@
 	</settings>
 	
 	<window title="Magnets" name="mainWindow" id="mainWindow" width="200" height="200" visible="true">
+		<frame id="magnetsFrame"/>
 	</window>
 	
 	<script src="Magnets.js"></script>

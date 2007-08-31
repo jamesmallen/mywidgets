@@ -1,4 +1,5 @@
 magnets = [];
+magnets.dirty = false;
 
 function Magnet(wn) {
 	with (this) {
@@ -28,6 +29,7 @@ function Magnet(wn) {
 		id = magnets.length;
 	}
 	magnets.push(this);
+	magnets.dirty = true;
 }
 
 Magnet.prototype = {
@@ -74,6 +76,7 @@ Magnet.prototype = {
 			
 			if (force || _recenter.hOffset != hOffset || _recenter.vOffset != vOffset || _recenter.width != width || _recenter.height != height || _recenter.scale != scale || _recenter.rotation != rotation) {
 				// log('Recentering Magnet', width, height, scale);
+				magnets.dirty = true;
 				
 				$.restore();
 				cv.hOffset = hOffset;
@@ -111,107 +114,88 @@ Magnet.prototype = {
 // event handler - comes from context of Canvas object
 // this.mag = Magnet object
 Magnet.onMouseDown = function() {
-	var p;
+	var p, dst;
 	with (this.mag) {
 		_drag.clicked = true;
+		_drag.initC = { x: hOffset, y: vOffset };
+		_drag.initP = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
 		_drag.initX = _drag.x = system.event.screenX;
 		_drag.initY = _drag.y = system.event.screenY;
-		p = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
-		
-		ptheta = Math.atan2(p.y, p.x);
-		
-		_drag.ratio = Math.min(1, Math.sqrt(p.x*p.x + p.y*p.y) * Math.cos(ptheta - rotation) / (width / 2));
+		_drag.initTheta = Math.atan2(_drag.y - vOffset, _drag.x - hOffset);
+		_drag.initRotation = rotation;
+		if (Math.sqrt(_drag.initP.x*_drag.initP.x + _drag.initP.y*_drag.initP.y) < width / 4) {
+			_drag.stab = true;
+			_drag.translate = true;
+		} else {
+			_drag.stab = false;
+			_drag.translate = false;
+		}
 		
 		cv.orderAbove();
 	}
 };
 
 Magnet.onMouseDrag = function() {
-	var dx, dy, p, pp, q, ratio, ptheta, dtheta;
+	var p, pProj, r, theta, bRotation;
+	
 	with (this.mag) {
 		if (_drag.clicked) {
-			p = { x: _drag.x - hOffset, y: _drag.y - vOffset };
 			p = { x: system.event.screenX - hOffset, y: system.event.screenY - vOffset };
 			
-			ptheta = Math.atan2(p.y, p.x);
-			
-			dtheta = Math.atan2(pp.y, pp.x) - ptheta;
-			
-			rotation += .1 * dtheta;
-			
-			/*
-			ratio = Math.min(1, Math.sqrt(p.x*p.x + p.y*p.y) * Math.cos(ptheta - rotation) / (width / 2));
-			log(ratio);
-			*/
-			
-			
-			
-			hOffset += Math.abs(1 - _drag.ratio) * p.x;
-			vOffset += Math.abs(1 - _drag.ratio) * p.y;
-			
-			
-			/*
 			r = Math.sqrt(p.x*p.x + p.y*p.y);
-			pqtheta = Math.atan(q.y - p.y, q.x - p.x);
+			theta = Math.atan2(p.y, p.x);
 			
-			ppqqtheta = Math.atan(q.y - pp.y, q.x - pp.x);
+			pProj = { x: r * Math.cos(rotation - theta), y: r * Math.sin(rotation - theta) };
 			
-			if (pp.x == q.x) {
-				if (pp.y > q.y) {
-					// qq = { x: q.x, y: pp.y - 2*r };
-					ppqqtheta = -Math.PI/2;
-				} else {
-					// qq = { x: q.x, y: pp.y + 2*r };
-					ppqqtheta = Math.PI/2;
-				}
-			} else {
-				// slope = (q.y - pp.y) / (q.x - pp.x);
-				ppqqtheta = Math.atan(q.y - pp.y, q.x - pp.x);
-				// qq = { x: pp.x + 2*r * Math.sin(ppqqtheta), y: pp.y + 2*r * Math.cos(ppqqtheta) };
-			}
-			
-			rotation += 1 * (ppqqtheta - pqtheta);
-			
-			//hOffset += pp.x + r * Math.sin(ppqqtheta);
-			//vOffset += pp.y + r * Math.cos(ppqqtheta);
-			
-			hOffset += pp.x + r * Math.sin(ppqqtheta);
-			vOffset += pp.y - r * Math.cos(ppqqtheta);
-			
-			log(ppqqtheta - pqtheta);
-			
-			qq = { x: pp.x + 2*r * Math.sin(ppqqtheta), y: pp.y + 2*r * Math.cos(ppqqtheta) };
-			log(qq.x, qq.y);
-			// log(p.x, p.y, q.x, q.y, pp.x, pp.y);
-			*/
-			
-			/*
-			dx = system.event.screenX - _drag.x;
-			dy = system.event.screenY - _drag.y;
-			
-			// log(dx, dy);
-			
-			// arotation - rotation if grabbed at the edge
-			arotation = rotation;
-			
-			brotation = Math.atan2(dy, dx);
-			if (brotation - rotation > Math.PI / 2) {
-				// log('flip a');
-				brotation -= Math.PI; // flip by 180
-			} else if (rotation - brotation > Math.PI / 2) {
-				// log('flip b');
-				brotation += Math.PI; // flip by 180
-			}
-			
-			
-			// log(brotation, rotation);
-			
-			rotation = .1 * (_drag.ratio * arotation + (1 - _drag.ratio) * brotation) + .9 * rotation;
-			
-			hOffset += dx;
-			vOffset += dy;
+			if (_drag.stab) {
+				theta -= Math.PI;
+
+				brotation = Math.atan2(system.event.screenY - _drag.y, system.event.screenX - _drag.x);
 				
-			*/
+				
+				
+				// get to correct side of PI
+				if (rotation - brotation > Math.PI) {
+					brotation += 2 * Math.PI;
+				} else if (brotation - rotation > Math.PI) {
+					brotation -= 2 * Math.PI;
+				}
+				
+				// get to nearest 180
+				if (brotation - rotation > Math.PI / 2) {
+					brotation -= Math.PI;
+				} else if (rotation - brotation > Math.PI / 2) {
+					brotation += Math.PI;
+				}
+				
+				// get to nearest 90
+				if (brotation - rotation > Math.PI / 4) {
+					brotation -= Math.PI / 2;
+				} else if (rotation - brotation > Math.PI / 4) {
+					brotation += Math.PI / 2;
+				}
+				
+				
+				if (rotation - theta > Math.PI) {
+					theta += Math.PI;
+				} else if (theta - rotation > Math.PI) {
+					theta -= Math.PI;
+				}
+				
+				rotation = .1 * brotation + .9 * rotation;
+			} else {
+				if ((Math.abs(pProj.x) > width / 2 || Math.abs(pProj.y) > height / 2) && !_drag.translate) {
+					_drag.initP = p;
+					_drag.translate = true;
+				}
+				
+				rotation = theta - _drag.initTheta + _drag.initRotation;
+			}
+			
+			if (_drag.translate) {
+				hOffset += p.x - _drag.initP.x;
+				vOffset += p.y - _drag.initP.y;
+			}
 			
 			_drag.x = system.event.screenX;
 			_drag.y = system.event.screenY;
@@ -231,12 +215,15 @@ Magnet.onMouseUp = function() {
 
 Magnet.toXML = function() {
 	var doc, root, settings, mag, xmlmag, i, j, p;
+	
+	Magnet.sort();
+	
 	doc = XMLDOM.createDocument();
 	root = doc.appendChild(doc.createElement('magnets'));
 	
 	settings = doc.createElement('settings');
-	settings.setAttribute('width', wn.width);
-	settings.setAttribute('height', wn.height);
+	settings.setAttribute('width', magFrame.width);
+	settings.setAttribute('height', magFrame.height);
 	root.appendChild(settings);
 	
 	for (i = 0; i < magnets.length; i++) {
@@ -271,27 +258,53 @@ Magnet.clear = function() {
 }
 
 Magnet.fromXML = function(xml, append) {
-	var doc, settings, mags, mag, node, i, j, attr;
+	var doc, settings, mags, mag, node, i, j, attr, noChanges;
 	if (!append) {
 		Magnet.clear();
 	}
 	
 	doc = XMLDOM.parse(xml);
-	// settings = doc.evaluate('magnets/settings');
+	settings = doc.evaluate('magnets/settings');
 	
+	if (settings.length == 1) {
+		settings = settings.item(0);
+		pdump(settings);
+		noChanges = (settings.getAttribute('width') == magFrame.width && settings.getAttribute('height') == magFrame.height);
+		log(settings.getAttribute('foo'));
+		log('foo');
+	}
 	mags = doc.evaluate('magnets/*');
 	
 	for (i = 0; i < mags.length; i++) {
 		node = mags.item(i);
 		switch (node.nodeName) {
 			case 'wordmagnet':
-				mag = new WordMagnet(wn);
+				mag = new WordMagnet(magFrame);
 				for (j = 0; j < node.attributes.length; j++) {
 					attr = node.attributes.item(j);
-					if (Number(attr.value) == attr.value) {
-						mag[attr.name] = Number(attr.value);
-					} else {
-						mag[attr.name] = attr.value;
+					switch (attr.name) {
+						case 'hOffset':
+							if (!noChanges && attr.value > magFrame.width) {
+								mag.hOffset = magFrame.width;
+							} else {
+								mag.hOffset = Number(attr.value);
+							}
+							break;
+						case 'vOffset':
+							if (!noChanges && attr.value > magFrame.height) {
+								mag.vOffset = magFrame.height;
+							} else {
+								mag.vOffset = Number(attr.value);
+							}
+							break;
+						
+						default:
+							if (Number(attr.value) == attr.value) {
+								mag[attr.name] = Number(attr.value);
+							} else {
+								mag[attr.name] = attr.value;
+							}
+							break;
 					}
 				}
 				break;
@@ -306,6 +319,20 @@ Magnet.refresh = function() {
 	for (i = 0; i < magnets.length; i++) {
 		magnets[i].update();
 	}
+}
+
+
+Magnet.sort = function() {
+	var newMagnets = [];
+	for (i = magFrame.firstChild; i != null; i = i.nextSibling) {
+		if (i.mag) {
+			newMagnets.push(i.mag);
+		} else {
+			log('found a non-magnet:');
+			pdump(i);
+		}
+	}
+	magnets = newMagnets;
 }
 
 

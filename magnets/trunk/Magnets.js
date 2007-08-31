@@ -30,14 +30,45 @@ function resizeToScreen(wn) {
 }
 
 
+function importWordlist(filename) {
+	var words = filesystem.readFile(filename, true), i, x, y, mag, highest;
+	
+	if (words.length > 1000) {
+		var i = alert('This word list has over 1000 words, but Magnets wasn\'t really meant to be used with more than a few hundred. Importing it may take a long time and clutter up your screen. Are you sure you want to continue?', 'Yes', 'No');
+		
+		if (i != 1) {
+			return;
+		}
+	}
+	
+	x = y = highest = 0;
+	for (i = 0; i < words.length; i++) {
+		mag = new WordMagnet(magFrame, words[i]);
+		mag.update();
+		if (x + mag.width > magFrame.width) {
+			x = highest = 0;
+			y += highest;
+		}
+		highest = Math.max(highest, mag.height);
+		mag.hOffset = x;
+		mag.vOffset = y;
+	}
+	
+	Magnet.refresh();
+}
+
+
 cacheClean();
-var wn;
+var wn, magFrame;
 
 var deg = Math.PI / 180;
 
 
 wn = widget.getElementById('mainWindow');
+magFrame = widget.getElementById('magnetsFrame');
 resizeToScreen(wn);
+magFrame.width = wn.width;
+magFrame.height = wn.height;
 
 filesystem.createDirectory(system.widgetDataFolder + '/tmp');
 
