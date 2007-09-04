@@ -1,0 +1,41 @@
+<?konfabulator xml-strict="true"?>
+<!--
+	Jumbalaya
+	by James M. Allen (james.m.allen@gmail.com)
+	
+	All images and code are copyright James M. Allen, unless otherwise noted,
+	and may not be used without permission.
+-->
+<widget minimumVersion="4.0">
+	
+	<settings>
+		<setting name="allowCustomObjectAttributes" value="true" />
+	</settings>
+	
+	<window title="Jumbalaya" name="gameWindow" id="gameWindow" width="458" height="316" visible="true">
+	</window>
+	
+	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true" opacity="0">
+	</window>
+	
+	<preference name="difficulty" title="Difficulty" type="popup" defaultValue="1">
+		<option>Easy</option>
+		<optionValue>1</optionValue>
+		<option>Medium</option>
+		<optionValue>2</optionValue>
+		<option>Hard</option>
+		<optionValue>3</optionValue>
+	</preference>
+	
+	<preference name="roundLength" hidden="true" defaultValue="180000" /> <!-- round length in ms -->
+	
+	<script src="Jumbalaya.js"></script>
+	
+	<about-box>
+		<about-image>Resources/AboutBox.png</about-image>
+		<about-version hOffset="282" vOffset="115" color="#ffffff" font="Lucida Grande,Lucida Sans Unicode,Lucida Sans,Arial,Helvetica" size="12">
+			<shadow hOffset="0" vOffset="2" color="#000000"/>
+		</about-version>
+	</about-box>
+	
+</widget>

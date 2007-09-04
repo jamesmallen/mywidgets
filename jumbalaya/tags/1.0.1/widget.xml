@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<name>Jumbalaya</name>
+	<version>1.0.1</version>
+	<identifier>33da9bc0-0256-11dc-822a-005056C00008</identifier>
+	<image usage="security" src="Resources/SecurityIcon.png" />
+	<image usage="dock" src="Resources/DockIcon.png" />
+	<author name="James M. Allen" href="http://www.kzoowidgets.com" />
+	<copyright>(c) 2007 James M. Allen</copyright>
+	<description>A word game where the player earns points by making words out of a given set of letters.</description>
+	<platform minVersion="4.0" />
+</metadata>
