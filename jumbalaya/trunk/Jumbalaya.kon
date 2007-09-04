@@ -18,11 +18,6 @@
 	<window title="Jumbalaya" name="wordsWindow" id="wordsWindow" width="362" height="271" visible="true" opacity="0">
 	</window>
 	
-	<preference name="numberLetters" title="Number of Letters:" type="popup" defaultValue="6">
-		<option>6</option>
-		<option>7</option>
-	</preference>
-	
 	<preference name="difficulty" title="Difficulty" type="popup" defaultValue="1">
 		<option>Easy</option>
 		<optionValue>1</optionValue>
@@ -30,8 +25,6 @@
 		<optionValue>2</optionValue>
 		<option>Hard</option>
 		<optionValue>3</optionValue>
-		<option>Ridiculous</option>
-		<optionValue>4</optionValue>
 	</preference>
 	
 	<preference name="roundLength" hidden="true" defaultValue="180000" /> <!-- round length in ms -->

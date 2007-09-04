@@ -17,5 +17,5 @@ var vw = ct.view;
 
 
 
-ct.changeState('menu');
+ct.changeState('loading');
 

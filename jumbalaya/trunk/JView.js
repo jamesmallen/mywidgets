@@ -10,6 +10,8 @@ const MESSAGE_SHOW_DURATION = 4; // in seconds
 const NOTECARD_LINE_HEIGHT = 18;
 const NOTECARD_LINE_WIDTH = 225;
 const NOTECARD_WORD_SPACING = {
+	1: 75,
+	2: 75,
 	3: 75,
 	4: 75,
 	5: 75,
@@ -46,6 +48,29 @@ JView = function() {
 	this.pan.panTilted = makeAndAppend(Image, this.pan, {
 		src: 'Resources/PanTilted.png',
 		visible: false
+	});
+	
+	
+	this.loading = makeAndAppend(Frame, this.gameWindow, {
+		hOffset: 77,
+		vOffset: 125
+	});
+	this.loading.loading = makeObject(Image, {
+		src: 'Resources/Loading.png'
+	});
+	this.loading.cv = makeAndAppend(Canvas, this.loading, {
+		width: 137,
+		height: 24
+	});
+	this.loading.ctx = this.loading.cv.getContext('2d');
+	this.loading.lastWord = makeAndAppend(Text, this.loading, {
+		color: '#fff',
+		hOffset: 68.5,
+		vOffset: 49,
+		hAlign: 'center',
+		font: 'Lucida Grande, Lucida Sans, Arial',
+		size: 10,
+		opacity: 137
 	});
 	
 	
@@ -278,7 +303,6 @@ JView.prototype = {
 				break;
 			case 'round':
 				emptyFrame(this.letters);
-				emptyFrame(this.words);
 				this.pan.pan.onMouseUp = this.actions.scramble;
 				this.trayLetters = makeObject(LetterHolder, {
 					parentNode: this.letters,
@@ -303,16 +327,13 @@ JView.prototype = {
 				this.initNotecard();
 				// this.updateNotecard();
 				
-				// this.gameWindow.onKeyPress = function() {
-				// widget.onKeyDown = function() {
-				//widget.onKeyUp = function() {
-				// this.gameWindow.onTextInput = this.actions.textInput;
 				this.gameWindow.onKeyDown = this.wordsWindow.onKeyDown = this.actions.textInput;
 				
 				this.timer.pauseButton.onClick = this.actions.pause;
 				this.timer.startButton.onClick = this.actions.resume;
 				this.timer.quitButton.onClick = this.actions.quit;
 				
+				break;
 			default:
 				break;
 		}
@@ -492,6 +513,9 @@ JView.prototype = {
 	 */
 	initNotecard: function() {
 		// draws the notecard stack
+		this.words.cache = null;
+		emptyFrame(this.words);
+		
 		var vOffset = this.updateNotecard(false);
 		
 		this.notecard.height = Math.max(vOffset + 90, 216);
@@ -499,6 +523,7 @@ JView.prototype = {
 		
 		this.wordsWindow.height = this.notecard.height;
 		this.wordsWindow.opacity = 255;
+		
 	},
 	
 	/**
@@ -508,34 +533,44 @@ JView.prototype = {
 	updateNotecard: function(highlightMissing) {
 		var hOffset = 0;
 		var vOffset = 0;
-		var t, lastLength;
+		var i, j, t, lastLength, placeholder;
 		
-		emptyFrame(this.words);
-		
-		for (var i in ct.currentWords) {
-			if (lastLength != i.length && hOffset > 0) {
-				hOffset = 0;
-				vOffset += NOTECARD_LINE_HEIGHT;
-			}
-			lastLength = i.length;
+		if (!this.words.cache) {
+			// init
+			this.words.cache = {};
 			
-			if (ct.currentWords[i] || highlightMissing) {
-				t = new ImageText({src:'Resources/HandLetters/*.png', data:i, hOffset: hOffset, vOffset: vOffset}, this.words);
-				if (!ct.currentWords[i] && highlightMissing) {
-					t.frame.style.background = 'rgba(255, 255, 0, 0.4)';
+			for (i in ct.currentWords) {
+				if (lastLength != i.length && hOffset > 0) {
+					hOffset = 0;
+					vOffset += NOTECARD_LINE_HEIGHT;
 				}
-			} else {
-				var placeholder = '';
-				for (var j = 0; j < i.length; j++) {
+				lastLength = i.length;
+
+
+				placeholder = '';
+				for (j = 0; j < i.length; j++) {
 					placeholder += '_';
 				}
-				t = new ImageText({src:'Resources/HandLetters/*.png', data:placeholder, hOffset: hOffset, vOffset: vOffset}, this.words);
+				
+				this.words.cache[i] = new ImageText({src:'Resources/HandLetters/*.png', data:placeholder, hOffset: hOffset, vOffset: vOffset}, this.words);
+				
+				
+				
+				hOffset += NOTECARD_WORD_SPACING[lastLength];
+				if (hOffset > NOTECARD_LINE_WIDTH) {
+					hOffset = 0;
+					vOffset += NOTECARD_LINE_HEIGHT;
+				}
 			}
-			
-			hOffset += NOTECARD_WORD_SPACING[lastLength];
-			if (hOffset > NOTECARD_LINE_WIDTH) {
-				hOffset = 0;
-				vOffset += NOTECARD_LINE_HEIGHT;
+		}
+		
+		
+		for (i in ct.currentWords) {
+			if (ct.currentWords[i] || highlightMissing) {
+				this.words.cache[i].data = i;
+				if (!ct.currentWords[i] && highlightMissing) {
+					this.words.cache[i].frame.style.background = 'rgba(255, 255, 0, 0.4)';
+				}
 			}
 		}
 		
@@ -591,7 +626,7 @@ JView.prototype = {
 		this.timer.quitButton.visible = true;
 		this.answer.buttons.visible = false;
 		
-		this.gameWindow.onTextInput = null;
+		this.gameWindow.onKeyDown = this.wordsWindow.onKeyDown = null;
 		this.pan.pan.onMouseUp = null;
 		
 		for (var i = 0; i < this.trayLetters.letters.length; i++) {
@@ -606,8 +641,23 @@ JView.prototype = {
 	},
 	
 	
+	updateLoading: function(pct, lastWord) {
+		var ctx = this.loading.ctx;
+		
+		ctx.globalCompositeOperation = 'source-over';
+		ctx.clearRect(0, 0, 137, 24);
+		ctx.fillStyle = 'rgba(255, 255, 255, .4)';
+		ctx.fillRect(0, 0, 137, 24);
+		
+		ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+		ctx.fillRect(0, 0, pct * 137, 24);
+		
+		ctx.globalCompositeOperation = 'source-in';
+		ctx.drawImage(this.loading.loading, 0, 0);
+		
+		this.loading.lastWord.data = lastWord;
+	},
 	
-
 	
 	actions: {
 		scramble: function() {

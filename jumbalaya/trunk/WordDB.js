@@ -13,6 +13,7 @@ WordDB.prototype = {
 	// PROPERTIES
 	_blocks: 0,
 	_arr: null,
+	_anm: null,
 	addHook: null,
 	
 	
@@ -32,23 +33,54 @@ WordDB.prototype = {
 	 * Fills the object with words
 	 * wordList can be a file name (text file, words on separate lines)
 	 * or an array of words.
-	 * If showProgress is set, logs the latest entry every 1000 words
+	 * If showProgress is set, runs asynchronously and calls showProgress
 	 */
-	load: function(wordList, showProgress) {
+	load: function(wordList, showProgress, showProgressContext, doneFunc) {
+		
 		if (typeof(wordList) == 'string') {
 			wordList = filesystem.readFile(wordList, true);
 		}
 		
-		for (var i = 0; i < wordList.length; i++) {
-			if (showProgress && (i % 1000 == 0)) {
-				log('adding ' + wordList[i]);
+		if (this._anm && this._anm.kill) {
+			this._anm.kill();
+		}
+		
+		this._anm = new CustomAnimation(1, this.loadUpdateFunc, doneFunc); // run the load process as quickly as possible
+		this._anm.wordList = wordList;
+		this._anm.wdb = this;
+		this._anm.showProgress = showProgress;
+		this._anm.showProgressContext = showProgressContext;
+		this._anm.bookmark = 0;
+		this._anm.progOffset = random(0, 300);
+		
+		animator.start(this._anm);
+		
+	},
+	
+	loadUpdateFunc: function() {
+		var i;
+		
+		for (i = this.bookmark; i < this.bookmark + 300 && i < this.wordList.length; i++) {
+			if (i == this.bookmark + this.progOffset && this.showProgress) {
+				this.showProgress.call(this.showProgressContext, i / this.wordList.length, this.wordList[i]);
 			}
-			this.add(wordList[i]);
-			if (this.addHook) {
-				this.addHook(wordList[i]);
+			
+			this.wdb.add(this.wordList[i]);
+			if (this.wdb.addHook) {
+				this.wdb.addHook(this.wordList[i]);
 			}
 		}
 		
+		if (i >= this.wordList.length) {
+			if (this.showProgress) {
+				this.showProgress.call(this.showProgressContext, 1, this.wordList[i]);
+			}
+			delete this.wordList;
+			return false;
+		} else {
+			this.bookmark = i;
+			return true;
+		}
 	},
 	
 	

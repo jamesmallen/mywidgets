@@ -41,7 +41,7 @@ JController = function() {
 	this.loadWords();
 	
 	widget.onPreferencesChanged = this.onPreferencesChanged;
-	
+	this.difficulty = parseInt(preferences.difficulty.value);
 	
 	/*
 	gameWindow.onKeyDown = function() {
@@ -65,6 +65,7 @@ JController.prototype = {
 	ended: false,
 	paused: false,
 	updateAnimation: null,
+	difficulty: 0,
 	
 	
 	
@@ -90,15 +91,16 @@ JController.prototype = {
 		
 		// then complex logic
 		switch (state) {
-			case 'menu':
-				
-				break;
 			case 'round':
 				params = this.newRound();
 				this.updateAnimation = new CustomAnimation(FLUID_ANIMATION_INTERVAL, function() { this.ct.updateRound(); return true; });
 				this.updateAnimation.ct = this;
 				animator.start(this.updateAnimation);
 				this.view.showMessage(getMessage('start'));
+				break;
+			case 'loading':
+			case 'menu':
+				// nothing special about these
 				break;
 			default:
 				log('Unhandled state switch: ' + state);
@@ -129,15 +131,14 @@ JController.prototype = {
 		
 		this.roundScore = 0;
 		
-		switch (parseInt(preferences.numberLetters.value)) {
-			case 6:
-				src = this.sixes;
-				break;
-			case 7:
+		switch (this.difficulty) {
+			case 3:
+			case 2:
 				src = this.sevens;
 				break;
+			case 1:
 			default:
-				throw new Error('Unexpected numberLetters value');
+				src = this.sixes;
 				break;
 		}
 		
@@ -198,6 +199,9 @@ JController.prototype = {
 				this.score += playScore;
 				
 				this.view.updateScore();
+				
+				log('Advance: ' + this.roundAdvance());
+				
 			} else {
 				this.view.showMessage(getMessage('duplicate', word.toUpperCase()));
 			}
@@ -352,24 +356,58 @@ JController.prototype = {
 	roundAdvance: function() {
 		// determine if the buzzword was gotten
 		var maxLength = 0;
-		var maxFoundLength = 0;
 		var foundAll = true;
 		var wordCount = 0;
+		var longestCount = 0;
 		var foundCount = 0;
-		
+		var foundLongestCount = 0;
+		var pct;
 		
 		for (var i in this.currentWords) {
 			maxLength = Math.max(i.length, maxLength);
 			wordCount++;
 			if (this.currentWords[i]) {
-				maxFoundLength = Math.max(i.length, maxFoundLength);
 				foundCount++;
-			} else {
-				foundAll = false;
 			}
 		}
 		
-		var normalAdvance = false;
+		pct = foundCount / wordCount;
+		
+		for (var i in this.currentWords) {
+			if (i.length == maxLength) {
+				longestCount++;
+				if (this.currentWords[i]) {
+					foundLongestCount++;
+				}
+			}
+		}
+		
+		if (foundCount == wordCount) {
+			log('Found all words');
+			return 2; // found all the words
+		} else {
+			switch (this.difficulty) {
+				case 3: // Hard
+					return ((foundLongestCount == longestCount) && // all the long words
+					        ((foundCount >= 15) || pct >= .75)) // at least 15 or 75%
+								 ? 1 : 0;
+					break;
+				case 2: // Medium
+					return ((foundLongestCount >= 1) || // at least one long word
+					        ((foundCount >= 15) || pct >= .75)) // at least 15 or 75%
+					       ? 1 : 0;
+					break;
+				case 1: // Easy
+				default:
+					return ((foundLongestCount >= 1) || // at least one long word
+					        ((foundCount >= 10) || pct >= .5)) // at least 10 or 50%
+					       ? 1 : 0;
+					break;
+			}
+			
+			// unexpected
+			return 0;
+		}
 		
 		if ( // advance conditions
 			(maxFoundLength == maxLength) || // found the 6/7 letter word
@@ -390,26 +428,46 @@ JController.prototype = {
 	 * onPreferencesChanged()
 	 */
 	onPreferencesChanged: function() {
+		if (ct.state == 'round') {
+			alert('Please change the difficulty from the Main Menu by clicking on the "Options" button.');
+			preferences.difficulty.value = ct.difficulty;
+		} else {
+			ct.difficulty = parseInt(preferences.difficulty.value);
+		}
 		// ct.loadWords();
 	},
 	
 	/**
 	 * loadWords()
-	 * Loads the appropriate wordlists into this.words from preferences
+	 * Loads the wordlist into this.words
 	 */
 	loadWords: function() {
 		this.words.reset();
 		
-		log('Loading wordlist ' + i + '...');
-		this.words.load(system.widgetDataFolder + '/words.txt');
+		log('Loading wordlist...');
+		this.words.load(system.widgetDataFolder + '/words.txt', this.view.updateLoading, this.view, function() { ct.changeState('menu'); });
 		
 	},
 	
 	states: {
+		loading: {
+			view: {
+				//gameWindow: { visible: true },
+				wordsWindow: { opacity: 0 },
+				loading: { visible: true },
+				menu: { visible: false },
+				timer: { visible: false },
+				messageBox: { visible: false },
+				answer: { visible: false },
+				letters: { visible: false }
+			}
+		},
+		
 		menu: {
 			view: {
-				gameWindow: { visible: true },
-				wordsWindow: { visible: false, opacity: 0 },
+				//gameWindow: { visible: true },
+				wordsWindow: { opacity: 0 },
+				loading: { visible: false },
 				menu: { visible: true },
 				timer: { visible: false },
 				messageBox: { visible: false },
@@ -422,8 +480,8 @@ JController.prototype = {
 			ended: false,
 			paused: false,
 			view: {
-				gameWindow: { visible: true },
-				wordsWindow: { visible: true },
+				//gameWindow: { visible: true },
+				// wordsWindow: { visible: true },
 				// wordsWindow: { opacity: 255 },
 				menu: { visible: false },
 				timer: {
