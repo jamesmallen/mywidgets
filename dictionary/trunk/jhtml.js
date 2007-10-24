@@ -427,6 +427,28 @@ function JHTML(params, parent)
 	}
 	
 	
+	// PRIVILEGED METHODS
+	this.setHtml = function(html) {
+		if (!/^<body>/.test(html)) {
+			html = '<body>' + html + '</body>';
+		}
+		
+		try {
+			_doc = XMLDOM.parse(html);
+		} catch (ex) {
+			log('Error parsing html - not well-formed!');
+			throw(ex);
+		}
+		
+		_parse();
+		
+		this.html = html;
+	}
+	
+	this.refresh = function() {
+		_parse();
+	}
+	
 	
 	
 	// PUBLIC PROPERTIES
@@ -476,27 +498,6 @@ function JHTML(params, parent)
 	this.watch('data', function(property, oldval, newval) { this.setHtml(newval); return newval; });
 	
 	
-	// PRIVILEGED METHODS
-	this.setHtml = function(html) {
-		if (!/^<body>/.test(html)) {
-			html = '<body>' + html + '</body>';
-		}
-		
-		try {
-			_doc = XMLDOM.parse(html);
-		} catch (ex) {
-			log('Error parsing html - not well-formed!');
-			throw(ex);
-		}
-		
-		_parse();
-		
-		this.html = html;
-	}
-	
-	this.refresh = function() {
-		_parse();
-	}
 }
 
 
