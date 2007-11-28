@@ -96,7 +96,9 @@ function Throbber(params, parent)
 	// see Throbber.prototype for more
 	
 	var _canvasPassThru = function(property, oldval, newval) {
-		this.canvas[property] = newval;
+		if (this.canvas) {
+			this.canvas[property] = newval;
+		}
 		return newval;
 	}
 	

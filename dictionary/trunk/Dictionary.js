@@ -44,7 +44,7 @@ var currentHeight = 244;
 var extenderFrame = new Frame();
 extenderFrame.opacity = 0;
 mainWindow.appendChild(extenderFrame);
-var extenderBG = new KImage({src: 'Resources/ExtenderBG*.png', colorize:'#000', height: 44, opacity:122, mask: 'Resources/SearchBarBG<.png', maskHeight:44}, extenderFrame);
+var extenderBG = new KImage({src: 'Resources/ExtenderBG*.png', colorize:'#000000', height: 44, opacity:122, mask: 'Resources/SearchBarBG<.png', maskHeight:44}, extenderFrame);
 var extender = new KImage({src: 'Resources/Extender*.png', height: 44, mask: 'Resources/SearchBarBG<.png', maskHeight:44}, extenderFrame);
 
 extenderContentsFrame = new Frame();
@@ -60,7 +60,7 @@ extenderContentsFrame.appendChild(resultsBox.vScrollBar);
 searchBarFrame = new Frame();
 mainWindow.appendChild(searchBarFrame);
 
-var searchBarBG = new KImage({src: 'Resources/SearchBarBG<.png', colorize:'#000', opacity:122}, searchBarFrame);
+var searchBarBG = new KImage({src: 'Resources/SearchBarBG<.png', colorize:'#000000', opacity:122}, searchBarFrame);
 
 var searchBar = new KImage({src: 'Resources/SearchBar<.png'}, searchBarFrame);
 
@@ -90,7 +90,7 @@ var searchBarGlow = new KImage({src: 'Resources/SearchBarGlow<.png', visible: fa
 var searchBarInput = new TextArea();
 searchBarInput.style.fontFamily = "'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif";
 searchBarInput.style.fontSize = '12px';
-searchBarInput.style.color = '#999';
+searchBarInput.style.color = '#999999';
 searchBarInput.data = 'Dictionary';
 searchBarInput.hOffset = 74;
 searchBarInput.vOffset = 12;
@@ -100,9 +100,9 @@ searchBarInput.spellcheck = false;
 
 searchBarInput.onGainFocus = function() {
 	searchBarGlow.visible = true;
-	if (this.style.color == '#999') {
+	if (this.style.color == '#999999') {
 		this.data = '';
-		this.style.color = '#000';
+		this.style.color = '#000000';
 	}
 }
 
@@ -110,7 +110,7 @@ searchBarInput.onLoseFocus = function() {
 	searchBarGlow.visible = false;
 	if (!this.data) {
 		this.data = 'Dictionary';
-		this.style.color = '#999';
+		this.style.color = '#999999';
 	}
 }
 
@@ -123,6 +123,7 @@ searchBarInput.onKeyPress = function() {
 			} else {
 				activeRequest = lookup(this.data, 'wordsc');
 			}
+			this.rejectKeyPress();
 			break;
 		case 'Tab':
 			this.rejectKeyPress();

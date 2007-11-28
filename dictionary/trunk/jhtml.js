@@ -449,7 +449,9 @@ function JHTML(params, parent)
 	}
 	
 	this.refresh = function() {
-		_parse();
+		if (_doc && _doc.documentElement) {
+			_parse();
+		}
 	}
 	
 	
