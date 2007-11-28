@@ -1,6 +1,6 @@
 /**
  * -------------
- * JHTML v1.0
+ * JHTML v1.0.1
  * -------------
  *  A class for rendering HTML using Frame and Text objects
  *
@@ -13,6 +13,9 @@
  * ---------------
  * Release History
  * ---------------
+ * 1.0.1 - 24 October 2007
+ * - Fixed an issue with order of object creation.
+ *
  * 1.0 - 19 April 2007
  * - Initial release - yay Yahoo! Widgets 4.0!
  *
